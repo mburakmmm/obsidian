@@ -1,0 +1,72 @@
+FIELD_NULL: int = 0
+FIELD_STRING: int = 1
+FIELD_INT: int = 2
+FIELD_FLOAT: int = 3
+FIELD_BOOL: int = 4
+
+class FieldValue:
+    kind: int
+    text_value: str
+    int_value: int
+    float_value: float
+    bool_value: bool
+
+    def __init__(self, kind: int, text_value: str, int_value: int, float_value: float, bool_value: bool) -> None:
+        if kind < FIELD_NULL or kind > FIELD_BOOL:
+            raise ValueError("unknown field value kind")
+        self.kind = kind
+        self.text_value = text_value
+        self.int_value = int_value
+        self.float_value = float_value
+        self.bool_value = bool_value
+
+    def clone(self) -> FieldValue:
+
+        return FieldValue(self.kind, self.text_value, self.int_value, self.float_value, self.bool_value)
+
+class LogField:
+    key: str
+    value: FieldValue
+
+    def __init__(self, key: str, value: FieldValue) -> None:
+        validate_field_key(key)
+        self.key = key
+        self.value = value.clone()
+
+    def clone(self) -> LogField:
+
+        return LogField(self.key, self.value)
+
+def null_value() -> FieldValue:
+    return FieldValue(FIELD_NULL, "", 0, 0.0, False)
+
+def string_value(value: str) -> FieldValue:
+    return FieldValue(FIELD_STRING, value, 0, 0.0, False)
+
+def int_value(value: int) -> FieldValue:
+    return FieldValue(FIELD_INT, "", value, 0.0, False)
+
+def float_value(value: float) -> FieldValue:
+    return FieldValue(FIELD_FLOAT, "", 0, value, False)
+
+def bool_value(value: bool) -> FieldValue:
+    return FieldValue(FIELD_BOOL, "", 0, 0.0, value)
+
+def is_reserved_key(key: str) -> bool:
+    return key == "timestamp" or key == "timestamp_ms" or key == "level" or key == "logger" or key == "message" or key == "fields" or key == "context" or key == "request_id" or key == "trace_id" or key == "span_id" or key == "exception" or key == "source" or key == "schema_version"
+
+def validate_field_key(key: str) -> None:
+    if len(key) == 0:
+        raise ValueError("field key must not be empty")
+    if len(key) > 128:
+        raise ValueError("field key is too long")
+    if "\n" in key or "" in key or "\t" in key:
+        raise ValueError("field key contains a control character")
+    if is_reserved_key(key):
+        raise ValueError("field key is reserved")
+
+def clone_fields(source: list[LogField]) -> list[LogField]:
+    result: list[LogField] = []
+    for field in source:
+        result.append(field.clone())
+    return result

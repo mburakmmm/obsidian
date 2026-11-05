@@ -1,0 +1,26 @@
+import fields
+import nox.log
+from fields import LogField
+from record import LogRecord
+
+def is_sensitive_key(key: str) -> bool:
+    normalized: str = key.lower()
+    return normalized == "password" or normalized == "passwd" or normalized == "token" or normalized == "access_token" or normalized == "refresh_token" or normalized == "authorization" or normalized == "api_key" or normalized == "secret" or normalized == "cookie" or normalized == "set-cookie" or normalized == "private_key"
+
+def sanitize_fields(source: list[LogField]) -> list[LogField]:
+    result: list[LogField] = []
+    for field in source:
+        if is_sensitive_key(field.key):
+            result.append(LogField(field.key, fields.string_value("***")))
+        else:
+            result.append(field.clone())
+    return result
+
+def sanitize_message(message: str) -> str:
+    keys: list[str] = ["password", "passwd", "token", "access_token", "refresh_token", "authorization", "api_key", "secret", "cookie", "set-cookie", "private_key"]
+    return nox.log.mask_assignments(message, keys)
+
+def sanitize_record(entry: LogRecord) -> LogRecord:
+    safe_fields: list[LogField] = sanitize_fields(entry.fields_snapshot())
+    safe_context: list[LogField] = sanitize_fields(entry.context_snapshot())
+    return LogRecord(entry.timestamp_ms, entry.event_level, entry.logger_name, sanitize_message(entry.message), safe_fields, safe_context)

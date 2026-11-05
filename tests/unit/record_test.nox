@@ -1,0 +1,105 @@
+import fields
+import level
+import nox.test
+import record
+from fields import FIELD_BOOL, FIELD_FLOAT, FIELD_INT, FIELD_NULL, FIELD_STRING, FieldValue, LogField
+from level import INFO, OFF
+from record import LogRecord
+
+def reserved_key_raises() -> bool:
+    try:
+        LogField("timestamp", fields.int_value(1))
+        return False
+    except ValueError as e:
+        return e.message == "field key is reserved"
+
+def control_key_raises() -> bool:
+    try:
+        LogField("safe\nforged", fields.string_value("x"))
+        return False
+    except ValueError as e:
+        return e.message == "field key contains a control character"
+
+def invalid_kind_raises() -> bool:
+    try:
+        FieldValue(99, "", 0, 0.0, False)
+        return False
+    except ValueError as e:
+        return e.message == "unknown field value kind"
+
+def off_record_raises() -> bool:
+    empty: list[LogField] = []
+    try:
+        LogRecord(1, OFF, "test", "message", empty, empty)
+        return False
+    except ValueError as e:
+        return e.message == "record level must be an event level"
+
+def invalid_logger_raises() -> bool:
+    empty: list[LogField] = []
+    try:
+        LogRecord(1, INFO, "bad\nname", "message", empty, empty)
+        return False
+    except ValueError as e:
+        return e.message == "logger name contains a control character"
+
+null_field: FieldValue = fields.null_value()
+string_field: FieldValue = fields.string_value("hello")
+integer_field: FieldValue = fields.int_value(42)
+decimal_field: FieldValue = fields.float_value(1.5)
+boolean_field: FieldValue = fields.bool_value(True)
+
+nox.test.assert_eq_int(null_field.kind, FIELD_NULL, "null kind")
+nox.test.assert_eq_int(string_field.kind, FIELD_STRING, "string kind")
+nox.test.assert_eq_str(string_field.text_value, "hello", "string value")
+nox.test.assert_eq_int(integer_field.kind, FIELD_INT, "int kind")
+nox.test.assert_eq_int(integer_field.int_value, 42, "int value")
+nox.test.assert_eq_int(decimal_field.kind, FIELD_FLOAT, "float kind")
+nox.test.assert_eq_float(decimal_field.float_value, 1.5, "float value")
+nox.test.assert_eq_int(boolean_field.kind, FIELD_BOOL, "bool kind")
+nox.test.assert_true(boolean_field.bool_value, "bool value")
+
+source_value: FieldValue = fields.string_value("before")
+source_field: LogField = LogField("user_id", source_value)
+source_fields: list[LogField] = [source_field]
+source_context: list[LogField] = [LogField("request", fields.string_value("req-1"))]
+captured: LogRecord = LogRecord(1234, INFO, "service.auth", "login", source_fields, source_context)
+
+source_value.text_value = "value-mutated"
+source_field.key = "key-mutated"
+source_field.value.text_value = "field-mutated"
+source_fields.append(LogField("extra", fields.int_value(7)))
+source_context.append(LogField("extra_context", fields.bool_value(True)))
+
+nox.test.assert_eq_int(captured.timestamp_ms, 1234, "timestamp captured")
+nox.test.assert_eq_int(captured.event_level, INFO, "level captured")
+nox.test.assert_eq_str(captured.level_name, "INFO", "canonical level captured")
+nox.test.assert_eq_str(captured.logger_name, "service.auth", "logger captured")
+nox.test.assert_eq_str(captured.message, "login", "message captured")
+nox.test.assert_eq_str(captured.schema_version, "obsidian.log.v1", "schema version")
+nox.test.assert_eq_int(captured.field_count(), 1, "caller list mutation isolated")
+nox.test.assert_eq_int(captured.context_count(), 1, "context list mutation isolated")
+nox.test.assert_eq_str(captured.field_at(0).key, "user_id", "field key copied")
+nox.test.assert_eq_str(captured.field_at(0).value.text_value, "before", "field value copied")
+
+snapshot: list[LogField] = captured.fields_snapshot()
+snapshot[0].key = "snapshot-mutated"
+snapshot[0].value.text_value = "snapshot-value-mutated"
+snapshot.append(LogField("snapshot_extra", fields.null_value()))
+
+nox.test.assert_eq_int(captured.field_count(), 1, "snapshot list isolated")
+nox.test.assert_eq_str(captured.field_at(0).key, "user_id", "snapshot key isolated")
+nox.test.assert_eq_str(captured.field_at(0).value.text_value, "before", "snapshot value isolated")
+
+cloned: LogRecord = captured.clone()
+clone_fields: list[LogField] = cloned.fields_snapshot()
+clone_fields[0].value.text_value = "clone-mutated"
+nox.test.assert_eq_str(captured.field_at(0).value.text_value, "before", "clone isolated")
+
+nox.test.assert_true(fields.is_reserved_key("message"), "message reserved")
+nox.test.assert_true(not fields.is_reserved_key("user_id"), "user_id available")
+nox.test.assert_true(reserved_key_raises(), "reserved key rejected")
+nox.test.assert_true(control_key_raises(), "control key rejected")
+nox.test.assert_true(invalid_kind_raises(), "invalid field kind rejected")
+nox.test.assert_true(off_record_raises(), "OFF record rejected")
+nox.test.assert_true(invalid_logger_raises(), "control logger rejected")

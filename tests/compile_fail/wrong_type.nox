@@ -1,0 +1,3 @@
+value: int = "not an integer"
+
+print(value)

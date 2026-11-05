@@ -1,0 +1,11 @@
+.DS_Store
+.nox/
+build/
+dist/
+test-results/
+*.o
+*.out
+
+# Executables produced by Phase 0 smoke tests.
+hello
+version_test

@@ -1,0 +1,30 @@
+import nox.time
+
+protocol Clock:
+    def now_ms(self) -> int:
+        pass
+
+class SystemClock:
+    def now_ms(self) -> int:
+        return nox.time.now_ms()
+
+class FakeClock:
+    current_ms: int
+    reads: int
+
+    def __init__(self, current_ms: int) -> None:
+        self.current_ms = current_ms
+        self.reads = 0
+
+    def now_ms(self) -> int:
+
+        self.reads += 1
+        return self.current_ms
+
+    def set_ms(self, value: int) -> None:
+
+        self.current_ms = value
+
+    def advance_ms(self, amount: int) -> None:
+
+        self.current_ms += amount

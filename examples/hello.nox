@@ -1,0 +1,3 @@
+import version
+
+print("obsidian " + version.current_version())

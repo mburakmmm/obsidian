@@ -1,0 +1,18 @@
+import fields
+from clock import FakeClock
+from fields import LogField
+from level import INFO
+from logger import Logger
+from record import LogRecord
+from sinks.memory import MemorySink
+
+fake_clock: FakeClock = FakeClock(1700000000000)
+log_instance: Logger = Logger("service.auth", INFO, fake_clock)
+memory: MemorySink = MemorySink("example-memory", 8)
+log_instance.add_sink(memory)
+
+event_fields: list[LogField] = [LogField("token", fields.string_value("SYNTHETIC_EXAMPLE_SECRET"))]
+log_instance.info("password=SYNTHETIC_EXAMPLE_SECRET", event_fields)
+
+entry: LogRecord = memory.record_at(0)
+print(entry.timestamp_ms, entry.level_name, entry.logger_name, entry.message, entry.field_at(0).value.text_value)

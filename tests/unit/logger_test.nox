@@ -1,0 +1,164 @@
+import fields
+import nox.test
+from clock import FakeClock
+from fields import LogField
+from level import DEBUG, INFO
+from logger import Logger
+from record import LogRecord
+from sinks.memory import MemorySink
+
+class ReentrantSink:
+    _logger: Logger
+    _empty: list[LogField]
+    _closed: bool
+
+    def __init__(self, target_logger: Logger) -> None:
+        self._logger = target_logger
+        self._empty = []
+        self._closed = False
+
+    def sink_name(self) -> str:
+
+        return "reentrant"
+
+    def write(self, entry: LogRecord) -> None:
+
+        self._logger.info("nested", self._empty)
+
+    def flush(self) -> None:
+
+        pass
+
+    def close(self) -> None:
+
+        self._closed = True
+
+    def is_closed(self) -> bool:
+
+        return self._closed
+
+    def is_bounded(self) -> bool:
+
+        return False
+
+class FailingSink:
+    def sink_name(self) -> str:
+
+        return "failing"
+
+    def write(self, entry: LogRecord) -> None:
+
+        raise ValueError("synthetic sink failure")
+
+    def flush(self) -> None:
+
+        raise ValueError("synthetic flush failure")
+
+    def close(self) -> None:
+
+        pass
+
+    def is_closed(self) -> bool:
+
+        return False
+
+    def is_bounded(self) -> bool:
+
+        return False
+
+def recursion_raises() -> bool:
+    test_clock: FakeClock = FakeClock(1)
+    test_logger: Logger = Logger("recursion", INFO, test_clock)
+    reentrant: ReentrantSink = ReentrantSink(test_logger)
+    test_logger.add_sink(reentrant)
+    empty: list[LogField] = []
+    try:
+        test_logger.info("outer", empty)
+        return False
+    except ValueError as e:
+        return e.message == "recursive logging is not allowed"
+
+def closed_write_raises() -> bool:
+    test_clock: FakeClock = FakeClock(1)
+    test_logger: Logger = Logger("closed", INFO, test_clock)
+    test_sink: MemorySink = MemorySink("closed-memory", 1)
+    test_logger.add_sink(test_sink)
+    test_logger.close()
+    empty: list[LogField] = []
+    return not test_logger.info("ignored", empty)
+
+def sink_failure_is_observable() -> bool:
+    test_clock: FakeClock = FakeClock(1)
+    test_logger: Logger = Logger("failure", INFO, test_clock)
+    failing: FailingSink = FailingSink()
+    test_logger.add_sink(failing)
+    empty: list[LogField] = []
+    try:
+        test_logger.info("event", empty)
+        return False
+    except ValueError as e:
+        return e.message == "synthetic sink failure"
+
+fake_clock: FakeClock = FakeClock(1000)
+log_instance: Logger = Logger("service.auth", INFO, fake_clock)
+first: MemorySink = MemorySink("first", 2)
+second: MemorySink = MemorySink("second", 4)
+first_id: int = log_instance.add_sink(first)
+second_id: int = log_instance.add_sink(second)
+empty_fields: list[LogField] = []
+
+nox.test.assert_eq_int(first_id, 1, "first registration id")
+nox.test.assert_eq_int(second_id, 2, "second registration id")
+nox.test.assert_true(not log_instance.debug("disabled", empty_fields), "disabled DEBUG returns false")
+nox.test.assert_eq_int(fake_clock.reads, 0, "disabled call does not read clock")
+nox.test.assert_eq_int(first.count(), 0, "disabled call not dispatched")
+
+nox.test.assert_true(log_instance.info("first event", empty_fields), "INFO emitted")
+nox.test.assert_eq_int(fake_clock.reads, 1, "clock read once for fan-out")
+nox.test.assert_eq_int(first.count(), 1, "first sink receives event")
+nox.test.assert_eq_int(second.count(), 1, "second sink receives event")
+nox.test.assert_eq_int(first.record_at(0).timestamp_ms, 1000, "first sink timestamp")
+nox.test.assert_eq_int(second.record_at(0).timestamp_ms, 1000, "second sink same timestamp")
+
+fake_clock.advance_ms(5)
+secret_fields: list[LogField] = [LogField("ToKeN", fields.string_value("SYNTHETIC_SECRET_SENTINEL"))]
+nox.test.assert_true(log_instance.info("password=SYNTHETIC_SECRET_SENTINEL", secret_fields), "secret event emitted safely")
+safe_record: LogRecord = first.record_at(1)
+nox.test.assert_true("SYNTHETIC_SECRET_SENTINEL" not in safe_record.message, "message sentinel masked")
+nox.test.assert_eq_str(safe_record.message, "password=***", "message assignment masked")
+nox.test.assert_eq_str(safe_record.field_at(0).value.text_value, "***", "mixed-case secret field masked")
+
+fake_clock.advance_ms(5)
+log_instance.info("third event", empty_fields)
+nox.test.assert_eq_int(first.count(), 2, "memory sink remains bounded")
+nox.test.assert_eq_int(first.dropped_count(), 1, "memory sink counts dropped oldest")
+nox.test.assert_eq_str(first.record_at(0).message, "password=***", "oldest retained record is second")
+
+nox.test.assert_true(log_instance.remove_sink(first_id), "registered sink removed")
+nox.test.assert_true(not log_instance.remove_sink(first_id), "removed sink id is stable")
+fake_clock.advance_ms(5)
+log_instance.info("after remove", empty_fields)
+nox.test.assert_eq_int(first.count(), 2, "removed sink receives nothing")
+nox.test.assert_eq_int(second.count(), 4, "remaining sink receives event")
+nox.test.assert_eq_str(second.record_at(0).message, "first event", "sink order first")
+nox.test.assert_eq_str(second.record_at(1).message, "password=***", "sink order second")
+nox.test.assert_eq_str(second.record_at(2).message, "third event", "sink order third")
+nox.test.assert_eq_str(second.record_at(3).message, "after remove", "sink order fourth")
+
+log_instance.flush()
+nox.test.assert_eq_int(first.flush_count(), 0, "removed sink not flushed")
+nox.test.assert_eq_int(second.flush_count(), 1, "registered sink flushed")
+
+second_snapshot: list[LogRecord] = second.snapshot()
+second_snapshot[0].message = "snapshot-mutated"
+nox.test.assert_eq_str(second.record_at(0).message, "first event", "memory snapshot isolated")
+
+log_instance.close()
+log_instance.close()
+nox.test.assert_true(log_instance.is_closed(), "logger close idempotent")
+nox.test.assert_true(second.is_closed(), "registered sink closed")
+nox.test.assert_true(not first.is_closed(), "removed sink lifecycle independent")
+nox.test.assert_true(first.is_bounded(), "memory sink advertises bounded storage")
+nox.test.assert_true(closed_write_raises(), "closed logger does not emit")
+nox.test.assert_true(recursion_raises(), "recursive sink logging rejected")
+nox.test.assert_true(sink_failure_is_observable(), "sink failure propagates")

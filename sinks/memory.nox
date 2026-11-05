@@ -1,0 +1,75 @@
+from record import LogRecord
+
+class MemorySink:
+    _name: str
+    _capacity: int
+    _records: list[LogRecord]
+    _dropped: int
+    _flushes: int
+    _closed: bool
+
+    def __init__(self, name: str, capacity: int) -> None:
+        if len(name) == 0:
+            raise ValueError("sink name must not be empty")
+        if capacity < 1:
+            raise ValueError("memory sink capacity must be positive")
+        self._name = name
+        self._capacity = capacity
+        self._records = []
+        self._dropped = 0
+        self._flushes = 0
+        self._closed = False
+
+    def sink_name(self) -> str:
+
+        return self._name
+
+    def write(self, entry: LogRecord) -> None:
+
+        if self._closed:
+            raise ValueError("memory sink is closed")
+        if len(self._records) == self._capacity:
+            del self._records[0]
+            self._dropped += 1
+        self._records.append(entry.clone())
+
+    def flush(self) -> None:
+
+        if self._closed:
+            raise ValueError("memory sink is closed")
+        self._flushes += 1
+
+    def close(self) -> None:
+
+        self._closed = True
+
+    def is_closed(self) -> bool:
+
+        return self._closed
+
+    def is_bounded(self) -> bool:
+
+        return True
+
+    def count(self) -> int:
+
+        return len(self._records)
+
+    def dropped_count(self) -> int:
+
+        return self._dropped
+
+    def flush_count(self) -> int:
+
+        return self._flushes
+
+    def record_at(self, index: int) -> LogRecord:
+
+        return self._records[index].clone()
+
+    def snapshot(self) -> list[LogRecord]:
+
+        result: list[LogRecord] = []
+        for entry in self._records:
+            result.append(entry.clone())
+        return result

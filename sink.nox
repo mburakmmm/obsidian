@@ -1,0 +1,25 @@
+from record import LogRecord
+
+protocol Sink:
+    def sink_name(self) -> str:
+        pass
+
+    def write(self, entry: LogRecord) -> None:
+
+        pass
+
+    def flush(self) -> None:
+
+        pass
+
+    def close(self) -> None:
+
+        pass
+
+    def is_closed(self) -> bool:
+
+        pass
+
+    def is_bounded(self) -> bool:
+
+        pass

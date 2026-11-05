@@ -1,0 +1,55 @@
+TRACE: int = 5
+DEBUG: int = 10
+INFO: int = 20
+WARNING: int = 30
+WARN: int = 30
+ERROR: int = 40
+CRITICAL: int = 50
+OFF: int = 100
+
+def is_valid(level: int) -> bool:
+    return level == TRACE or level == DEBUG or level == INFO or level == WARNING or level == ERROR or level == CRITICAL or level == OFF
+
+def is_event_level(level: int) -> bool:
+    return is_valid(level) and level != OFF
+
+def canonical_name(level: int) -> str:
+    if level == TRACE:
+        return "TRACE"
+    if level == DEBUG:
+        return "DEBUG"
+    if level == INFO:
+        return "INFO"
+    if level == WARNING:
+        return "WARNING"
+    if level == ERROR:
+        return "ERROR"
+    if level == CRITICAL:
+        return "CRITICAL"
+    if level == OFF:
+        return "OFF"
+    raise ValueError("unknown Obsidian level")
+
+def from_name(name: str) -> int:
+    if name == "TRACE":
+        return TRACE
+    if name == "DEBUG":
+        return DEBUG
+    if name == "INFO":
+        return INFO
+    if name == "WARNING" or name == "WARN":
+        return WARNING
+    if name == "ERROR":
+        return ERROR
+    if name == "CRITICAL":
+        return CRITICAL
+    if name == "OFF":
+        return OFF
+    raise ValueError("unknown Obsidian level name")
+
+def is_enabled(event_level: int, threshold: int) -> bool:
+    if not is_event_level(event_level):
+        return False
+    if not is_valid(threshold) or threshold == OFF:
+        return False
+    return event_level >= threshold

@@ -1,0 +1,40 @@
+name: Feature request
+description: Propose work that fits Obsidian's current phase and scope.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Core event model
+        - Formatting
+        - Sink lifecycle
+        - Security and redaction
+        - Configuration and context
+        - Rotation and retention
+        - Concurrency
+        - Ecosystem integration
+        - Documentation and tooling
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the use case without prescribing an unverified API.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior and acceptance evidence
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Security, lifecycle and portability risks
+    validations:
+      required: true

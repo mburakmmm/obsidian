@@ -1,0 +1,66 @@
+import fields
+import level
+from fields import LogField
+
+LOG_SCHEMA_VERSION: str = "obsidian.log.v1"
+
+class LogRecord:
+    timestamp_ms: int
+    event_level: int
+    level_name: str
+    logger_name: str
+    message: str
+    _fields: list[LogField]
+    _context: list[LogField]
+    schema_version: str
+
+    def __init__(self, timestamp_ms: int, event_level: int, logger_name: str, message: str, event_fields: list[LogField], context: list[LogField]) -> None:
+        if timestamp_ms < 0:
+            raise ValueError("timestamp must not be negative")
+        if not level.is_event_level(event_level):
+            raise ValueError("record level must be an event level")
+        validate_logger_name(logger_name)
+        self.timestamp_ms = timestamp_ms
+        self.event_level = event_level
+        self.level_name = level.canonical_name(event_level)
+        self.logger_name = logger_name
+        self.message = message
+        self._fields = fields.clone_fields(event_fields)
+        self._context = fields.clone_fields(context)
+        self.schema_version = LOG_SCHEMA_VERSION
+
+    def field_count(self) -> int:
+
+        return len(self._fields)
+
+    def context_count(self) -> int:
+
+        return len(self._context)
+
+    def field_at(self, index: int) -> LogField:
+
+        return self._fields[index].clone()
+
+    def context_at(self, index: int) -> LogField:
+
+        return self._context[index].clone()
+
+    def fields_snapshot(self) -> list[LogField]:
+
+        return fields.clone_fields(self._fields)
+
+    def context_snapshot(self) -> list[LogField]:
+
+        return fields.clone_fields(self._context)
+
+    def clone(self) -> LogRecord:
+
+        return LogRecord(self.timestamp_ms, self.event_level, self.logger_name, self.message, self._fields, self._context)
+
+def validate_logger_name(logger_name: str) -> None:
+    if len(logger_name) == 0:
+        raise ValueError("logger name must not be empty")
+    if len(logger_name) > 128:
+        raise ValueError("logger name is too long")
+    if "\n" in logger_name or "" in logger_name or "\t" in logger_name:
+        raise ValueError("logger name contains a control character")

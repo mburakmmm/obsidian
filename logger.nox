@@ -1,0 +1,116 @@
+import level
+import redact
+import record
+from clock import Clock
+from fields import LogField
+from level import CRITICAL, DEBUG, ERROR, INFO, TRACE, WARNING
+from record import LogRecord
+from sink import Sink
+
+class Logger:
+    logger_name: str
+    threshold: int
+    _clock: Clock
+    _sinks: list[Sink]
+    _sink_ids: list[int]
+    _next_sink_id: int
+    _closed: bool
+    _dispatching: bool
+
+    def __init__(self, logger_name: str, threshold: int, clock: Clock) -> None:
+        record.validate_logger_name(logger_name)
+        if not level.is_valid(threshold):
+            raise ValueError("logger threshold is invalid")
+        self.logger_name = logger_name
+        self.threshold = threshold
+        self._clock = clock
+        self._sinks = []
+        self._sink_ids = []
+        self._next_sink_id = 1
+        self._closed = False
+        self._dispatching = False
+
+    def is_enabled(self, event_level: int) -> bool:
+
+        return not self._closed and level.is_enabled(event_level, self.threshold)
+
+    def add_sink(self, target: Sink) -> int:
+
+        if self._closed:
+            raise ValueError("logger is closed")
+        registration_id: int = self._next_sink_id
+        self._next_sink_id += 1
+        self._sinks.append(target)
+        self._sink_ids.append(registration_id)
+        return registration_id
+
+    def remove_sink(self, registration_id: int) -> bool:
+
+        index: int = 0
+        while index < len(self._sink_ids):
+            if self._sink_ids[index] == registration_id:
+                del self._sink_ids[index]
+                del self._sinks[index]
+                return True
+            index += 1
+        return False
+
+    def log(self, event_level: int, message: str, event_fields: list[LogField]) -> bool:
+
+        if not self.is_enabled(event_level):
+            return False
+        if self._dispatching:
+            raise ValueError("recursive logging is not allowed")
+        empty_context: list[LogField] = []
+        captured: LogRecord = LogRecord(self._clock.now_ms(), event_level, self.logger_name, message, event_fields, empty_context)
+        safe_record: LogRecord = redact.sanitize_record(captured)
+        self._dispatching = True
+        try:
+            for target in self._sinks:
+                target.write(safe_record.clone())
+        finally:
+            self._dispatching = False
+        return True
+
+    def trace_event(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(TRACE, message, event_fields)
+
+    def debug(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(DEBUG, message, event_fields)
+
+    def info(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(INFO, message, event_fields)
+
+    def warning(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(WARNING, message, event_fields)
+
+    def error(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(ERROR, message, event_fields)
+
+    def critical(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(CRITICAL, message, event_fields)
+
+    def flush(self) -> None:
+
+        if self._closed:
+            return
+        for target in self._sinks:
+            target.flush()
+
+    def close(self) -> None:
+
+        if self._closed:
+            return
+        for target in self._sinks:
+            target.close()
+        self._closed = True
+
+    def is_closed(self) -> bool:
+
+        return self._closed

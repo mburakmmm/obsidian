@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  NOX_VERSION: v2.0.143
+  NOX_REPOSITORY: mburakmmm/nox-lang
+
+jobs:
+  phase0:
+    name: ${{ matrix.asset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            asset: macos-arm64
+          - os: ubuntu-latest
+            asset: linux-x64
+          - os: ubuntu-24.04-arm
+            asset: linux-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install pinned NOX release
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="nox-lang-${NOX_VERSION}-${{ matrix.asset }}"
+          base="https://github.com/${NOX_REPOSITORY}/releases/download/${NOX_VERSION}"
+          curl -fsSLO "${base}/${stage}.tar.gz"
+          curl -fsSLO "${base}/${stage}.tar.gz.sha256"
+          shasum -a 256 -c "${stage}.tar.gz.sha256"
+          tar xzf "${stage}.tar.gz"
+          echo "$PWD/${stage}/bin" >>"$GITHUB_PATH"
+          echo "NOX_RESOURCE_DIR=$PWD/${stage}" >>"$GITHUB_ENV"
+
+      - name: Verify toolchain pin
+        shell: bash
+        run: test "$(noxc --version)" = "noxc 2.0.143"
+
+      - name: Format check
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$(git ls-files '*.nox')"
+          before="$(git ls-files -z '*.nox' | xargs -0 shasum)"
+          while IFS= read -r -d '' source_file; do
+            noxc fmt "$source_file"
+          done < <(git ls-files -z '*.nox')
+          after="$(git ls-files -z '*.nox' | xargs -0 shasum)"
+          test "$before" = "$after"
+
+      - name: Check and run LLVM
+        shell: bash
+        run: |
+          noxc check examples/hello.nox
+          test "$(noxc run --backend llvm examples/hello.nox)" = "obsidian 0.0.0"
+          test "$(noxc run --backend llvm examples/memory_logging.nox)" = "1700000000000 INFO service.auth password=*** ***"
+          noxc test --backend llvm tests
+
+      - name: Check and run QBE
+        shell: bash
+        run: |
+          test "$(noxc run --backend qbe examples/hello.nox)" = "obsidian 0.0.0"
+          test "$(noxc run --backend qbe examples/memory_logging.nox)" = "1700000000000 INFO service.auth password=*** ***"
+          noxc test --backend qbe tests
+
+      - name: Negative compile fixture
+        shell: bash
+        run: |
+          for fixture in tests/compile_fail/*.nox; do
+            if noxc check "$fixture"; then
+              echo "compile-fail fixture unexpectedly compiled: $fixture" >&2
+              exit 1
+            fi
+          done
+
+      - name: Verify dependency alias import
+        shell: bash
+        run: bash scripts/verify-package-import.sh
+
+      - name: Report test evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          test_files="$(find tests -name '*_test.nox' -type f | wc -l | tr -d ' ')"
+          assertions="$(grep -Rho 'nox\.test\.assert_[a-z_]*' tests | wc -l | tr -d ' ')"
+          {
+            echo "### Phase 0 test evidence"
+            echo "- test files: $test_files"
+            echo "- assertions: $assertions"
+            echo "- skips: 0"
+            echo "- backends: LLVM, QBE"
+          } >>"$GITHUB_STEP_SUMMARY"

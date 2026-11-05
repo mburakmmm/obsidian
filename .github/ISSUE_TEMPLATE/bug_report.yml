@@ -1,0 +1,48 @@
+name: Bug report
+description: Report a reproducible Obsidian defect without private data.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include credentials, production logs or private data. Use synthetic values only.
+  - type: input
+    id: version
+    attributes:
+      label: Obsidian version or commit
+      placeholder: v0.x.y or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: nox
+    attributes:
+      label: NOX compiler version and backend
+      placeholder: noxc 2.0.143 / LLVM or QBE
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include the smallest synthetic example and exact commands.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: security
+    attributes:
+      label: Data safety
+      options:
+        - label: This report contains no real secrets or private production data.
+          required: true
