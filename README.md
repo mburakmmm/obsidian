@@ -45,6 +45,7 @@ Text/JSONL formatting, console/file sinks, the complete security matrix, context
 | NOX source | `a8940d27826849a526c3e918126ac6dd6ef571d1` |
 | Obsidian package | `0.0.0`, unreleased |
 | Verified locally | macOS arm64, LLVM and QBE |
+| Verified in CI | macOS arm64, Linux x64/arm64; LLVM and QBE |
 
 See [`docs/compatibility.md`](docs/compatibility.md) before relying on a NOX capability or platform claim.
 

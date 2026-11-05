@@ -14,7 +14,7 @@
 - [x] Yerel derleyici, sabitlenen revizyon ve `docs/compatibility.md` aynı sürümü gösteriyor.
 - [x] Phase 0 yerel kapısı geçti; macOS arm64 LLVM/QBE kanıtı kaydedildi.
 - [x] Phase 1 yerel kapısı geçti; senkron çekirdek iki backend'de doğrulandı.
-- [ ] GitHub CI üzerinden Linux x64/arm64 kanıtı alındı.
+- [x] GitHub CI üzerinden macOS arm64 ve Linux x64/arm64 kanıtı alındı.
 
 Not: Yukarıdaki upstream commit yalnızca planlama anındaki gözlemdir; uyumluluk revizyonu olarak henüz onaylanmış değildir. Kurulu derleyici ile upstream arasında sürüm farkı bulunduğu için gerçek uyumluluk deneyi yapılmadan hiçbir NOX API'si varsayılmayacaktır.
 
@@ -533,3 +533,4 @@ File rotation ve async çalışma, sırasıyla Phase 1–4 ve Phase 6 kapıları
 | 2026-11-05 | `0.0.x` / Phase 0 | NOX `v2.0.143` / `a8940d2…` sabitlendi; gerçek root-module düzeni, belgeler, ADR'ler, test ve CI iskeleti oluşturuldu | LLVM/QBE hello: pass; test: backend başına 1 dosya/2 assertion/0 skip; 2 compile-fail fixture; downstream alias+lock probe: pass | Phase 0 yerel kapısı geçti; Linux CI kanıtı bekliyor, Phase 1 sırada |
 | 2026-11-05 | `0.1.x` / Phase 1 | Numeric levels, typed scalar fields, caller-isolated records, injected clocks, sink protocol, bounded memory sink, synchronous logger ve baseline pre-sink redaction eklendi | LLVM/QBE: 4/4 test dosyası; 99 assertion; 0 skip; 2 expected compile-fail; deterministic sanitized example: pass | Phase 1 yerel kapısı geçti; `Logger.trace` compiler codegen kısıtı belgeli; Phase 2 formatter sırada |
 | 2026-11-05 | Release altyapısı | CI matrisi, issue/PR şablonları, katkı ve güvenlik politikaları ile immutable tag tabanlı GitHub Release + `noxc publish` hattı eklendi | Workflow/YAML/shell doğrulaması ve iki backend regresyonu; ilk remote CI sonucu ayrıca kaydedilecek | `0.0.0` yayınlanmaz; ilk yayın seçilmiş lisans, `NOXPKG_TOKEN` ve ilgili faz kapısı sonrası |
+| 2026-11-05 | Uzak CI kanıtı | GitHub Actions run `41983292400`; macOS arm64, Linux x64 ve Linux arm64 matrisi | Her platformda format, LLVM/QBE testleri, 2 compile-fail fixture ve paket alias/import probu geçti | Phase 0 uzak platform kapısı geçti; Phase 2 sırada |
