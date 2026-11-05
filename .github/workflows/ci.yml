@@ -45,7 +45,10 @@ jobs:
 
       - name: Verify toolchain pin
         shell: bash
-        run: test "$(noxc --version)" = "noxc 2.0.143"
+        run: |
+          set -euo pipefail
+          version_output="$(noxc --version 2>&1)"
+          test "$version_output" = "noxc 2.0.143"
 
       - name: Format check
         shell: bash
