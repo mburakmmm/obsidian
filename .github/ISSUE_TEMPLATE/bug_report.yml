@@ -17,7 +17,7 @@ body:
     id: nox
     attributes:
       label: NOX compiler version and backend
-      placeholder: noxc 2.0.143 / LLVM or QBE
+      placeholder: noxc 2.1.0 / LLVM or QBE
     validations:
       required: true
   - type: textarea

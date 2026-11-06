@@ -5,7 +5,7 @@
 
 ## Context
 
-Obsidian needs synchronous console and file output without inventing APIs absent from NOX. At the pinned 2.0.143 revision, `print` writes only to stdout and exposes no stdio flush or failure channel; `print(file=...)` is explicitly unsupported. The same remains true in the observed 2.0.181 documentation. `nox.fs.FileWriter.write` is unbuffered, `open_append` owns an explicit handle and `close` is idempotent. There is no public `fsync`, `openat`/`O_NOFOLLOW`, `lstat` or recursive directory-creation API.
+Obsidian needs synchronous console and file output without inventing APIs absent from NOX. At the current 2.1.0 revision, `print`, `nox.console` and `nox.log` write only to stdout and expose no stdio flush or recoverable failure channel; `print(file=...)` is explicitly unsupported. `nox.fs.FileWriter.write` is unbuffered, `open_append` owns an explicit handle and `close` is idempotent. There is no public `fsync`, `openat`/`O_NOFOLLOW` or `lstat` API.
 
 ## Decision
 

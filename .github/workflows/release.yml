@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: release
     env:
-      NOX_VERSION: v2.0.143
+      NOX_VERSION: v2.1.0
       NOX_REPOSITORY: mburakmmm/nox-lang
       NOX_HOME: ${{ github.workspace }}/.release-nox-home
       GH_TOKEN: ${{ github.token }}

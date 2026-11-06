@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  NOX_VERSION: v2.0.143
+  NOX_VERSION: v2.1.0
   NOX_REPOSITORY: mburakmmm/nox-lang
 
 jobs:
@@ -48,7 +48,7 @@ jobs:
         run: |
           set -euo pipefail
           version_output="$(noxc --version 2>&1)"
-          test "$version_output" = "noxc 2.0.143"
+          test "$version_output" = "noxc 2.1.0"
 
       - name: Format check
         shell: bash

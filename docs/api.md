@@ -36,7 +36,7 @@ No logger, record, sink, context, configuration or formatter API is public yet.
 
 `LogField` rejects empty, oversized, control-character and reserved keys. Error messages are stable categories and do not echo the rejected key.
 
-`LogRecord` captures timestamp milliseconds, numeric/canonical severity, logger name, message, event fields, context and `obsidian.log.v1` schema version. It deep-copies caller-owned field lists and returns clones from accessors. NOX 2.0.143 has no private or language-level immutable class fields, so this is a snapshot-isolation contract rather than an enforcement claim against deliberate mutation of underscore-prefixed internals.
+`LogRecord` captures timestamp milliseconds, numeric/canonical severity, logger name, message, event fields, context and `obsidian.log.v1` schema version. It deep-copies caller-owned field lists and returns clones from accessors. NOX 2.1.0 has no private or language-level immutable class fields, so this is a snapshot-isolation contract rather than an enforcement claim against deliberate mutation of underscore-prefixed internals.
 
 Messages and scalar string fields are limited to 65,536 Unicode code points. `fields` and `context` are independently limited to 256 unique keys. NaN and positive/negative infinity are rejected by `FieldValue`; null, string, integer, finite float and boolean are the supported scalar kinds.
 
@@ -89,7 +89,7 @@ Stable seeded sampling, hierarchical prefix filters and source metadata are not 
 
 ## Async dispatch
 
-There is no async logging API on NOX 2.0.143. `Logger.log`, convenience methods, sink writes, `flush` and `close` remain synchronous. Obsidian does not expose a background worker, queue capacity, overflow policy or async lifecycle counters. This prevents callers from mistaking an incomplete queue for a supported durability or ordering boundary. See ADR-0011 for the executable capability evidence and re-evaluation conditions.
+There is no async logging API on the pinned NOX 2.1.0 baseline. `Logger.log`, convenience methods, sink writes, `flush` and `close` remain synchronous. Obsidian does not expose a background worker, queue capacity, overflow policy or async lifecycle counters. The Phase 7 capability audit was rerun unchanged on 2.1.0 and remains a no-go. See ADR-0011 for the executable evidence and re-evaluation conditions.
 
 ## Internal synchronous I/O sinks
 

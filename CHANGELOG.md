@@ -7,7 +7,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 ### Added
 
 - Phase 0 repository scaffold and evidence-based roadmap.
-- Pinned NOX 2.0.143 compatibility baseline.
+- Pinned and audited NOX compatibility baseline.
 - Minimal module, example and test used to verify package resolution on LLVM and QBE.
 - Reproducible downstream dependency-alias import probe with exact lock resolution.
 - Initial numeric level model with canonical names, `WARN` alias handling and fail-closed threshold checks.
@@ -44,9 +44,10 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - File names containing recognized credential-key components are rejected before opening a handle.
 - JSONL records include optional top-level correlation identifiers; text records render them in fixed request/trace/span order.
 - Rotating output rejects oversized records/preexisting files rather than exceeding the configured storage budget.
-- Async dispatch remains disabled after the Phase 7 audit found no portable non-blocking overflow or timeout-aware worker shutdown contract in NOX 2.0.143.
+- Async dispatch remains disabled after the Phase 7 audit, revalidated on NOX 2.1.0, found no portable non-blocking overflow or timeout-aware worker shutdown contract.
 - Hermetic package and import harnesses accept an explicit `NOXC` binary override for pinned local verification.
 - Sink/filter failures now default to non-raising observable diagnostics while explicit strict mode raises fixed sanitized categories.
+- The pinned compiler baseline is now NOX 2.1.0 so Phase 9 can test current ecosystem releases; the complete existing suite remains green locally on LLVM and QBE.
 
 ### Security
 

@@ -7,7 +7,7 @@ Structured, secure logging foundations for the NOX ecosystem.
 [![CI](https://github.com/mburakmmm/obsidian/actions/workflows/ci.yml/badge.svg)](https://github.com/mburakmmm/obsidian/actions/workflows/ci.yml)
 [![Release](https://github.com/mburakmmm/obsidian/actions/workflows/release.yml/badge.svg)](https://github.com/mburakmmm/obsidian/actions/workflows/release.yml)
 ![Status](https://img.shields.io/badge/status-experimental-orange)
-![NOX](https://img.shields.io/badge/NOX-2.0.143-6f42c1)
+![NOX](https://img.shields.io/badge/NOX-2.1.0-6f42c1)
 
 </div>
 
@@ -52,8 +52,8 @@ Stderr is unavailable in the pinned NOX public API and remains explicitly disabl
 
 | Component | Baseline |
 |---|---|
-| NOX compiler | `noxc 2.0.143` |
-| NOX source | `a8940d27826849a526c3e918126ac6dd6ef571d1` |
+| NOX compiler | `noxc 2.1.0` |
+| NOX source | `fd107b922c67a804520dc30f849039d977542f6c` |
 | Obsidian package | `0.0.0`, unreleased |
 | Verified locally | macOS arm64, LLVM and QBE |
 | Verified in CI | macOS arm64, Linux x64/arm64; LLVM and QBE |

@@ -8,7 +8,7 @@
 
 - [x] `AGENTS.md` okundu ve geliştirme kapıları bu plana aktarıldı.
 - [x] Proje dizini incelendi: başlangıçta yalnızca `AGENTS.md` vardı; henüz Git deposu değildi.
-- [x] Yerel araç gözlemleri kaydedildi: başlangıçta `noxc 2.0.143`; 2026-11-06 ambient kurulum `2.0.181`, final faz kanıtı izole `2.0.143` arşiviyle alındı.
+- [x] Yerel araç gözlemleri kaydedildi: başlangıç `2.0.143`; Faz 9 önkoşulu olarak destek pini checksum-doğrulanmış `2.1.0` / `fd107b92…` sürümüne yükseltildi; final kanıt izole arşivden alınıyor.
 - [x] Upstream ana dal gözlemi kaydedildi: `01fc411f3a17b969ceff984fbd46b9e857a592d1` (`v2.0.170`, 2026-11-05 tarihinde görülen son commit).
 - [x] Test edilecek NOX revizyonu seçilip sabitlendi.
 - [x] İzole final test derleyicisi, sabitlenen revizyon ve `docs/compatibility.md` aynı sürümü gösteriyor; ambient kullanıcı kurulumu destek kanıtına dahil edilmiyor.
@@ -218,7 +218,7 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 ### 7.1 Console sink
 
 - [x] Target seçimi explicit; `CONSOLE_STDOUT` gerçek çıktı üretir, stderr fallback yapılmaz.
-- BLOCKED: `CONSOLE_STDERR`, NOX 2.0.143/2.0.181 public API'sinde stderr yazımı olmadığı için sanitize `SinkError` ile kapalı; stderr önerisi dokümante edildi.
+- BLOCKED: `CONSOLE_STDERR`, NOX 2.1.0 public API'sinde stderr yazımı olmadığı için sanitize `SinkError` ile kapalı; stderr önerisi dokümante edildi.
 - [x] Write/flush/close ve kapalı sink davranışı testli; close idempotent.
 - [x] Gerçek stdout exact-capture entegrasyon örneği LLVM/QBE harness'ında var.
 - BLOCKED: `print` recoverable write-error ve stdio flush kanalı sunmadığı için console broken-pipe/flush kanıtı yok.
@@ -551,3 +551,4 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Ph
 | 2026-11-07 | Phase 7 genişletilmiş matris | LLVM overlap probu bounded ve scheduling-aware yapıldı; QBE scalar channel/atomic lifecycle ayrı executable probla doğrulandı | Yerelde üç tekrar; CI `42301491991`: macOS ARM64, Linux x64, Linux ARM64 üzerinde LLVM/QBE 14 dosya/325 assertion/0 skip ve 7 capability probu geçti | Phase 7 kapandı; overlap gözlemi dürüstçe raporlanıyor, async no-go değişmedi; Phase 8 sırada |
 | 2026-11-07 | Manuel registry başvurusu | Kullanıcı isteğiyle token yapılandırmasına dokunmadan `noxc publish github.com/mburakmmm/obsidian --ref main` çalıştırıldı | noxpkg submission `6bbd1c55-e95b-4fb1-b66d-15c15a6c7909` | Başvuru onay bekliyor; registry erişilebilirliği veya kararlı sürüm iddiası yok |
 | 2026-11-07 | `0.4.x` / Phase 8 | Exact logger filtresi, sink başına threshold, sanitize clone filtre sınırı, saturating diagnostics ve strict sabit hata kategorileri eklendi | Pinned NOX 2.0.143 yerel ve CI `42306338481`: macOS ARM64, Linux x64, Linux ARM64 üzerinde LLVM/QBE 16 dosya/358 assertion/0 skip; 7 capability probu; 9 exact ve sentinel-scanned örnek; import/lock doğrulaması geçti | Phase 8 desteklenen matriste kapandı; typed route config derleyici kanıtı yok diye kapalı, sampling/source/prefix bilinçli kapalı |
+| 2026-11-07 | Phase 9 araç zinciri önkoşulu | NOX pini kullanıcı yönlendirmesiyle `v2.1.0` / `fd107b92…` sürümüne yükseltildi; zorunlu stdlib/concurrency belgeleri kesin etikette yeniden doğrulandı | Resmi macOS ARM64 arşivi checksum geçti; LLVM/QBE 16 dosya/358 assertion, 9 örnek, 7 capability probu ve import/lock yerelde geçti; `Logger.trace` LLVM duplicate-symbol kısıtı sürüyor | Yerel yükseltme kapısı geçti; üç platformlu uzak CI bekleniyor, adaptör kodu henüz eklenmedi |

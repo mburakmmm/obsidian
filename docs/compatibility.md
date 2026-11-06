@@ -1,22 +1,22 @@
 # NOX compatibility baseline
 
-Status: Phase 0–8 evidence is green in the supported CI matrix. This document does not extend support beyond tested jobs.
+Status: Phase 0–8 evidence is green on the previous supported CI matrix. NOX 2.1.0 passes the complete local LLVM/QBE suite; the upgraded remote matrix is pending. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
 | Item | Pinned/observed value | Evidence |
 |---|---|---|
-| NOX source | `a8940d27826849a526c3e918126ac6dd6ef571d1` | Annotated upstream tag `v2.0.143` resolves to this commit |
-| Pinned test compiler | `noxc 2.0.143` | Verified release archive, `noxc --version` on 2026-11-06 |
-| Release archive SHA-256 | `fab24640892ef054bff50eeba901fa953d13424319729a9b095d3a31694589e4` | Published checksum plus local `shasum -a 256 -c` |
-| Compiler binary SHA-256 | `4070e9d4582bb961395be2b2dbbb96eb3f5278f954adf38112c2c4baf9d51676` | Extracted pinned release binary |
-| Ambient user compiler | `noxc 2.0.188` | Observed on 2026-11-06; not the support pin and not used for final Phase 4 evidence |
-| Host | macOS 27.0.1, arm64 | `sw_vers`, `uname -m` |
+| NOX source | `fd107b922c67a804520dc30f849039d977542f6c` | Annotated upstream tag `v2.1.0` resolves to this commit |
+| Pinned test compiler | `noxc 2.1.0` | Verified release archive, `noxc --version` on 2026-11-07 |
+| Release archive SHA-256 | `b96d286772da8eaa9d161824d7e4c91c34af85874045dbbae44909b607e65062` | Published checksum plus local `shasum -a 256 -c` |
+| Compiler binary SHA-256 | `41296804cf1fe802e778f26940265dd1451dee5cdaf4838e7cc66c3329e49eb0` | Extracted pinned release binary |
+| Ambient user compiler | `noxc 2.1.0` | Observed on 2026-11-07; final evidence uses the isolated verified archive |
+| Host | macOS 27.2, arm64 | `sw_vers`, `uname -m` |
 | C compiler | Apple clang 21.0.0 | `clang --version` |
-| Bundled QBE | present in the verified 2.0.143 release archive | filesystem inspection |
+| Bundled QBE | present in the verified 2.1.0 release archive | filesystem inspection |
 | Profile under test | `hosted` | filesystem, process and clock APIs are required |
 
-The compiler reports a version but not its source SHA. The annotated `v2.0.143` tag resolves to the selected commit, but GitHub reports the tag as unsigned. Release assets include per-platform SHA-256 files; local verification and CI check the downloaded archive against the matching checksum before use. This is integrity evidence, not signed provenance. The ambient user installation has advanced to 2.0.188 and is deliberately not treated as the project support baseline.
+The compiler reports a version but not its source SHA. The annotated `v2.1.0` tag resolves to the selected commit and contains no signature. Release assets include per-platform SHA-256 files; local verification and CI check the downloaded archive against the matching checksum before use. This is integrity evidence, not signed provenance. The ambient installation matches the pin, but the isolated checksum-verified archive remains the evidence source.
 
 ## Audited public APIs at the pinned revision
 
@@ -32,7 +32,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | `nox.time` | UTC `DateTime`; wall `now_ms`; monotonic `Instant`; `boot_ms` | Inject wall clock for records and monotonic clock for timeouts/durations | Fake clock and epoch-to-RFC3339 probes pass on LLVM/QBE |
 | `nox.thread` | awaited blocking `ThreadChannel.send/recv`; join-only `ThreadHandle`; QBE scalar element restriction | No portable record queue, non-blocking overflow or timeout-aware shutdown contract | Phase 7 executable probes pass locally and in supported CI; async no-go |
 | `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 scalar/lifetime probes pass locally and in supported CI on LLVM/QBE; LLVM overlap observation is reported separately |
-| scheduler | LLVM M:N work-stealing; QBE cooperative tasks plus separate runtimes for `nox.thread.start`; channel waits ignore task cancellation | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak 2 is proven but scheduling-sensitive; QBE scalar thread-channel probe passes locally and in supported CI |
+| scheduler | LLVM M:N work-stealing; QBE cooperative tasks; `Task.cancel` is cooperative, while `ThreadHandle` has join only and channels expose no close/timeout contract | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak 2 is proven but scheduling-sensitive; QBE scalar thread-channel probe passes locally and in supported CI |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
 | tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 8 local and CI `42306338481`: 16 files/358 assertions/0 skips plus seven async capability probes on LLVM/QBE |
 
@@ -53,13 +53,13 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | Async multi-producer safety | QBE rejects class-valued thread channels; no `try_send`/`try_recv`, channel close, thread cancellation or timed join; sync send fails codegen | Phase 7 no-go: keep async API and `QueueConfig` absent; re-evaluate only under ADR-0011 triggers |
 | Shared synchronous logger concurrency | Phase 5 proves overlapping task-local explicit context snapshots, not simultaneous mutation/dispatch through one logger instance | Make no shared-logger thread-safety claim; explicit context isolation is not an async dispatcher guarantee |
 | Native glue | Stderr/no-follow gaps exist, but a portable boundary has not been designed or approved | Keep unsupported paths disabled; no Zig/NNI code without a separate ADR |
-| `Logger.trace` spelling | NOX 2.0.143 type-checks it but LLVM codegen emits a duplicate `logger_Logger_trace` symbol in the current module graph | Keep the common `log(TRACE, ...)` path and temporary `trace_event` convenience method; retest on compiler upgrade before stabilizing the API |
+| `Logger.trace` spelling | NOX 2.1.0 still type-checks it but LLVM codegen emits a duplicate `obsidian_logger_Logger_trace` symbol in an isolated downstream probe | Keep the common `log(TRACE, ...)` path and temporary `trace_event` convenience method |
 | Maximum finite float literal in `noxc fmt` | Formatting a source literal at IEEE-754 maximum returned `NoSpaceLeft`; parsing the exact decimal with documented `float(str)` preserves the value and formats cleanly | Keep the compile/runtime regression and avoid the problematic literal spelling at this compiler revision |
-| Root-project package self-name | 2.0.143 and 2.0.181 resolve `obsidian.*` correctly inside an installed dependency, but not while Obsidian itself is the root project | Use manifest-name self-imports and run tests/examples through the isolated downstream harness in ADR-0006 |
-| Stderr and console flush | No public API in 2.0.143 or observed 2.0.181 docs; `print(file=...)` is explicitly unsupported | Keep stderr disabled with `SinkError`; console flush is logical only; no native shim without a separate ADR |
+| Root-project package self-name | 2.1.0 resolves `obsidian.*` correctly inside an installed dependency, but a direct root-project `noxc check logger.nox` still rejects the self-name | Use manifest-name self-imports and run tests/examples through the isolated downstream harness in ADR-0006 |
+| Stderr and console flush | No public API in the 2.1.0 `nox.log`, `nox.console` or built-in docs; `print(file=...)` is explicitly unsupported | Keep stderr disabled with `SinkError`; console flush is logical only; no native shim without a separate ADR |
 | Race-free no-follow file open | No `lstat`, `openat`, `O_NOFOLLOW` or equivalent public API | Require trusted allowed root; reject lexical and existing symlink escapes; do not claim hostile-directory race safety |
 | Streaming directory iteration | `nox.fs.read_dir` returns the complete name list | Rotation caps processing at 10,000 entries and requires a dedicated trusted log directory; initial stdlib list allocation cannot be bounded internally |
-| `nox.path.strip_prefix` component boundary | Pinned 2.0.143 treats `/safe/root2` as prefixed by `/safe/root`; observed 2.0.181 does not | Do not use it for confinement; compare canonical path components exactly and retain the regression test |
+| `nox.path.strip_prefix` component boundary | The historical 2.0.143 sibling-prefix defect is fixed by the current pin; existing component-wise confinement tests still pass | Retain explicit canonical component comparison and the regression test rather than changing security logic during the pin upgrade |
 
 ## Backend and platform matrix
 
@@ -90,4 +90,4 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 - `docs/internals/architecture.md`
 - `docs/tools/packages.md`, `testing.md`, `noxc.md`
 
-All source paths above refer to commit `a8940d27826849a526c3e918126ac6dd6ef571d1` in `mburakmmm/nox-lang`.
+All source paths above refer to commit `fd107b922c67a804520dc30f849039d977542f6c` in `mburakmmm/nox-lang`.

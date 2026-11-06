@@ -1,12 +1,12 @@
 # ADR-0011: async dispatch is unsupported on the pinned NOX baseline
 
-Status: accepted no-go for NOX 2.0.143 / `a8940d27826849a526c3e918126ac6dd6ef571d1`
+Status: accepted no-go; revalidated on NOX 2.1.0 / `fd107b922c67a804520dc30f849039d977542f6c`
 
 ## Context
 
 Phase 7 requires a bounded multi-producer queue, explicit overflow policies, exact accounting, timeout-aware flush/close, worker completion and proven shared-memory lifetime on LLVM and QBE. The existing logger API is synchronous: `Logger.log` captures and redacts one record, then calls every sink before returning.
 
-The pinned public APIs provide blocking `Channel.send/recv`, blocking `ThreadChannel.send/recv`, join-only `ThreadHandle`, cooperative task cancellation and manually freed scalar atomic cells. The scheduler documentation explicitly states that channel operations do not observe task cancellation. There is no documented `try_send`, `try_recv`, channel close, timed receive, timed join or thread-handle cancellation.
+The pinned public APIs provide awaited blocking `Channel.send/recv`, awaited blocking `ThreadChannel.send/recv`, join-only `ThreadHandle`, cooperative `Task.cancel` and manually freed scalar atomic cells. Task cancellation is not a thread-worker shutdown primitive. There is no documented `try_send`, `try_recv`, channel close, timed receive, timed join or thread-handle cancellation.
 
 ## Executable evidence
 

@@ -38,7 +38,7 @@ Core Obsidian may depend on the pinned NOX standard library and separately appro
 
 ## Module layout
 
-NOX 2.0.143 resolves package files from the repository root, so modules remain small root-level files such as `level.nox`, `record.nox`, `logger.nox`, `format_text.nox` and `format_json.nox`; sink modules live under `sinks/`. Package-internal imports use the manifest name (`obsidian.*`) so they remain correct regardless of a consumer's chosen dependency alias. Because the pinned compiler does not resolve that self-name for a root-project build, repository tests and examples execute in an isolated downstream consumer created by `scripts/run-package-suite.sh`.
+NOX 2.1.0 resolves package files from the repository root, so modules remain small root-level files such as `level.nox`, `record.nox`, `logger.nox`, `format_text.nox` and `format_json.nox`; sink modules live under `sinks/`. Package-internal imports use the manifest name (`obsidian.*`) so they remain correct regardless of a consumer's chosen dependency alias. Because the pinned compiler still does not resolve that self-name for a root-project build, repository tests and examples execute in an isolated downstream consumer created by `scripts/run-package-suite.sh`.
 
 There is no `__init__.nox` facade convention in the audited module contract. Public entry points will be documented by module path rather than simulated with Python package behavior.
 
