@@ -1,0 +1,105 @@
+import nox.test
+from obsidian.clock import FakeClock
+from obsidian.diagnostics import DiagnosticsSnapshot, MAX_DIAGNOSTIC_COUNT
+from obsidian.filter import AllowAllFilter, ExactLoggerNameFilter
+from obsidian.fields import LogField
+from obsidian.level import ERROR, INFO, TRACE
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.sinks.memory import MemorySink
+
+class ExplodingFilter:
+    def allows(self, entry: LogRecord) -> bool:
+
+        raise ValueError("SYNTHETIC_FILTER_FAILURE_SECRET")
+
+class SanitizedFilter:
+    saw_safe: bool
+
+    def __init__(self) -> None:
+        self.saw_safe = False
+
+    def allows(self, entry: LogRecord) -> bool:
+
+        self.saw_safe = "SYNTHETIC_FILTER_INPUT" not in entry.message and "token=***" in entry.message
+        entry.message = "mutated-filter-copy"
+        return True
+
+class ReentrantFilter:
+    _logger: Logger
+    _empty: list[LogField]
+    nested_result: bool
+
+    def __init__(self, target_logger: Logger) -> None:
+        self._logger = target_logger
+        self._empty = []
+        self.nested_result = True
+
+    def allows(self, entry: LogRecord) -> bool:
+
+        self.nested_result = self._logger.info("nested token=SYNTHETIC_FILTER_REENTRY_SECRET", self._empty)
+        return True
+
+def invalid_threshold_is_rejected(logger: Logger, sink: MemorySink) -> bool:
+    try:
+        logger.add_sink_with_filter(sink, 999, AllowAllFilter())
+        return False
+    except ValueError as e:
+        return e.message == "sink threshold is invalid"
+
+def invalid_exact_name_is_rejected() -> bool:
+    try:
+        ExactLoggerNameFilter("bad\nname")
+        return False
+    except ValueError as e:
+        return e.message == "logger name contains a control character"
+
+logger: Logger = Logger("service.route", TRACE, FakeClock(10))
+all_events: MemorySink = MemorySink("all", 4)
+errors_only: MemorySink = MemorySink("errors", 2)
+exact_match: MemorySink = MemorySink("match", 2)
+exact_miss: MemorySink = MemorySink("miss", 2)
+failed_filter: MemorySink = MemorySink("failed", 2)
+after_failure: MemorySink = MemorySink("after", 2)
+sanitized_filter: SanitizedFilter = SanitizedFilter()
+
+logger.add_sink(all_events)
+logger.add_sink_with_filter(errors_only, ERROR, AllowAllFilter())
+logger.add_sink_with_filter(exact_match, INFO, ExactLoggerNameFilter("service.route"))
+logger.add_sink_with_filter(exact_miss, INFO, ExactLoggerNameFilter("service.other"))
+logger.add_sink_with_filter(failed_filter, INFO, ExplodingFilter())
+logger.add_sink_with_filter(after_failure, INFO, sanitized_filter)
+
+nox.test.assert_true(not logger.info("token=SYNTHETIC_FILTER_INPUT", []), "filter failure is observable")
+nox.test.assert_eq_int(all_events.count(), 1, "default route receives event")
+nox.test.assert_eq_int(errors_only.count(), 0, "per-sink threshold rejects lower event")
+nox.test.assert_eq_int(exact_match.count(), 1, "exact logger filter accepts match")
+nox.test.assert_eq_int(exact_miss.count(), 0, "exact logger filter rejects non-match")
+nox.test.assert_eq_int(failed_filter.count(), 0, "failed filter fails closed")
+nox.test.assert_eq_int(after_failure.count(), 1, "filter failure does not block later route")
+nox.test.assert_true(sanitized_filter.saw_safe, "custom filter receives sanitized clone")
+nox.test.assert_eq_str(after_failure.record_at(0).message, "token=***", "filter mutation cannot alter sink record")
+
+nox.test.assert_true(not logger.error("error", []), "failing route remains observable for error")
+nox.test.assert_eq_int(errors_only.count(), 1, "per-sink threshold accepts error")
+nox.test.assert_eq_int(logger.diagnostics_snapshot().filter_failures(), 2, "filter failures counted exactly")
+nox.test.assert_true(invalid_threshold_is_rejected(logger, MemorySink("invalid", 1)), "invalid sink threshold rejected")
+nox.test.assert_true(invalid_exact_name_is_rejected(), "invalid exact filter name rejected")
+
+logger._filter_failures = MAX_DIAGNOSTIC_COUNT
+logger.info("saturation", [])
+snapshot: DiagnosticsSnapshot = logger.diagnostics_snapshot()
+nox.test.assert_eq_int(snapshot.filter_failures(), MAX_DIAGNOSTIC_COUNT, "filter failure counter saturates")
+nox.test.assert_eq_int(snapshot.total_failures(), MAX_DIAGNOSTIC_COUNT, "diagnostic total saturates")
+logger.close()
+
+reentrant_logger: Logger = Logger("service.reentrant-filter", INFO, FakeClock(11))
+reentrant_sink: MemorySink = MemorySink("reentrant-filter", 1)
+reentrant_filter: ReentrantFilter = ReentrantFilter(reentrant_logger)
+reentrant_logger.add_sink_with_filter(reentrant_sink, INFO, reentrant_filter)
+nox.test.assert_true(not reentrant_logger.info("outer", []), "filter re-entry fails closed")
+nox.test.assert_true(not reentrant_filter.nested_result, "nested filter log is rejected")
+nox.test.assert_eq_int(reentrant_sink.count(), 0, "filter re-entry never reaches sink")
+nox.test.assert_eq_int(reentrant_logger.diagnostics_snapshot().filter_failures(), 1, "filter re-entry counted once")
+nox.test.assert_eq_int(reentrant_logger.diagnostics_snapshot().recursion_failures(), 1, "filter recursion counted once")
+reentrant_logger.close()

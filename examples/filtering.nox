@@ -1,0 +1,19 @@
+from obsidian.clock import FakeClock
+from obsidian.filter import AllowAllFilter, ExactLoggerNameFilter
+from obsidian.level import ERROR, INFO, TRACE
+from obsidian.logger import Logger
+from obsidian.sinks.memory import MemorySink
+
+logger: Logger = Logger("service.orders", TRACE, FakeClock(1700000000000))
+all_events: MemorySink = MemorySink("all", 4)
+errors: MemorySink = MemorySink("errors", 4)
+orders: MemorySink = MemorySink("orders", 4)
+
+logger.add_sink(all_events)
+logger.add_sink_with_filter(errors, ERROR, AllowAllFilter())
+logger.add_sink_with_filter(orders, INFO, ExactLoggerNameFilter("service.orders"))
+
+logger.info("order accepted", [])
+logger.error("order failed", [])
+print("all=" + str(all_events.count()) + " errors=" + str(errors.count()) + " matched=" + str(orders.count()) + " filter_failures=" + str(logger.diagnostics_snapshot().filter_failures()))
+logger.close()

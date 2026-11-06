@@ -42,6 +42,8 @@ Obsidian wraps and extends `nox.log`; it does not replace or fork the standard l
 - Validated typed configuration, all-or-nothing logger construction and opt-in environment threshold overrides.
 - Single-process size-based file rotation with deterministic dry-run retention and bounded storage.
 - An executable Phase 7 capability audit that keeps unsupported async dispatch disabled.
+- Exact logger routing, per-sink thresholds and sanitized fail-closed custom filters.
+- Saturating diagnostics for redaction, filter, sink lifecycle and recursion failures.
 - Deterministic LLVM and QBE tests.
 
 Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. Nested values, exception capture and time-based rotation remain gated future phases. Async dispatch is unsupported on the pinned toolchain because portable record transfer, non-blocking overflow and timeout-aware shutdown cannot all be proven. Simultaneous calls through one shared logger have no thread-safety claim; rotating files require one owning process and a trusted directory.
@@ -79,7 +81,7 @@ event_fields: list[LogField] = [LogField("user_id", obsidian.fields.string_value
 log_instance.info("login succeeded", event_fields)
 ```
 
-See [`examples/request_context.nox`](examples/request_context.nox) for explicit request context and correlation IDs, and [`docs/configuration.md`](docs/configuration.md) for the validated factory and environment override.
+See [`examples/request_context.nox`](examples/request_context.nox) for explicit request context and correlation IDs, [`examples/filtering.nox`](examples/filtering.nox) for safe sink routing, and [`docs/configuration.md`](docs/configuration.md) for the validated factory and environment override.
 See [`examples/file_rotation.nox`](examples/file_rotation.nox), [`docs/operations.md`](docs/operations.md) and [`docs/recovery.md`](docs/recovery.md) before enabling file rotation.
 
 Library, test and example imports use the package name `obsidian`. The pinned compiler resolves those self-imports correctly when Obsidian is loaded as a dependency, but not while compiling the package as the root project. Development therefore runs a hermetic downstream-consumer fixture; see ADR-0006.

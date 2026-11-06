@@ -1,0 +1,56 @@
+import nox.test
+from obsidian.clock import FakeClock
+from obsidian.diagnostics import DiagnosticsSnapshot
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.sinks.memory import MemorySink
+
+class LifecycleFailureSink:
+    def sink_name(self) -> str:
+
+        return "lifecycle-failure"
+
+    def write(self, entry: LogRecord) -> None:
+
+        raise ValueError("SYNTHETIC_DIAGNOSTIC_WRITE_SECRET")
+
+    def flush(self) -> None:
+
+        raise ValueError("SYNTHETIC_DIAGNOSTIC_FLUSH_SECRET")
+
+    def close(self) -> None:
+
+        raise ValueError("SYNTHETIC_DIAGNOSTIC_CLOSE_SECRET")
+
+    def is_closed(self) -> bool:
+
+        return False
+
+    def is_bounded(self) -> bool:
+
+        return True
+
+logger: Logger = Logger("diagnostics", INFO, FakeClock(1))
+failure: LifecycleFailureSink = LifecycleFailureSink()
+healthy: MemorySink = MemorySink("healthy", 2)
+logger.add_sink(failure)
+logger.add_sink(healthy)
+
+nox.test.assert_true(not logger.info("safe event", []), "write failure returns false")
+nox.test.assert_eq_int(healthy.count(), 1, "write failure does not block healthy sink")
+logger.flush()
+before_close: DiagnosticsSnapshot = logger.diagnostics_snapshot()
+nox.test.assert_eq_int(before_close.sink_write_failures(), 1, "write failure counted")
+nox.test.assert_eq_int(before_close.sink_flush_failures(), 1, "flush failure counted")
+nox.test.assert_eq_int(before_close.sink_close_failures(), 0, "close failure absent before close")
+nox.test.assert_eq_int(before_close.total_failures(), 2, "diagnostic total before close")
+
+logger.close()
+logger.close()
+after_close: DiagnosticsSnapshot = logger.diagnostics_snapshot()
+nox.test.assert_true(logger.is_closed(), "logger closes despite sink close failure")
+nox.test.assert_true(healthy.is_closed(), "healthy sink still closes")
+nox.test.assert_eq_int(after_close.sink_close_failures(), 1, "close failure counted once")
+nox.test.assert_eq_int(after_close.total_failures(), 3, "diagnostic total after close")

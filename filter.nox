@@ -1,0 +1,26 @@
+import obsidian.record
+from obsidian.record import LogRecord
+
+protocol LogFilter:
+    def allows(self, entry: LogRecord) -> bool:
+        pass
+
+class AllowAllFilter:
+    def allows(self, entry: LogRecord) -> bool:
+
+        return True
+
+class ExactLoggerNameFilter:
+    _logger_name: str
+
+    def __init__(self, logger_name: str) -> None:
+        obsidian.record.validate_logger_name(logger_name)
+        self._logger_name = logger_name
+
+    def logger_name(self) -> str:
+
+        return self._logger_name
+
+    def allows(self, entry: LogRecord) -> bool:
+
+        return entry.logger_name == self._logger_name

@@ -1,0 +1,60 @@
+MAX_DIAGNOSTIC_COUNT: int = 2147483647
+
+def saturating_increment(value: int) -> int:
+    if value < MAX_DIAGNOSTIC_COUNT:
+        return value + 1
+    return MAX_DIAGNOSTIC_COUNT
+
+def saturating_add(left: int, right: int) -> int:
+    if left >= MAX_DIAGNOSTIC_COUNT or right >= MAX_DIAGNOSTIC_COUNT - left:
+        return MAX_DIAGNOSTIC_COUNT
+    return left + right
+
+class DiagnosticsSnapshot:
+    _redaction_failures: int
+    _filter_failures: int
+    _sink_write_failures: int
+    _sink_flush_failures: int
+    _sink_close_failures: int
+    _recursion_failures: int
+
+    def __init__(self, redaction_failures: int, filter_failures: int, sink_write_failures: int, sink_flush_failures: int, sink_close_failures: int, recursion_failures: int) -> None:
+        self._redaction_failures = redaction_failures
+        self._filter_failures = filter_failures
+        self._sink_write_failures = sink_write_failures
+        self._sink_flush_failures = sink_flush_failures
+        self._sink_close_failures = sink_close_failures
+        self._recursion_failures = recursion_failures
+
+    def redaction_failures(self) -> int:
+
+        return self._redaction_failures
+
+    def filter_failures(self) -> int:
+
+        return self._filter_failures
+
+    def sink_write_failures(self) -> int:
+
+        return self._sink_write_failures
+
+    def sink_flush_failures(self) -> int:
+
+        return self._sink_flush_failures
+
+    def sink_close_failures(self) -> int:
+
+        return self._sink_close_failures
+
+    def recursion_failures(self) -> int:
+
+        return self._recursion_failures
+
+    def total_failures(self) -> int:
+
+        total: int = saturating_add(self._redaction_failures, self._filter_failures)
+        total = saturating_add(total, self._sink_write_failures)
+        total = saturating_add(total, self._sink_flush_failures)
+        total = saturating_add(total, self._sink_close_failures)
+        total = saturating_add(total, self._recursion_failures)
+        return total

@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phase 7 async no-go decision. Public APIs are not frozen.
+Status: Phase 8 filtering and bounded diagnostics implemented locally. Public APIs are not frozen.
 
 ## Dependency direction
 
@@ -27,7 +27,7 @@ Core Obsidian may depend on the pinned NOX standard library and separately appro
 - Records are immutable snapshots captured once before fan-out.
 - Threshold checks happen before expensive record/field construction.
 - Redaction happens before any sink, callback or diagnostic boundary.
-- Formatting/filtering/redaction remain pure and separate from I/O.
+- Formatting/filtering/redaction remain separate from I/O; custom filters receive only a sanitized clone.
 - Formatters consume one captured record and never re-read clocks or identifiers.
 - Text flattens context with event-field precedence; JSON keeps `fields` and `context` namespaced and deterministically sorted.
 - Bound logger views deep-copy explicit context and delegate to one sink-owning parent logger.
@@ -44,7 +44,7 @@ There is no `__init__.nox` facade convention in the audited module contract. Pub
 
 ## Lifecycle model
 
-Logger ownership is explicit. Sinks have documented write/flush/close behavior and idempotent close. The current internal policy propagates sanitized `SinkError` failures to the caller; bounded diagnostics and configurable non-raising policy remain Phase 8 work. User callbacks do not execute while holding a lock required by logging.
+Logger ownership is explicit. Sinks have documented write/flush/close behavior and idempotent close. The default policy records saturating sanitized counters and continues to later routes; `raise_on_error` is explicit and emits only fixed categories. User filters and sinks do not execute while holding a logging lock. Re-entry is rejected and counted rather than recursively routed.
 
 `BoundLogger` does not expose `close`; it delegates writes and flush to its parent and cannot duplicate sink ownership. Runtime reconfiguration changes only validated scalar logger state and leaves the installed sink set intact. New sink sets are built through an all-or-nothing factory rather than mutating a live logger incrementally.
 
@@ -52,7 +52,7 @@ Logger ownership is explicit. Sinks have documented write/flush/close behavior a
 
 ## Security model
 
-All logger output paths consume one pre-sink sanitized snapshot. A redactor exception or failed result drops the unsafe event and increments a saturating sanitized counter; direct default formatter use substitutes a fixed placeholder on internal redaction failure. Raw records are never passed to sinks merely because redaction or formatting failed. Scalar nested values remain disabled instead of being stringified.
+All logger output paths consume one pre-sink sanitized snapshot. A redactor exception or failed result drops the unsafe event and increments a saturating sanitized counter; direct default formatter use substitutes a fixed placeholder on internal redaction failure. Filters receive cloned safe records, and filter failures cannot expose or forward the original. Diagnostics contain counts only. Raw records are never passed to callbacks or sinks merely because redaction, filtering or formatting failed. Scalar nested values remain disabled instead of being stringified.
 
 ## Portability model
 

@@ -1,6 +1,6 @@
 # API status
 
-Status: internal development API through the Phase 7 async no-go decision; not frozen and not published.
+Status: internal development API through the Phase 8 local implementation; not frozen and not approved in the registry.
 
 ## Levels
 
@@ -61,11 +61,15 @@ Both internal formatter entry points apply the default sanitizer before encoding
 
 ## Internal synchronous logger
 
-`Logger(name, threshold, clock, redactor=None)` is an explicit instance with no global default. Disabled events return `False` before reading the clock or constructing a record. Enabled events capture the clock once, apply the selected internal redactor, and synchronously dispatch cloned snapshots to registered `Sink` implementations. A redactor exception or failed result drops the event, increments a saturating failure counter and returns `False` without exposing the unsafe record or exception text.
+`Logger(name, threshold, clock, redactor=None, raise_on_error=False)` is an explicit instance with no global default. Disabled events return `False` before reading the clock or constructing a record. Enabled events capture the clock once, apply the selected internal redactor, and synchronously dispatch cloned snapshots to registered `Sink` implementations. A redactor exception or failed result drops the event, increments a saturating failure counter and returns `False` without exposing the unsafe record or exception text.
 
 The TRACE convenience method is temporarily named `trace_event`. At the pinned compiler revision, the natural `trace` spelling passes type-checking but produces a duplicate LLVM symbol; `log(TRACE, ...)` remains the stable semantic path. This spelling is not frozen.
 
-`add_sink` returns a monotonically increasing registration ID. `remove_sink` affects only that registration. `flush` targets currently registered sinks. `close` closes registered sinks once and is idempotent. Sink failures currently propagate so data loss is observable; the configurable diagnostics policy remains Phase 3/8 work.
+`add_sink` returns a monotonically increasing registration ID and installs an allow-all `TRACE` route. `add_sink_with_filter(sink, minimum_level, filter)` adds a validated per-sink numeric threshold and a `LogFilter`. `ExactLoggerNameFilter` is case-sensitive exact equality; it is not a prefix matcher. Threshold rejection happens before invoking the filter. Filters receive sanitized clones, so mutation cannot affect sink output. A filter exception or re-entry fails only that route closed and later routes still run.
+
+`remove_sink` affects only its registration. `flush` targets currently registered sinks. `close` attempts every registered sink once and becomes closed even if a sink fails. Default write failures make `log` return `False`; flush/close failures are visible in diagnostics. Explicit `raise_on_error=True` raises only fixed sanitized categories after write routing. It never exposes callback exception text.
+
+`diagnostics_snapshot()` returns bounded counters for redaction, filtering, sink write/flush/close and recursion failures. Individual counters and `total_failures()` saturate at `2147483647`. No record, path, configuration value or exception text is stored.
 
 `Sink` exposes lifecycle methods, a stable name and a bounded-storage capability flag. `MemorySink` is a bounded drop-oldest ring with an explicit drop counter and clone-returning snapshots. Recursive logging from a sink is rejected before a second record is captured. No lock is held while calling a sink because the current dispatcher is synchronous and lock-free.
 
@@ -77,7 +81,9 @@ The TRACE convenience method is temporarily named `trace_event`. At the pinned c
 
 Correlation IDs are optional strings limited to 128 ASCII letters/digits plus `-`, `_`, `.` and `:`. Text output renders request, trace and span IDs in that fixed order. JSON emits non-empty identifiers as optional top-level properties after `context` and before `schema_version`. No implicit global or task-local propagation exists.
 
-`LoggerConfig`, `RedactionConfig`, `FormatterConfig` and `SinkConfig` are validated typed models. `factory.build_logger` builds the complete synchronous sink set before exposing a logger and closes already-built sinks if construction fails. `Logger.reconfigure` replaces only name, threshold and redactor after all replacement objects exist; current sink registrations are preserved.
+`LoggerConfig`, `RedactionConfig`, `FormatterConfig` and `SinkConfig` are validated typed models. `factory.build_logger` preserves allow-all routing, builds the complete synchronous sink set before exposing a logger and closes already-built sinks if construction fails. `Logger.reconfigure` replaces only name, threshold, redactor and error policy after all replacement objects exist; current sink registrations are preserved. Typed route configuration is deferred on the pinned compiler; use explicit `add_sink_with_filter` calls after constructing sinks.
+
+Stable seeded sampling, hierarchical prefix filters and source metadata are not implemented. The pinned docs expose no selected stable hash or caller/file/line inspection API; Obsidian does not fabricate either capability.
 
 `with_threshold_environment` reads only an explicitly named variable and handles missing `nox.os.getenv` values through `OsError`. Invalid values raise a fixed sanitized category. There is no implicit `.env`, home, file or network configuration. `QueueConfig` is deliberately absent because the Phase 7 audit reached a no-go decision on the pinned toolchain.
 

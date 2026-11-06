@@ -33,6 +33,8 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Oldest-first dry-run retention selection, bounded archive count and restart sequence recovery.
 - Sanitized rename/reopen recovery paths and strict owned-archive regular-file validation.
 - Executable async capability probes for record transfer, non-blocking queue operations, worker lifecycle and genuine overlap.
+- Exact logger filters and per-sink numeric thresholds through explicit route registration.
+- Saturating sanitized diagnostics for redaction, filter, sink lifecycle and recursion failures.
 
 ### Changed
 
@@ -44,7 +46,9 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Rotating output rejects oversized records/preexisting files rather than exceeding the configured storage budget.
 - Async dispatch remains disabled after the Phase 7 audit found no portable non-blocking overflow or timeout-aware worker shutdown contract in NOX 2.0.143.
 - Hermetic package and import harnesses accept an explicit `NOXC` binary override for pinned local verification.
+- Sink/filter failures now default to non-raising observable diagnostics while explicit strict mode raises fixed sanitized categories.
 
 ### Security
 
 - Security fixtures use synthetic sentinels; redactor exceptions are dropped before fan-out and their messages are not emitted.
+- Custom filters receive only sanitized clones; exceptions, mutation and re-entry cannot expose an unsafe record or block later safe routes.

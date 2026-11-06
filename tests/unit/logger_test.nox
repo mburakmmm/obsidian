@@ -1,21 +1,25 @@
 import obsidian.fields
 import nox.test
 from obsidian.clock import FakeClock
+from obsidian.diagnostics import DiagnosticsSnapshot
 from obsidian.fields import LogField
 from obsidian.level import DEBUG, INFO
 from obsidian.logger import Logger
 from obsidian.record import LogRecord
+from obsidian.sink_error import SinkError
 from obsidian.sinks.memory import MemorySink
 
 class ReentrantSink:
     _logger: Logger
     _empty: list[LogField]
     _closed: bool
+    nested_result: bool
 
     def __init__(self, target_logger: Logger) -> None:
         self._logger = target_logger
         self._empty = []
         self._closed = False
+        self.nested_result = True
 
     def sink_name(self) -> str:
 
@@ -23,7 +27,7 @@ class ReentrantSink:
 
     def write(self, entry: LogRecord) -> None:
 
-        self._logger.info("nested", self._empty)
+        self.nested_result = self._logger.info("nested", self._empty)
 
     def flush(self) -> None:
 
@@ -56,7 +60,7 @@ class FailingSink:
 
     def close(self) -> None:
 
-        pass
+        raise ValueError("SYNTHETIC_CLOSE_FAILURE_SECRET")
 
     def is_closed(self) -> bool:
 
@@ -66,17 +70,15 @@ class FailingSink:
 
         return False
 
-def recursion_raises() -> bool:
+def recursion_is_bounded() -> bool:
     test_clock: FakeClock = FakeClock(1)
     test_logger: Logger = Logger("recursion", INFO, test_clock)
     reentrant: ReentrantSink = ReentrantSink(test_logger)
     test_logger.add_sink(reentrant)
     empty: list[LogField] = []
-    try:
-        test_logger.info("outer", empty)
-        return False
-    except ValueError as e:
-        return e.message == "recursive logging is not allowed"
+    emitted: bool = test_logger.info("outer", empty)
+    snapshot: DiagnosticsSnapshot = test_logger.diagnostics_snapshot()
+    return not emitted and not reentrant.nested_result and snapshot.recursion_failures() == 1
 
 def closed_write_raises() -> bool:
     test_clock: FakeClock = FakeClock(1)
@@ -93,11 +95,20 @@ def sink_failure_is_observable() -> bool:
     failing: FailingSink = FailingSink()
     test_logger.add_sink(failing)
     empty: list[LogField] = []
+    emitted: bool = test_logger.info("event", empty)
+    test_logger.flush()
+    test_logger.close()
+    snapshot: DiagnosticsSnapshot = test_logger.diagnostics_snapshot()
+    return not emitted and snapshot.sink_write_failures() == 1 and snapshot.sink_flush_failures() == 1 and snapshot.sink_close_failures() == 1 and test_logger.is_closed()
+
+def strict_sink_failure_is_sanitized() -> bool:
+    test_logger: Logger = Logger("strict-failure", INFO, FakeClock(1), None, True)
+    test_logger.add_sink(FailingSink())
     try:
-        test_logger.info("event", empty)
+        test_logger.info("token=SYNTHETIC_STRICT_INPUT", [])
         return False
-    except ValueError as e:
-        return e.message == "synthetic sink failure"
+    except SinkError as e:
+        return e.message == "logger dispatch failed" and "SYNTHETIC" not in e.message
 
 fake_clock: FakeClock = FakeClock(1000)
 log_instance: Logger = Logger("service.auth", INFO, fake_clock)
@@ -160,5 +171,6 @@ nox.test.assert_true(second.is_closed(), "registered sink closed")
 nox.test.assert_true(not first.is_closed(), "removed sink lifecycle independent")
 nox.test.assert_true(first.is_bounded(), "memory sink advertises bounded storage")
 nox.test.assert_true(closed_write_raises(), "closed logger does not emit")
-nox.test.assert_true(recursion_raises(), "recursive sink logging rejected")
-nox.test.assert_true(sink_failure_is_observable(), "sink failure propagates")
+nox.test.assert_true(recursion_is_bounded(), "recursive sink logging rejected and counted")
+nox.test.assert_true(sink_failure_is_observable(), "sink lifecycle failures are counted")
+nox.test.assert_true(strict_sink_failure_is_sanitized(), "strict sink failure category is sanitized")

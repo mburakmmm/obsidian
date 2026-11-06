@@ -99,6 +99,7 @@ replacement: LoggerConfig = LoggerConfig("service.reconfigured", ERROR, Redactio
 logger.reconfigure(replacement)
 nox.test.assert_eq_str(logger.logger_name, "service.reconfigured", "valid reconfigure swaps name")
 nox.test.assert_eq_int(logger.threshold, ERROR, "valid reconfigure swaps threshold")
+nox.test.assert_true(not replacement.raise_on_error(), "default error policy records diagnostics")
 nox.test.assert_true(not logger.info("disabled", []), "reconfigured threshold active")
 nox.test.assert_true(logger.error("session_key=SYNTHETIC_CONFIG_SECRET", []), "reconfigured redactor active")
 

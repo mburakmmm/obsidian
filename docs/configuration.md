@@ -1,6 +1,6 @@
 # Configuration
 
-Status: internal API after the Phase 7 async no-go decision; no stable package has been published.
+Status: internal API through the Phase 8 local implementation; registry approval remains pending.
 
 Obsidian configuration is explicit and typed. It never searches `.env`, a home directory, the working tree or a network location.
 
@@ -16,13 +16,15 @@ config: LoggerConfig = LoggerConfig("service.auth", INFO, redaction)
 
 Constructors validate before a logger is changed and copy caller-owned key lists. Error categories are fixed and do not include rejected values.
 
-`logger.reconfigure(config)` atomically replaces the logger name, threshold and redactor from the caller's synchronous perspective. It does not add, remove, close or replace sinks. A config that fails construction cannot be passed to `reconfigure`, so the existing logger remains usable.
+`LoggerConfig(..., raise_on_error=False)` defaults to bounded non-raising diagnostics. Explicit strict mode raises only fixed sanitized categories. `logger.reconfigure(config)` atomically replaces the logger name, threshold, redactor and error policy from the caller's synchronous perspective. It does not add, remove, close or replace sinks. A config that fails construction cannot be passed to `reconfigure`, so the existing logger remains usable.
 
 ## Sink factory
 
 Use `memory_sink_config`, `console_sink_config`, `file_sink_config` or `rotating_file_sink_config` to create a typed `SinkConfig`, then pass the list to `factory.build_logger(config, sink_configs, clock)`. The rotating form additionally requires `max_bytes` and `max_archives`. The factory constructs every sink before returning the logger. If one construction fails, it closes sinks already constructed during that attempt and raises `SinkError("logger factory sink construction failed")` without echoing paths or values. A cleanup failure is separately observable as the fixed `logger factory cleanup failed` category.
 
 `FormatterConfig(FORMAT_TEXT)` and `FormatterConfig(FORMAT_JSON)` are supported. Console configuration accepts only the pinned compiler's supported stdout target. File configuration remains subject to the trusted-root restrictions in `operations.md`.
+
+The pinned compiler could not safely represent a typed route wrapper in optimized tests, so factory-built sinks use allow-all routing. Configure per-sink thresholds and filters explicitly with `logger.add_sink_with_filter` when constructing a logger programmatically. No partially working typed route config is exposed.
 
 ## Explicit environment override
 

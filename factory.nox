@@ -39,7 +39,7 @@ def build_logger(config: LoggerConfig, sink_configs: list[SinkConfig], clock: Cl
         if not close_built_sinks(built):
             raise SinkError("logger factory cleanup failed")
         raise SinkError("logger factory sink construction failed")
-    result: Logger = Logger(config.logger_name(), config.threshold(), clock, config.redaction().build_redactor())
+    result: Logger = Logger(config.logger_name(), config.threshold(), clock, config.redaction().build_redactor(), config.raise_on_error())
     for target in built:
         result.add_sink(target)
     return result

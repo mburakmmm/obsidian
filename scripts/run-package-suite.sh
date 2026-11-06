@@ -87,6 +87,7 @@ run_exact_example examples/file_logging.nox "$expected_file"
 run_exact_example examples/security_redaction.nox "$expected_security"
 run_exact_example examples/request_context.nox "$expected_context"
 run_exact_example examples/file_rotation.nox "rotations=1 archives=1 bounded=true"
+run_exact_example examples/filtering.nox "all=2 errors=1 matched=2 filter_failures=0"
 
 resolved_sha="$(git -C "$package_root" rev-parse HEAD)"
 grep -q "\"resolved\": \"$resolved_sha\"" nox.lock

@@ -129,14 +129,16 @@ class LoggerConfig:
     _logger_name: str
     _threshold: int
     _redaction: RedactionConfig
+    _raise_on_error: bool
 
-    def __init__(self, logger_name: str, threshold: int, redaction: RedactionConfig) -> None:
+    def __init__(self, logger_name: str, threshold: int, redaction: RedactionConfig, raise_on_error: bool = False) -> None:
         obsidian.record.validate_logger_name(logger_name)
         if not obsidian.level.is_valid(threshold):
             raise ValueError("logger threshold is invalid")
         self._logger_name = logger_name
         self._threshold = threshold
         self._redaction = RedactionConfig(redaction.additional_keys_snapshot())
+        self._raise_on_error = raise_on_error
 
     def logger_name(self) -> str:
 
@@ -152,7 +154,11 @@ class LoggerConfig:
 
     def clone(self) -> LoggerConfig:
 
-        return LoggerConfig(self._logger_name, self._threshold, self._redaction)
+        return LoggerConfig(self._logger_name, self._threshold, self._redaction, self._raise_on_error)
+
+    def raise_on_error(self) -> bool:
+
+        return self._raise_on_error
 
 def memory_sink_config(name: str, capacity: int) -> SinkConfig:
     return SinkConfig(SINK_MEMORY, name, capacity, 0, "", "", False, FormatterConfig(FORMAT_TEXT))

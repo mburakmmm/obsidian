@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–6 supported synchronous scope and the Phase 7 async no-go capability audit pass pinned local LLVM/QBE verification and the supported CI matrix. This document does not extend support beyond tested jobs.
+Status: Phase 0–7 evidence is green in the supported CI matrix; Phase 8 filtering/diagnostics pass pinned local LLVM/QBE verification and await remote matrix evidence. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -34,7 +34,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 scalar/lifetime probes pass locally and in supported CI on LLVM/QBE; LLVM overlap observation is reported separately |
 | scheduler | LLVM M:N work-stealing; QBE cooperative tasks plus separate runtimes for `nox.thread.start`; channel waits ignore task cancellation | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak 2 is proven but scheduling-sensitive; QBE scalar thread-channel probe passes locally and in supported CI |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 7 local and supported CI: 14 files/325 assertions/0 skips plus seven async capability probes; CI `42301491991` |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 8 local: 16 files/358 assertions/0 skips plus seven async capability probes; remote matrix pending |
 
 ## Known gaps and conservative decisions
 
@@ -44,6 +44,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | TTY detection | No documented public API found in the mandatory audit | Default to no ANSI; color remains disabled until a public capability is proven |
 | Stack trace/source inspection | No documented public API proven | Do not implement `logger.exception` or source capture yet |
 | Seeded random sampling | No documented public API proven | Defer sampling or implement a deterministic pure hash only after ADR/tests |
+| Optimized route-config representation | Widened, nested and scalar-snapshot route config experiments produced invalid values or `SIGSEGV` under the pinned `noxc test` runner while direct debug execution could pass | Preserve `SinkConfig`; expose only proven programmatic routing and defer typed factory routes until a newer pinned compiler/representation passes LLVM/QBE tests |
 | Temporary test directory helper | No `nox.test` helper documented | Use explicitly scoped fixtures and cleanup; do not invent a helper |
 | Recursive structures | JSON supports nested trees, but Obsidian's typed field model is undecided | Resolve in ADR-0002 and compile tests before implementation |
 | Immutable classes | NOX class fields are mutable and visibility is conventional | Deep-copy caller data, expose clone-returning accessors and keep internal storage underscore-prefixed; do not claim language-enforced immutability |

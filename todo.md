@@ -371,21 +371,21 @@ Go ise:
 
 ## 12. `0.4.x` — Phase 8: gelişmiş filtreleme ve diagnostics
 
-- [ ] Exact logger-name filter.
-- [ ] Per-sink numeric threshold.
-- [ ] Filter exception fail-closed; unredacted record dışarı çıkmıyor.
-- [ ] Stable seeded sampling uygulanacaksa deterministik testli.
-- [ ] Güvenlik/audit event'leri explicit izin olmadan sample edilmiyor.
-- [ ] Hierarchical prefix rules yalnız ayrı testlerle ekleniyor.
-- [ ] Source metadata mevcut public API ile alınabiliyorsa ekleniyor; başarısızlığı emit'i bozmaz.
-- [ ] Sink failure counters bounded ve sanitized.
-- [ ] Emergency diagnostic recursion yapmıyor ve secret sızdırmıyor.
-- [ ] User callback internal logging lock'u altında değil.
-- [ ] Audit profile için tamper-resistance iddiası yok.
+- [x] Exact logger-name filter.
+- [x] Per-sink numeric threshold.
+- [x] Filter exception fail-closed; unredacted record dışarı çıkmıyor.
+- [x] Stable seeded sampling bu fazda bilinçli olarak eklenmedi; sabit hash sözleşmesi seçilmeden iddia yok.
+- [x] Sampling olmadığı için güvenlik/audit event'leri örtük olarak elenmiyor.
+- [x] Hierarchical prefix rules ayrı tasarım/test olmadan eklenmedi.
+- [x] Public caller/file/line API kanıtlanmadığı için source metadata kapalı bırakıldı.
+- [x] Sink failure counters bounded ve sanitized.
+- [x] Diagnostics yalnız sabit kategorili sayaç; recursive emergency output/callback yolu yok.
+- [x] User filter/sink callback internal logging lock'u altında değil.
+- [x] Audit profile ve tamper-resistance iddiası yok.
 
 ### Phase 8 kapısı
 
-- [ ] Recursion yok, diagnostics bounded, filter/sampling testleri deterministik.
+- [x] Re-entry bounded/fail-closed, diagnostics saturating, filtre testleri deterministik; sampling unsupported olarak belgeli. Uzak CI kanıtı bekleniyor.
 
 ---
 
@@ -549,3 +549,5 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Ph
 | 2026-11-06 | `0.3.x` / Phase 6 size-rotation | Single-process byte rotation, fixed-width archive sequence, dry-run retention, restart/rename recovery, symlink ve owned-file doğrulaması eklendi | Pinned NOX 2.0.143 yerel ve desteklenen CI LLVM/QBE: 14 test dosyası, 325 assertion, 0 skip; 3 expected compile-fail; 8 exact örnek ve import/lock probu geçti | Uzak CI run `42250864512` (macOS runner kapasitesi nedeniyle attempt 2) üç platformda yeşil; Phase 6 kapandı, time/cross-process rotation desteklenmiyor |
 | 2026-11-06 | `0.4.x` / Phase 7 async go/no-go | Thread/channel/atomic/join/cancellation probları, gerçek overlap testi ve ADR-0011 eklendi | Pinned NOX 2.0.143 yerel ve CI `42257058031`: 14 dosya/325 assertion/0 skip, 6 capability probu; LLVM overlap peak `2`, QBE class-channel expected reject | No-go desteklenen üç platformda doğrulandı; async ve `QueueConfig` kapalı, senkron dispatcher tek desteklenen yol |
 | 2026-11-07 | Phase 7 genişletilmiş matris | LLVM overlap probu bounded ve scheduling-aware yapıldı; QBE scalar channel/atomic lifecycle ayrı executable probla doğrulandı | Yerelde üç tekrar; CI `42301491991`: macOS ARM64, Linux x64, Linux ARM64 üzerinde LLVM/QBE 14 dosya/325 assertion/0 skip ve 7 capability probu geçti | Phase 7 kapandı; overlap gözlemi dürüstçe raporlanıyor, async no-go değişmedi; Phase 8 sırada |
+| 2026-11-07 | Manuel registry başvurusu | Kullanıcı isteğiyle token yapılandırmasına dokunmadan `noxc publish github.com/mburakmmm/obsidian --ref main` çalıştırıldı | noxpkg submission `6bbd1c55-e95b-4fb1-b66d-15c15a6c7909` | Başvuru onay bekliyor; registry erişilebilirliği veya kararlı sürüm iddiası yok |
+| 2026-11-07 | `0.4.x` / Phase 8 yerel aday | Exact logger filtresi, sink başına threshold, sanitize clone filtre sınırı, saturating diagnostics ve strict sabit hata kategorileri eklendi | Pinned NOX 2.0.143 LLVM/QBE: 16 dosya/358 assertion/0 skip; 7 capability probu; 9 exact ve sentinel-scanned örnek; import/lock doğrulaması geçti | Yerel Phase 8 kapısı geçti; typed route config derleyici kanıtı yok diye kapalı, sampling/source/prefix bilinçli kapalı; uzak CI bekleniyor |
