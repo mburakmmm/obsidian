@@ -1,0 +1,58 @@
+import obsidian.context
+import obsidian.fields
+import obsidian.redact
+from obsidian.fields import LogField
+from obsidian.level import ERROR, INFO, WARNING
+
+MAX_HTTP_METHOD_LENGTH: int = 16
+MAX_ROUTE_NAME_LENGTH: int = 256
+
+def safe_http_method(method: str) -> str:
+    if len(method) == 0 or len(method) > MAX_HTTP_METHOD_LENGTH:
+        return "UNKNOWN"
+    for character in method:
+        codepoint: int = ord(character)
+        if codepoint < 65 or codepoint > 90:
+            return "UNKNOWN"
+    return method
+
+def safe_route_name(route_name: str) -> str:
+    if len(route_name) == 0 or len(route_name) > MAX_ROUTE_NAME_LENGTH:
+        return ""
+    for character in route_name:
+        codepoint: int = ord(character)
+        if codepoint < 32 or codepoint == 127:
+            return ""
+    return obsidian.redact.sanitize_message(route_name)
+
+def safe_correlation_id(value: str) -> str:
+    try:
+        obsidian.context.validate_correlation_id(value)
+        return value
+    except ValueError:
+        return ""
+
+def safe_http_status(status: int) -> int:
+    if status < 100 or status > 599:
+        return 0
+    return status
+
+def safe_duration_ms(duration_ms: int) -> int:
+    if duration_ms < 0:
+        return 0
+    return duration_ms
+
+def request_completion_level(status: int) -> int:
+    safe_status: int = safe_http_status(status)
+    if safe_status >= 500:
+        return ERROR
+    if safe_status >= 400:
+        return WARNING
+    return INFO
+
+def request_completion_fields(method: str, status: int, duration_ms: int, route_name: str = "") -> list[LogField]:
+    result: list[LogField] = [LogField("method", obsidian.fields.string_value(safe_http_method(method))), LogField("status", obsidian.fields.int_value(safe_http_status(status))), LogField("duration_ms", obsidian.fields.int_value(safe_duration_ms(duration_ms)))]
+    safe_route: str = safe_route_name(route_name)
+    if len(safe_route) > 0:
+        result.append(LogField("route", obsidian.fields.string_value(safe_route)))
+    return result

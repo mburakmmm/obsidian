@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phase 8 filtering and bounded diagnostics implemented locally. Public APIs are not frozen.
+Status: Phase 9 optional adapter preview implemented locally. Public APIs are not frozen.
 
 ## Dependency direction
 
@@ -22,6 +22,8 @@ application / optional ecosystem adapter
 
 Core Obsidian may depend on the pinned NOX standard library and separately approved minimal utilities. Nyx, Aether, Aura, VAULT, Pulse and other consumers must never be imported by core modules.
 
+Framework-specific imports are confined to `adapters/`. Those modules are optional package leaves: an application imports one only after adding that framework dependency. `integration.nox` is the framework-neutral boundary for normalized request metadata, and the root manifest remains dependency-free. See ADR-0013.
+
 ## Boundaries
 
 - Records are immutable snapshots captured once before fan-out.
@@ -38,7 +40,7 @@ Core Obsidian may depend on the pinned NOX standard library and separately appro
 
 ## Module layout
 
-NOX 2.1.0 resolves package files from the repository root, so modules remain small root-level files such as `level.nox`, `record.nox`, `logger.nox`, `format_text.nox` and `format_json.nox`; sink modules live under `sinks/`. Package-internal imports use the manifest name (`obsidian.*`) so they remain correct regardless of a consumer's chosen dependency alias. Because the pinned compiler still does not resolve that self-name for a root-project build, repository tests and examples execute in an isolated downstream consumer created by `scripts/run-package-suite.sh`.
+NOX 2.1.0 resolves package files from the repository root, so modules remain small root-level files such as `level.nox`, `record.nox`, `logger.nox`, `format_text.nox`, `format_json.nox` and `integration.nox`; sink modules live under `sinks/`, and optional framework modules live under `adapters/`. Package-internal imports use the manifest name (`obsidian.*`) so they remain correct regardless of a consumer's chosen dependency alias. Because the pinned compiler still does not resolve that self-name for a root-project build, repository tests and examples execute in an isolated downstream consumer created by `scripts/run-package-suite.sh`.
 
 There is no `__init__.nox` facade convention in the audited module contract. Public entry points will be documented by module path rather than simulated with Python package behavior.
 

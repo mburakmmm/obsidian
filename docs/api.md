@@ -1,6 +1,6 @@
 # API status
 
-Status: internal development API through the Phase 8 local implementation; not frozen and not approved in the registry.
+Status: internal development API through the Phase 9 optional adapter preview; not frozen.
 
 ## Levels
 
@@ -90,6 +90,18 @@ Stable seeded sampling, hierarchical prefix filters and source metadata are not 
 ## Async dispatch
 
 There is no async logging API on the pinned NOX 2.1.0 baseline. `Logger.log`, convenience methods, sink writes, `flush` and `close` remain synchronous. Obsidian does not expose a background worker, queue capacity, overflow policy or async lifecycle counters. The Phase 7 capability audit was rerun unchanged on 2.1.0 and remains a no-go. See ADR-0011 for the executable evidence and re-evaluation conditions.
+
+## Optional ecosystem adapters
+
+`integration.request_completion_fields` constructs the framework-neutral allowlisted request fields. Methods must be 1–16 uppercase ASCII letters, status must be 100–599 and duration is clamped to zero. `safe_route_name` accepts at most 256 control-free characters and applies message redaction; `safe_correlation_id` returns an empty value for an invalid identifier. Completion severity is `INFO` for 1xx–3xx, `WARNING` for 4xx and `ERROR` for 5xx.
+
+`obsidian.adapters.nyx.NyxRequestLogging` provides router-compatible before/after methods with task-local monotonic timing. `bind_request` and `log_completion` read only Nyx's request ID, HTTP method and response status; raw targets and payloads are not collected.
+
+`obsidian.adapters.aether.AetherRequestLogging` returns an `InterceptorFns`. It keeps timing and optional route metadata in Aether's request-scoped value bag. `set_route_name` is explicit and must receive a stable application-defined name/template, never a raw path.
+
+`obsidian.adapters.quartz.QuartzCapture` is a bounded sink wrapper intended for tests. It delegates lifecycle/storage to `MemorySink` and provides fixed-message count, level and secret-sentinel assertions.
+
+These modules are not imported by core and require the corresponding consumer dependency only when selected. Exact tested revisions and examples are documented in `docs/ecosystem.md`; API compatibility beyond them is not claimed.
 
 ## Internal synchronous I/O sinks
 

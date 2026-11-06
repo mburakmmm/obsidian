@@ -1,0 +1,12 @@
+import obsidian.adapters.aether
+from aether.interceptor import InterceptorFns
+from obsidian.clock import SystemClock
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.sinks.memory import MemorySink
+
+logger: Logger = Logger("service.api", INFO, SystemClock())
+logger.add_sink(MemorySink("request-events", 128))
+request_logging: obsidian.adapters.aether.AetherRequestLogging = obsidian.adapters.aether.AetherRequestLogging(logger)
+interceptors: list[InterceptorFns] = [request_logging.interceptor()]
+logger.close()

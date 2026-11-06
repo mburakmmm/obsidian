@@ -1,0 +1,14 @@
+import obsidian.adapters.nyx
+from nox.router import Router
+from obsidian.clock import SystemClock
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.sinks.memory import MemorySink
+
+logger: Logger = Logger("service.web", INFO, SystemClock())
+logger.add_sink(MemorySink("request-events", 128))
+request_logging: obsidian.adapters.nyx.NyxRequestLogging = obsidian.adapters.nyx.NyxRequestLogging(logger)
+router: Router = Router()
+router.use_before(request_logging.before)
+router.use_after(request_logging.after)
+logger.close()

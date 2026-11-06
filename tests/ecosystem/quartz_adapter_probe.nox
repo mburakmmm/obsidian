@@ -1,0 +1,22 @@
+import obsidian.adapters.quartz
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+
+capture: obsidian.adapters.quartz.QuartzCapture = obsidian.adapters.quartz.QuartzCapture("quartz-capture", 2)
+logger: Logger = Logger("service.quartz", INFO, FakeClock(1700000000000))
+logger.add_sink(capture)
+
+logger.info("first", [])
+logger.error("authorization: Bearer SYNTHETIC_QUARTZ_SECRET", [LogField("token", obsidian.fields.string_value("SYNTHETIC_QUARTZ_FIELD"))])
+capture.assert_count(2)
+capture.assert_level(1, "ERROR")
+capture.assert_no_secret(1, "SYNTHETIC_QUARTZ_SECRET")
+capture.assert_no_secret(1, "SYNTHETIC_QUARTZ_FIELD")
+
+logger.info("third", [])
+capture.assert_count(2)
+capture.assert_level(1, "INFO")
+logger.close()

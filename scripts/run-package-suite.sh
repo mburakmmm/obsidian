@@ -16,8 +16,9 @@ package_root="$probe_root/package"
 consumer_root="$probe_root/consumer"
 probe_nox_home="$probe_root/nox-home"
 
-mkdir -p "$package_root/sinks" "$consumer_root/tests" "$consumer_root/examples" "$probe_nox_home"
+mkdir -p "$package_root/adapters" "$package_root/sinks" "$consumer_root/tests" "$consumer_root/examples" "$probe_nox_home"
 cp "$project_root/nox.json" "$project_root"/*.nox "$package_root/"
+cp "$project_root/adapters"/*.nox "$package_root/adapters/"
 cp "$project_root/sinks"/*.nox "$package_root/sinks/"
 
 git -C "$package_root" init -q -b main

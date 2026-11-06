@@ -393,23 +393,23 @@ Go ise:
 
 Her adaptör için bağımsız modül, minimal örnek, integration test, consumer kurulu değilken graceful davranış ve core'a ters bağımlılık olmadığının kanıtı gereklidir.
 
-- [ ] Nyx request logger/ID/status/duration adaptörü.
-- [ ] Aether middleware context/route diagnostics adaptörü.
-- [ ] Quartz memory capture/assertion adaptörü; production bağımlılığı yok.
-- [ ] Nova outbound timing/status; auth/body default loglanmıyor.
-- [ ] Feather query duration/safe query ID; raw params/credentials yok.
-- [ ] Atlas pipeline stage/row count; sensitive row content yok.
-- [ ] Rune CLI/no-color adaptörü; console framework değiştirilmez.
-- [ ] Chronos job context isolation.
-- [ ] Ember correlation; logging event transport değildir.
-- [ ] VAULT optional config/secret integration; core import yok.
-- [ ] Pulse optional trace/span bridge; tracing engine yok.
-- [ ] Aura optional platform sink; UI blocking ve hard dependency yok.
-- [ ] Dependency graph denetimi: Obsidian core yalnız stdlib/onaylı minimal utility'lere bağlı.
+- [x] Nyx request logger/ID/status/duration adaptörü.
+- [x] Aether middleware context/route diagnostics adaptörü.
+- [x] Quartz memory capture/assertion adaptörü; production bağımlılığı yok.
+- DEFERRED: Nova outbound timing/status; public API denetimi ve sabit tüketici sürümü ayrı dilimde yapılacak, auth/body varsayılan olarak loglanmayacak.
+- DEFERRED: Feather query duration/safe query ID; public API sabitlenmeden raw params/credentials entegrasyonu eklenmeyecek.
+- DEFERRED: Atlas pipeline stage/row count; consumer API denetimi olmadan sensitive row content yolu açılmayacak.
+- DEFERRED: Rune CLI/no-color adaptörü; console API ve TTY yetenek denetimi sonrası, framework değiştirilmeden ele alınacak.
+- DEFERRED: Chronos job context isolation; consumer context API'si sabitlenince bağımsız isolation testiyle ele alınacak.
+- DEFERRED: Ember correlation; logging event transport yapılmadan consumer API denetimi sonrası ele alınacak.
+- DEFERRED: VAULT optional config/secret integration; core import eklenmeden VAULT public sözleşmesi sabitlenince ele alınacak.
+- DEFERRED: Pulse optional trace/span bridge; tracing engine eklenmeden Pulse public sözleşmesi sabitlenince ele alınacak.
+- DEFERRED: Aura optional platform sink; UI blocking/lifecycle sözleşmesi kanıtlanmadan eklenmeyecek.
+- [x] Dependency graph denetimi: Obsidian core yalnız stdlib/onaylı minimal utility'lere bağlı.
 
 ### Phase 9 kapısı
 
-- [ ] Her yayımlanan adaptör bağımsız testli; hiçbir ecosystem framework core tarafından import edilmiyor.
+- [ ] İlk yayımlanan Nyx/Aether/Quartz adaptörleri bağımsız LLVM/QBE tüketici problarında geçti ve hiçbir framework core tarafından import edilmiyor; uzak CI matrisi bekleniyor.
 
 ---
 
@@ -551,4 +551,5 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Ph
 | 2026-11-07 | Phase 7 genişletilmiş matris | LLVM overlap probu bounded ve scheduling-aware yapıldı; QBE scalar channel/atomic lifecycle ayrı executable probla doğrulandı | Yerelde üç tekrar; CI `42301491991`: macOS ARM64, Linux x64, Linux ARM64 üzerinde LLVM/QBE 14 dosya/325 assertion/0 skip ve 7 capability probu geçti | Phase 7 kapandı; overlap gözlemi dürüstçe raporlanıyor, async no-go değişmedi; Phase 8 sırada |
 | 2026-11-07 | Manuel registry başvurusu | Kullanıcı isteğiyle token yapılandırmasına dokunmadan `noxc publish github.com/mburakmmm/obsidian --ref main` çalıştırıldı | noxpkg submission `6bbd1c55-e95b-4fb1-b66d-15c15a6c7909` | Başvuru onay bekliyor; registry erişilebilirliği veya kararlı sürüm iddiası yok |
 | 2026-11-07 | `0.4.x` / Phase 8 | Exact logger filtresi, sink başına threshold, sanitize clone filtre sınırı, saturating diagnostics ve strict sabit hata kategorileri eklendi | Pinned NOX 2.0.143 yerel ve CI `42306338481`: macOS ARM64, Linux x64, Linux ARM64 üzerinde LLVM/QBE 16 dosya/358 assertion/0 skip; 7 capability probu; 9 exact ve sentinel-scanned örnek; import/lock doğrulaması geçti | Phase 8 desteklenen matriste kapandı; typed route config derleyici kanıtı yok diye kapalı, sampling/source/prefix bilinçli kapalı |
-| 2026-11-07 | Phase 9 araç zinciri önkoşulu | NOX pini kullanıcı yönlendirmesiyle `v2.1.0` / `fd107b92…` sürümüne yükseltildi; zorunlu stdlib/concurrency belgeleri kesin etikette yeniden doğrulandı | Resmi macOS ARM64 arşivi checksum geçti; LLVM/QBE 16 dosya/358 assertion, 9 örnek, 7 capability probu ve import/lock yerelde geçti; `Logger.trace` LLVM duplicate-symbol kısıtı sürüyor | Yerel yükseltme kapısı geçti; üç platformlu uzak CI bekleniyor, adaptör kodu henüz eklenmedi |
+| 2026-11-07 | Phase 9 araç zinciri önkoşulu | NOX pini kullanıcı yönlendirmesiyle `v2.1.0` / `fd107b92…` sürümüne yükseltildi; zorunlu stdlib/concurrency belgeleri kesin etikette yeniden doğrulandı | Resmi macOS ARM64 arşivi checksum geçti; LLVM/QBE 16 dosya/358 assertion, 9 örnek, 7 capability probu ve import/lock yerelde geçti; GitHub CI `42308138269` üç platformda yeşil; `Logger.trace` LLVM duplicate-symbol kısıtı sürüyor | NOX 2.1.0 yükseltme kapısı yerel ve uzak matriste geçti; adaptör dilimi başlatıldı |
+| 2026-11-07 | `0.5.x` / Phase 9 ilk adaptör dilimi | Framework-neutral safe request metadata, optional Nyx/Aether request adaptörleri, bounded Quartz capture, üç minimal örnek, dependency audit ve ADR-0013 eklendi | NOX 2.1.0 yerel LLVM/QBE: core 17 dosya/392 assertion/0 skip; Nyx `v0.24.0`, Aether `v0.9.0`, Quartz `v0.9.15` için backend başına 3 bağımsız prob/36 explicit check ve 3 örnek geçti; sentinel çıktı taraması temiz | Yerel kapı geçti; uzak üç-platform CI bekleniyor. Diğer consumer adaptörleri public API denetimlerine kadar explicit DEFERRED |

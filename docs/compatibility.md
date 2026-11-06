@@ -16,7 +16,7 @@ Status: Phase 0–8 evidence is green on the previous supported CI matrix. NOX 2
 | Bundled QBE | present in the verified 2.1.0 release archive | filesystem inspection |
 | Profile under test | `hosted` | filesystem, process and clock APIs are required |
 
-The compiler reports a version but not its source SHA. The annotated `v2.1.0` tag resolves to the selected commit and contains no signature. Release assets include per-platform SHA-256 files; local verification and CI check the downloaded archive against the matching checksum before use. This is integrity evidence, not signed provenance. The ambient installation matches the pin, but the isolated checksum-verified archive remains the evidence source.
+The compiler reports a version but not its source SHA. The annotated `v2.1.0` tag resolves to the selected commit and contains no signature. Release assets include per-platform SHA-256 files; local verification and CI run `42308138269` checked the platform archives against their matching checksums on macOS arm64 and Linux x64/arm64. This is integrity evidence, not signed provenance. The ambient installation matches the pin, but the isolated checksum-verified archive remains the evidence source.
 
 ## Audited public APIs at the pinned revision
 
@@ -34,7 +34,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.1.0` ta
 | `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 scalar/lifetime probes pass locally and in supported CI on LLVM/QBE; LLVM overlap observation is reported separately |
 | scheduler | LLVM M:N work-stealing; QBE cooperative tasks; `Task.cancel` is cooperative, while `ThreadHandle` has join only and channels expose no close/timeout contract | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak 2 is proven but scheduling-sensitive; QBE scalar thread-channel probe passes locally and in supported CI |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 8 local and CI `42306338481`: 16 files/358 assertions/0 skips plus seven async capability probes on LLVM/QBE |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 9 local: 17 files/392 assertions/0 skips, seven async capability probes, plus three isolated ecosystem probes/36 explicit checks per backend on LLVM/QBE; remote evidence pending |
 
 ## Known gaps and conservative decisions
 
@@ -56,6 +56,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.1.0` ta
 | `Logger.trace` spelling | NOX 2.1.0 still type-checks it but LLVM codegen emits a duplicate `obsidian_logger_Logger_trace` symbol in an isolated downstream probe | Keep the common `log(TRACE, ...)` path and temporary `trace_event` convenience method |
 | Maximum finite float literal in `noxc fmt` | Formatting a source literal at IEEE-754 maximum returned `NoSpaceLeft`; parsing the exact decimal with documented `float(str)` preserves the value and formats cleanly | Keep the compile/runtime regression and avoid the problematic literal spelling at this compiler revision |
 | Root-project package self-name | 2.1.0 resolves `obsidian.*` correctly inside an installed dependency, but a direct root-project `noxc check logger.nox` still rejects the self-name | Use manifest-name self-imports and run tests/examples through the isolated downstream harness in ADR-0006 |
+| Optional ecosystem modules | Unimported package modules may reference dependencies absent from the core consumer; imported modules resolve through the consumer's aliases | Keep Nyx/Aether/Quartz outside `nox.json`; isolated probes pass at Nyx `v0.24.0`/`b4ef854…`, Aether `v0.9.0`/`d283a3b…` and Quartz `v0.9.15`/`a8e0b9b…` on local LLVM/QBE |
 | Stderr and console flush | No public API in the 2.1.0 `nox.log`, `nox.console` or built-in docs; `print(file=...)` is explicitly unsupported | Keep stderr disabled with `SinkError`; console flush is logical only; no native shim without a separate ADR |
 | Race-free no-follow file open | No `lstat`, `openat`, `O_NOFOLLOW` or equivalent public API | Require trusted allowed root; reject lexical and existing symlink escapes; do not claim hostile-directory race safety |
 | Streaming directory iteration | `nox.fs.read_dir` returns the complete name list | Rotation caps processing at 10,000 entries and requires a dedicated trusted log directory; initial stdlib list allocation cannot be bounded internally |
@@ -65,12 +66,12 @@ The compiler reports a version but not its source SHA. The annotated `v2.1.0` ta
 
 | Platform/backend | Check | Build/run | Tests | Concurrency claim |
 |---|---:|---:|---:|---|
-| macOS arm64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Peak 2 proven in `42257058031`; bounded recheck reported not observed |
-| macOS arm64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Scalar thread-channel/atomic join-before-free passes |
-| Linux x64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Peak 2 proven in `42257058031`; bounded recheck reported not observed |
-| Linux x64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Scalar thread-channel/atomic join-before-free passes |
-| Linux arm64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Bounded recheck observed real worker peak 2 |
-| Linux arm64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Scalar thread-channel/atomic join-before-free passes |
+| macOS arm64 / LLVM | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 local: 17/392 plus 3 ecosystem probes | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| macOS arm64 / QBE | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 local: 17/392 plus 3 ecosystem probes | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
+| Linux x64 / LLVM | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 remote evidence pending | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| Linux x64 / QBE | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 remote evidence pending | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
+| Linux arm64 / LLVM | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 remote evidence pending | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| Linux arm64 / QBE | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 remote evidence pending | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
 | Windows x64 | Not run | Not run | Not run | Unsupported until evidence exists |
 
 ## Upgrade policy

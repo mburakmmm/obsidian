@@ -1,0 +1,43 @@
+import nox.test
+import nyx.runtime
+import obsidian.adapters.nyx
+from nox.http import HttpRequest, HttpResponse
+from nox.router import Context, Router
+from obsidian.clock import FakeClock
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.sinks.memory import MemorySink
+
+logger: Logger = Logger("service.nyx", INFO, FakeClock(1700000000000))
+sink: MemorySink = MemorySink("nyx-capture", 4)
+logger.add_sink(sink)
+middleware: obsidian.adapters.nyx.NyxRequestLogging = obsidian.adapters.nyx.NyxRequestLogging(logger)
+router: Router = Router()
+router.use_before(middleware.before)
+router.use_after(middleware.after)
+
+nyx.runtime.begin("req-nyx-42", 1700000000000, "en")
+request: HttpRequest = HttpRequest("GET", "/accounts/SYNTHETIC_NYX_PATH?token=SYNTHETIC_NYX_QUERY", "SYNTHETIC_NYX_BODY", {"Authorization": "Bearer SYNTHETIC_NYX_HEADER"})
+ctx: Context = Context(request, {})
+response: HttpResponse = HttpResponse(503, "SYNTHETIC_NYX_RESPONSE", {})
+nox.test.assert_true(obsidian.adapters.nyx.log_completion(logger, ctx, response, 17, "accounts.show"), "nyx completion logged")
+nox.test.assert_eq_int(sink.count(), 1, "nyx completion captured once")
+entry: LogRecord = sink.record_at(0)
+nox.test.assert_eq_str(entry.message, "request completed", "nyx uses fixed message")
+nox.test.assert_eq_str(entry.level_name, "ERROR", "nyx maps server errors")
+nox.test.assert_eq_str(entry.request_id, "req-nyx-42", "nyx binds request id")
+nox.test.assert_eq_int(entry.field_count(), 4, "nyx safe field count")
+nox.test.assert_eq_str(entry.field_at(0).value.text_value, "GET", "nyx method captured")
+nox.test.assert_eq_int(entry.field_at(1).value.int_value, 503, "nyx status captured")
+nox.test.assert_eq_int(entry.field_at(2).value.int_value, 17, "nyx duration captured")
+nox.test.assert_eq_str(entry.field_at(3).value.text_value, "accounts.show", "nyx explicit route captured")
+nox.test.assert_true(not "SYNTHETIC_NYX" in entry.message, "nyx request data absent from message")
+nyx.runtime.end()
+
+nyx.runtime.begin("bad\nid", 1700000000000, "en")
+nox.test.assert_true(obsidian.adapters.nyx.log_completion(logger, ctx, HttpResponse(200, "", {}), -1), "nyx unsafe id does not break logging")
+nox.test.assert_eq_str(sink.record_at(1).request_id, "", "nyx unsafe request id omitted")
+nox.test.assert_eq_int(sink.record_at(1).field_at(2).value.int_value, 0, "nyx negative duration normalized")
+nyx.runtime.end()
+logger.close()

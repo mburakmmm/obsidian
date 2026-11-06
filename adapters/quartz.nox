@@ -1,0 +1,84 @@
+import quartz.core.assert
+from obsidian.fields import FIELD_STRING, LogField
+from obsidian.record import LogRecord
+from obsidian.sinks.memory import MemorySink
+
+def field_contains(field: LogField, sentinel: str) -> bool:
+    if sentinel in field.key:
+        return True
+    return field.value.kind == FIELD_STRING and sentinel in field.value.text_value
+
+def record_contains(entry: LogRecord, sentinel: str) -> bool:
+    if sentinel in entry.logger_name or sentinel in entry.message:
+        return True
+    if sentinel in entry.request_id or sentinel in entry.trace_id or sentinel in entry.span_id:
+        return True
+    for field in entry.fields_snapshot():
+        if field_contains(field, sentinel):
+            return True
+    for field in entry.context_snapshot():
+        if field_contains(field, sentinel):
+            return True
+    return False
+
+class QuartzCapture:
+    _memory: MemorySink
+
+    def __init__(self, name: str, capacity: int) -> None:
+        self._memory = MemorySink(name, capacity)
+
+    def sink_name(self) -> str:
+
+        return self._memory.sink_name()
+
+    def write(self, entry: LogRecord) -> None:
+
+        self._memory.write(entry)
+
+    def flush(self) -> None:
+
+        self._memory.flush()
+
+    def close(self) -> None:
+
+        self._memory.close()
+
+    def is_closed(self) -> bool:
+
+        return self._memory.is_closed()
+
+    def is_bounded(self) -> bool:
+
+        return True
+
+    def count(self) -> int:
+
+        return self._memory.count()
+
+    def dropped_count(self) -> int:
+
+        return self._memory.dropped_count()
+
+    def record_at(self, index: int) -> LogRecord:
+
+        return self._memory.record_at(index)
+
+    def snapshot(self) -> list[LogRecord]:
+
+        return self._memory.snapshot()
+
+    def assert_count(self, expected: int) -> None:
+
+        quartz.core.assert.assert_eq_int(self.count(), expected, "obsidian capture count")
+
+    def assert_no_secret(self, index: int, sentinel: str) -> None:
+
+        if len(sentinel) == 0:
+            raise ValueError("secret sentinel must not be empty")
+        entry: LogRecord = self.record_at(index)
+        quartz.core.assert.assert_false(record_contains(entry, sentinel), "obsidian capture contained a forbidden value")
+
+    def assert_level(self, index: int, expected: str) -> None:
+
+        entry: LogRecord = self.record_at(index)
+        quartz.core.assert.assert_true(entry.level_name == expected, "obsidian capture level mismatch")

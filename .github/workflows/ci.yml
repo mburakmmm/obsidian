@@ -88,18 +88,29 @@ jobs:
         shell: bash
         run: bash scripts/verify-package-import.sh
 
+      - name: Audit dependency direction
+        shell: bash
+        run: bash scripts/audit-dependencies.sh
+
+      - name: Verify optional ecosystem adapters
+        shell: bash
+        run: bash scripts/run-ecosystem-suite.sh all
+
       - name: Report test evidence
         shell: bash
         run: |
           set -euo pipefail
           test_files="$(find tests -name '*_test.nox' -type f | wc -l | tr -d ' ')"
-          assertions="$(grep -Rho 'nox\.test\.assert_[a-z_]*' tests | wc -l | tr -d ' ')"
+          assertions="$(find tests -name '*_test.nox' -type f -print0 | xargs -0 grep -ho 'nox\.test\.assert_[a-z_]*' | wc -l | tr -d ' ')"
           capability_probes="$(find tests/capability -name '*.nox' -type f | wc -l | tr -d ' ')"
+          ecosystem_probes="$(find tests/ecosystem -name '*_probe.nox' -type f | wc -l | tr -d ' ')"
+          ecosystem_checks="$(grep -RhoE '(nox\.test\.assert_[a-z_]*|capture\.assert_[a-z_]*)' tests/ecosystem | wc -l | tr -d ' ')"
           {
             echo "### Obsidian test evidence"
             echo "- test files: $test_files"
             echo "- assertions: $assertions"
             echo "- skips: 0"
             echo "- async capability probes: $capability_probes (no-go)"
+            echo "- ecosystem probes: $ecosystem_probes ($ecosystem_checks explicit checks per backend)"
             echo "- backends: LLVM, QBE"
           } >>"$GITHUB_STEP_SUMMARY"

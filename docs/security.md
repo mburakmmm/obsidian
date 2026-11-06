@@ -1,6 +1,6 @@
 # Security model and redaction limits
 
-Status: Phase 4 scalar boundary and Phase 8 filter/diagnostic extensions are verified in the supported CI matrix.
+Status: Phase 4 scalar boundary and Phase 8 filter/diagnostic extensions are verified in the supported CI matrix; Phase 9 adapter extensions are verified locally and await remote matrix evidence.
 
 ## Protected output paths
 
@@ -37,6 +37,12 @@ Redaction cannot discover every arbitrary secret embedded in prose. Do not log f
 Nested arrays/objects are not accepted by the scalar `FieldValue` model. This is a safe rejection, not recursive redaction support. Typed in-process configuration is validated with fixed errors; explicit environment threshold parsing never echoes the supplied value. Size-rotated active/archive output and injected rename failures are covered by synthetic-sentinel tests. Config-file loading, exception/source metadata, time rotation, sampling and diagnostics callbacks are not implemented. Phase 7 explicitly disables async dispatch, so no queue output path exists; any future re-evaluation must extend and rerun the complete sentinel matrix before it can be advertised.
 
 No claim is made for encrypted storage, tamper resistance, cross-process file ownership or secret discovery in arbitrary encodings.
+
+## Optional adapter boundary
+
+Nyx and Aether integrations emit a fixed completion message plus allowlisted method, status and duration fields. They never copy raw path/query/header/body/response data into a record. Route metadata is absent unless application code explicitly supplies a stable name or template; it is bounded, control-checked and sanitized. Invalid correlation IDs are omitted. Quartz secret assertions scan the captured snapshot and use fixed failure text so a failing assertion does not echo the sentinel.
+
+These controls reduce accidental collection but do not make arbitrary route names safe. Applications must not pass raw framework paths or targets to the explicit route API. See `docs/ecosystem.md` and ADR-0013.
 
 ## Testing rules
 

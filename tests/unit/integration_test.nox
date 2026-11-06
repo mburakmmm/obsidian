@@ -1,0 +1,52 @@
+import nox.test
+import obsidian.integration
+from obsidian.fields import FIELD_INT, FIELD_STRING, LogField
+from obsidian.level import ERROR, INFO, WARNING
+
+def has_field(fields: list[LogField], key: str) -> bool:
+    for field in fields:
+        if field.key == key:
+            return True
+    return False
+
+nox.test.assert_eq_str(obsidian.integration.safe_http_method("GET"), "GET", "uppercase method accepted")
+nox.test.assert_eq_str(obsidian.integration.safe_http_method("get"), "UNKNOWN", "lowercase method rejected")
+nox.test.assert_eq_str(obsidian.integration.safe_http_method("GET\n"), "UNKNOWN", "control method rejected")
+nox.test.assert_eq_str(obsidian.integration.safe_http_method("ABCDEFGHIJKLMNOPQ"), "UNKNOWN", "oversized method rejected")
+
+nox.test.assert_eq_str(obsidian.integration.safe_route_name("users.show"), "users.show", "stable route name accepted")
+nox.test.assert_eq_str(obsidian.integration.safe_route_name("users\nshow"), "", "control route rejected")
+nox.test.assert_eq_str(obsidian.integration.safe_route_name("/users?token=SYNTHETIC_ROUTE_SECRET"), "/users?token=***", "route credential sanitized")
+nox.test.assert_eq_str(obsidian.integration.safe_route_name(""), "", "empty route omitted")
+
+nox.test.assert_eq_str(obsidian.integration.safe_correlation_id("req-42"), "req-42", "portable correlation id accepted")
+nox.test.assert_eq_str(obsidian.integration.safe_correlation_id("bad\nid"), "", "unsafe correlation id omitted")
+
+nox.test.assert_eq_int(obsidian.integration.safe_http_status(200), 200, "valid status retained")
+nox.test.assert_eq_int(obsidian.integration.safe_http_status(99), 0, "low status normalized")
+nox.test.assert_eq_int(obsidian.integration.safe_http_status(600), 0, "high status normalized")
+nox.test.assert_eq_int(obsidian.integration.safe_duration_ms(17), 17, "valid duration retained")
+nox.test.assert_eq_int(obsidian.integration.safe_duration_ms(-1), 0, "negative duration normalized")
+nox.test.assert_eq_int(obsidian.integration.request_completion_level(503), ERROR, "server error uses error level")
+nox.test.assert_eq_int(obsidian.integration.request_completion_level(404), WARNING, "client error uses warning level")
+nox.test.assert_eq_int(obsidian.integration.request_completion_level(999), INFO, "invalid status fails to info level")
+
+fields: list[LogField] = obsidian.integration.request_completion_fields("POST", 201, 23, "orders.create")
+nox.test.assert_eq_int(len(fields), 4, "completion field count")
+nox.test.assert_eq_str(fields[0].key, "method", "method field ordered first")
+nox.test.assert_eq_int(fields[0].value.kind, FIELD_STRING, "method field remains string")
+nox.test.assert_eq_str(fields[0].value.text_value, "POST", "method field value")
+nox.test.assert_eq_str(fields[1].key, "status", "status field ordered second")
+nox.test.assert_eq_int(fields[1].value.kind, FIELD_INT, "status field remains int")
+nox.test.assert_eq_int(fields[1].value.int_value, 201, "status field value")
+nox.test.assert_eq_str(fields[2].key, "duration_ms", "duration field ordered third")
+nox.test.assert_eq_int(fields[2].value.int_value, 23, "duration field value")
+nox.test.assert_eq_str(fields[3].key, "route", "explicit route field included")
+nox.test.assert_eq_str(fields[3].value.text_value, "orders.create", "route field value")
+
+without_route: list[LogField] = obsidian.integration.request_completion_fields("BAD METHOD", 700, -4)
+nox.test.assert_eq_int(len(without_route), 3, "empty route omitted")
+nox.test.assert_eq_str(without_route[0].value.text_value, "UNKNOWN", "unsafe method normalized in fields")
+nox.test.assert_eq_int(without_route[1].value.int_value, 0, "unsafe status normalized in fields")
+nox.test.assert_eq_int(without_route[2].value.int_value, 0, "unsafe duration normalized in fields")
+nox.test.assert_true(not has_field(without_route, "route"), "omitted route absent")

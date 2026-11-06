@@ -35,6 +35,11 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Executable async capability probes for record transfer, non-blocking queue operations, worker lifecycle and genuine overlap.
 - Exact logger filters and per-sink numeric thresholds through explicit route registration.
 - Saturating sanitized diagnostics for redaction, filter, sink lifecycle and recursion failures.
+- Framework-neutral safe HTTP completion metadata normalization.
+- Optional Nyx v0.24.0 request lifecycle adapter with task-local monotonic duration and validated request IDs.
+- Optional Aether v0.9.0 interceptor with request-scoped timing and explicit sanitized route names.
+- Optional Quartz v0.9.15 bounded capture/assertion adapter for test projects.
+- Isolated LLVM/QBE ecosystem probes, compiling integration examples and a core dependency-direction audit.
 
 ### Changed
 
@@ -48,6 +53,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Hermetic package and import harnesses accept an explicit `NOXC` binary override for pinned local verification.
 - Sink/filter failures now default to non-raising observable diagnostics while explicit strict mode raises fixed sanitized categories.
 - The pinned compiler baseline is now NOX 2.1.0 so Phase 9 can test current ecosystem releases; the complete existing suite remains green locally on LLVM and QBE.
+- Request adapters collect only allowlisted method/status/duration and optional explicit route metadata; raw targets, queries, headers and bodies remain excluded.
 
 ### Security
 

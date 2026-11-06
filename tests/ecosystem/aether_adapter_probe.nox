@@ -1,0 +1,50 @@
+import aether.context
+import aether.interceptor
+import nox.test
+import obsidian.adapters.aether
+from aether.container import Container
+from aether.context import HttpContext
+from aether.interceptor import BeforeResult, InterceptorFns
+from nox.http import HttpRequest, HttpResponse
+from obsidian.clock import FakeClock
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.sinks.memory import MemorySink
+
+logger: Logger = Logger("service.aether", INFO, FakeClock(1700000000000))
+sink: MemorySink = MemorySink("aether-capture", 4)
+logger.add_sink(sink)
+logging: obsidian.adapters.aether.AetherRequestLogging = obsidian.adapters.aether.AetherRequestLogging(logger)
+interceptors: list[InterceptorFns] = [logging.interceptor()]
+
+aether.context.begin("req-aether-42", "POST", "/payments/SYNTHETIC_AETHER_PATH?token=SYNTHETIC_AETHER_QUERY")
+request: HttpRequest = HttpRequest("POST", "/payments/SYNTHETIC_AETHER_PATH?token=SYNTHETIC_AETHER_QUERY", "SYNTHETIC_AETHER_BODY", {"Cookie": "SYNTHETIC_AETHER_COOKIE"})
+ctx: HttpContext = HttpContext(request, {}, Container(), "req-aether-42", "SYNTHETIC_AETHER_INPUT", False, "/payments/SYNTHETIC_AETHER_PATH")
+obsidian.adapters.aether.set_route_name(ctx, "payments.create")
+before: BeforeResult = aether.interceptor.run_before(interceptors, ctx)
+nox.test.assert_true(before.response is None, "aether logging before does not short-circuit")
+response: HttpResponse = HttpResponse(201, "SYNTHETIC_AETHER_RESPONSE", {})
+returned: HttpResponse = aether.interceptor.run_after(interceptors, ctx, response, before.entered_count)
+nox.test.assert_eq_int(returned.status, 201, "aether preserves response")
+nox.test.assert_eq_int(sink.count(), 1, "aether completion captured once")
+entry: LogRecord = sink.record_at(0)
+nox.test.assert_eq_str(entry.message, "request completed", "aether uses fixed message")
+nox.test.assert_eq_str(entry.level_name, "INFO", "aether maps success")
+nox.test.assert_eq_str(entry.request_id, "req-aether-42", "aether binds request id")
+nox.test.assert_eq_int(entry.field_count(), 4, "aether safe field count")
+nox.test.assert_eq_str(entry.field_at(0).value.text_value, "POST", "aether method captured")
+nox.test.assert_eq_int(entry.field_at(1).value.int_value, 201, "aether status captured")
+nox.test.assert_true(entry.field_at(2).value.int_value >= 0, "aether duration non-negative")
+nox.test.assert_eq_str(entry.field_at(3).value.text_value, "payments.create", "aether explicit route captured")
+nox.test.assert_true(not "SYNTHETIC_AETHER" in entry.message, "aether request data absent from message")
+aether.context.finish()
+
+aether.context.begin("bad\nid", "GET", "/")
+bad_ctx: HttpContext = HttpContext(HttpRequest("GET", "/", "", {}), {}, Container(), "bad\nid", "", False, "/")
+nox.test.assert_true(obsidian.adapters.aether.log_completion(logger, bad_ctx, HttpResponse(500, "", {}), -1), "aether unsafe id does not break logging")
+nox.test.assert_eq_str(sink.record_at(1).request_id, "", "aether unsafe request id omitted")
+nox.test.assert_eq_str(sink.record_at(1).level_name, "ERROR", "aether maps server error")
+nox.test.assert_eq_int(sink.record_at(1).field_at(2).value.int_value, 0, "aether negative duration normalized")
+aether.context.finish()
+logger.close()

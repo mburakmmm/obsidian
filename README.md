@@ -13,7 +13,7 @@ Structured, secure logging foundations for the NOX ecosystem.
 
 Obsidian is a small standalone logging library being built for Nyx, Aether, Nova, Feather, Atlas, Quartz, Rune, Chronos, Ember, VAULT, Pulse and Aura. Those projects may depend on Obsidian; Obsidian core never depends on them.
 
-The project is experimental. The synchronous scalar logging core is under evidence-gated development and no stable package has been published. `AGENTS.md` is the engineering contract and `todo.md` contains the phase roadmap.
+The project is experimental. The synchronous scalar logging core is under evidence-gated development and no stable release has been published. `AGENTS.md` is the engineering contract and `todo.md` contains the phase roadmap.
 
 ## Design priorities
 
@@ -44,6 +44,7 @@ Obsidian wraps and extends `nox.log`; it does not replace or fork the standard l
 - An executable Phase 7 capability audit that keeps unsupported async dispatch disabled.
 - Exact logger routing, per-sink thresholds and sanitized fail-closed custom filters.
 - Saturating diagnostics for redaction, filter, sink lifecycle and recursion failures.
+- Optional Nyx, Aether and Quartz adapters with isolated dependency graphs and safe request metadata defaults.
 - Deterministic LLVM and QBE tests.
 
 Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. Nested values, exception capture and time-based rotation remain gated future phases. Async dispatch is unsupported on the pinned toolchain because portable record transfer, non-blocking overflow and timeout-aware shutdown cannot all be proven. Simultaneous calls through one shared logger have no thread-safety claim; rotating files require one owning process and a trusted directory.
@@ -83,6 +84,7 @@ log_instance.info("login succeeded", event_fields)
 
 See [`examples/request_context.nox`](examples/request_context.nox) for explicit request context and correlation IDs, [`examples/filtering.nox`](examples/filtering.nox) for safe sink routing, and [`docs/configuration.md`](docs/configuration.md) for the validated factory and environment override.
 See [`examples/file_rotation.nox`](examples/file_rotation.nox), [`docs/operations.md`](docs/operations.md) and [`docs/recovery.md`](docs/recovery.md) before enabling file rotation.
+See [`docs/ecosystem.md`](docs/ecosystem.md) and [`examples/integrations`](examples/integrations) for optional Nyx, Aether and Quartz integrations. Core use does not require those packages.
 
 Library, test and example imports use the package name `obsidian`. The pinned compiler resolves those self-imports correctly when Obsidian is loaded as a dependency, but not while compiling the package as the root project. Development therefore runs a hermetic downstream-consumer fixture; see ADR-0006.
 
@@ -93,6 +95,8 @@ bash scripts/run-package-suite.sh llvm
 bash scripts/run-package-suite.sh qbe
 bash scripts/run-async-capability-audit.sh
 bash scripts/verify-package-import.sh
+bash scripts/audit-dependencies.sh
+bash scripts/run-ecosystem-suite.sh all
 ```
 
 Compile-fail fixtures under `tests/compile_fail` must exit non-zero. Test files, assertions and skips are reported separately in CI.
@@ -102,10 +106,12 @@ Compile-fail fixtures under `tests/compile_fail` must exit non-zero. Test files,
 ```text
 *.nox                    Small project-root library modules
 sinks/                   Sink implementations
+adapters/                Optional Nyx, Aether and Quartz modules
 examples/                Compiling usage examples
 tests/unit/              Behavioral tests
 tests/concurrency/       Backend-aware context/concurrency evidence
 tests/capability/        Executable compiler/runtime capability probes
+tests/ecosystem/         Pinned downstream adapter probes
 tests/security/          Synthetic-sentinel and fail-closed acceptance tests
 tests/compile_fail/      Explicit negative compiler fixtures
 docs/                    Architecture, API, compatibility and ADRs

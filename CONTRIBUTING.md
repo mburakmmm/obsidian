@@ -13,9 +13,11 @@ Obsidian is developed phase by phase under the contract in `AGENTS.md`. Begin wi
 Required local checks:
 
 ```sh
-noxc test --backend llvm tests
-noxc test --backend qbe tests
+bash scripts/run-package-suite.sh llvm
+bash scripts/run-package-suite.sh qbe
 bash scripts/verify-package-import.sh
+bash scripts/audit-dependencies.sh
+bash scripts/run-ecosystem-suite.sh all
 ```
 
 Compile-fail fixtures under `tests/compile_fail` are successful only when `noxc check` exits non-zero.

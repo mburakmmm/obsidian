@@ -1,0 +1,52 @@
+import nox.time
+import obsidian.integration
+from nox.http import HttpResponse
+from aether.context import HttpContext
+from aether.interceptor import InterceptorFns
+from obsidian.context import BoundLogger
+from obsidian.fields import LogField
+from obsidian.logger import Logger
+
+STARTED_KEY: str = "obsidian.started_boot_ms"
+ROUTE_KEY: str = "obsidian.route_name"
+
+class AetherRequestLogging:
+    _logger: Logger
+
+    def __init__(self, logger: Logger) -> None:
+        self._logger = logger
+
+    def before(self, ctx: HttpContext) -> HttpResponse | None:
+
+        ctx.set_request_value(STARTED_KEY, str(nox.time.boot_ms()))
+        return None
+
+    def after(self, ctx: HttpContext, response: HttpResponse) -> HttpResponse:
+
+        duration_ms: int = 0
+        started: str = ctx.get_request_value(STARTED_KEY)
+        if len(started) > 0:
+            try:
+                duration_ms = nox.time.boot_ms() - int(started)
+            except ValueError:
+                duration_ms = 0
+        route_name: str = ctx.get_request_value(ROUTE_KEY)
+        log_completion(self._logger, ctx, response, duration_ms, route_name)
+        return response
+
+    def interceptor(self) -> InterceptorFns:
+
+        return InterceptorFns(self.before, self.after)
+
+def bind_request(logger: Logger, ctx: HttpContext) -> BoundLogger:
+    request_id: str = obsidian.integration.safe_correlation_id(ctx.request_id)
+    return logger.bind([], request_id)
+
+def log_completion(logger: Logger, ctx: HttpContext, response: HttpResponse, duration_ms: int, route_name: str = "") -> bool:
+    request_logger: BoundLogger = bind_request(logger, ctx)
+    fields: list[LogField] = obsidian.integration.request_completion_fields(ctx.method, response.status, duration_ms, route_name)
+    level: int = obsidian.integration.request_completion_level(response.status)
+    return request_logger.log(level, "request completed", fields)
+
+def set_route_name(ctx: HttpContext, route_name: str) -> None:
+    ctx.set_request_value(ROUTE_KEY, obsidian.integration.safe_route_name(route_name))

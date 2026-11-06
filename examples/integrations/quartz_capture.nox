@@ -1,0 +1,12 @@
+import obsidian.adapters.quartz
+from obsidian.clock import FakeClock
+from obsidian.level import INFO
+from obsidian.logger import Logger
+
+capture: obsidian.adapters.quartz.QuartzCapture = obsidian.adapters.quartz.QuartzCapture("test-events", 32)
+logger: Logger = Logger("service.test", INFO, FakeClock(1700000000000))
+logger.add_sink(capture)
+logger.info("ready", [])
+capture.assert_count(1)
+capture.assert_level(0, "INFO")
+logger.close()

@@ -1,0 +1,44 @@
+import nox.time
+import nyx.runtime
+import obsidian.integration
+from nox.http import HttpResponse
+from nox.router import Context
+from obsidian.context import BoundLogger
+from obsidian.fields import LogField
+from obsidian.logger import Logger
+
+class NyxRequestLogging:
+    _logger: Logger
+    _started: TaskLocal[str]
+
+    def __init__(self, logger: Logger) -> None:
+        self._logger = logger
+        self._started = TaskLocal[str]()
+
+    def before(self, ctx: Context) -> HttpResponse | None:
+
+        self._started.set(str(nox.time.boot_ms()))
+        return None
+
+    def after(self, ctx: Context, response: HttpResponse) -> HttpResponse:
+
+        duration_ms: int = 0
+        started: str | None = self._started.get()
+        if started is not None:
+            try:
+                duration_ms = nox.time.boot_ms() - int(started)
+            except ValueError:
+                duration_ms = 0
+        self._started.clear()
+        log_completion(self._logger, ctx, response, duration_ms)
+        return response
+
+def bind_request(logger: Logger) -> BoundLogger:
+    request_id: str = obsidian.integration.safe_correlation_id(nyx.runtime.request_id())
+    return logger.bind([], request_id)
+
+def log_completion(logger: Logger, ctx: Context, response: HttpResponse, duration_ms: int, route_name: str = "") -> bool:
+    request_logger: BoundLogger = bind_request(logger)
+    fields: list[LogField] = obsidian.integration.request_completion_fields(ctx.request.method, response.status, duration_ms, route_name)
+    level: int = obsidian.integration.request_completion_level(response.status)
+    return request_logger.log(level, "request completed", fields)
