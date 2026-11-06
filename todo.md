@@ -282,7 +282,7 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 - [x] Mevcut yakalanan output, snapshot ve sink hata yollarında maskesiz sentinel yok; henüz var olmayan output türleri kapsam dışı olarak kayıtlı.
 - [x] Fail-closed drop ve sayaç yolu kanıtlı.
 - [x] Phase 1–4 uçtan uca yol çalışıyor: `Logger.info → immutable record → redaction → formatter → memory/console sink`.
-- [ ] Ancak bu kapıdan sonra ilk alpha değerlendirilebilir.
+- [x] Mevcut scalar kapsamın Faz 4 kapısı uzak matriste geçti; ilk alpha artık güvenlik açısından değerlendirilebilir, ancak lisans/sürüm/release kapıları tamamlanmadan yayımlanmaz.
 
 ---
 
@@ -544,3 +544,4 @@ File rotation ve async çalışma, sırasıyla Phase 1–4 ve Phase 6 kapıları
 | 2026-11-06 | `0.2.x` / Phase 3 desteklenen alt küme | Explicit stdout `ConsoleSink`, trusted root için canonical-root kontrolleri yapan append-only `FileSink`, sanitize `SinkError`, opt-in parent creation ve gerçek I/O testleri eklendi | Pinned NOX 2.0.143 LLVM/QBE: 8 test dosyası, 185 assertion, 0 skip; exact stdout/file örnekleri, permission/traversal/existing-symlink/append/reopen/UTF-8 kanıtı geçti | Stderr, console write-error kanalı, dangling-symlink race ve disk-full kanıtı BLOCKED; Phase 3 kapısı açık tutuldu |
 | 2026-11-06 | Phase 3 desteklenen alt küme uzak CI kanıtı | GitHub Actions run `42173270729`; commit `50a85a7`; macOS arm64, Linux x64 ve Linux arm64 | Üç işte de pinned toolchain, format, LLVM/QBE 8 dosya/185 assertion süiti, 2 compile-fail fixture ve dependency alias/import probu geçti | Desteklenen alt küme matriste yeşil; platform API eksikleri nedeniyle Phase 3 kapısı açık, Phase 4 başlatılmadı |
 | 2026-11-06 | `0.2.x` / Phase 4 scalar güvenlik adayı | Case-insensitive default/ek denylist, header/Bearer/URL/query masking, fail-closed drop+sayaç, filename guard ve security matrix eklendi | Pinned NOX 2.0.143 LLVM/QBE: 9 test dosyası, 226 assertion, 0 skip; 3 expected compile-fail; 6 exact ve sentinel-scanned örnek; import/lock probu geçti | Yerel scalar güvenlik kapısı geçti; uzak CI kanıtı bekleniyor, exception/config/rotation/async yolları geldiklerinde matrise eklenecek |
+| 2026-11-06 | Phase 4 scalar güvenlik uzak CI kanıtı | GitHub Actions run `42206489911`; commit `fe32ffd`; macOS arm64, Linux x64 ve Linux arm64 | Üç işte de pinned toolchain, format, LLVM/QBE 9 dosya/226 assertion süiti, 3 compile-fail fixture, sentinel taraması ve dependency alias/import probu geçti | Mevcut scalar Faz 4 kapısı geçti; alpha yayınlanmadı, Phase 5 context/configuration sırada |

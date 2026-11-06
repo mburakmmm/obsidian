@@ -1,6 +1,6 @@
 # Security model and redaction limits
 
-Status: Phase 4 scalar logging boundary under verification; Obsidian remains unreleased and experimental.
+Status: Phase 4 scalar logging boundary verified locally and in the supported CI matrix; Obsidian remains unreleased and experimental.
 
 ## Protected output paths
 
