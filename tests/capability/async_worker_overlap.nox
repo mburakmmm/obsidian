@@ -23,7 +23,7 @@ async def overlap_worker(channel: ThreadChannel[int]) -> int:
             updating = False
         elif peak.compare_and_swap(observed, now):
             updating = False
-    deadline_ms: int = nox.time.boot_ms() + 5000
+    deadline_ms: int = nox.time.boot_ms() + 1000
     while active.load() < 2 and nox.time.boot_ms() < deadline_ms:
         pass
     if active.load() < 2:

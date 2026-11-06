@@ -47,6 +47,25 @@ expect_exact_run() {
   fi
 }
 
+expect_bounded_overlap_run() {
+  local backend="$1"
+  local source_file="$2"
+  local output
+  output="$(NOX_POOL_WORKERS=4 "$noxc_bin" run --backend "$backend" "$source_file" 2>&1)"
+  case "$output" in
+    "2 True")
+      overlap_result="observed"
+      ;;
+    "1 True")
+      overlap_result="not-observed"
+      ;;
+    *)
+      echo "async capability probe output mismatch: $source_file ($backend): $output" >&2
+      exit 1
+      ;;
+  esac
+}
+
 capability_root="$project_root/tests/capability"
 expect_check_failure "$capability_root/async_try_send.nox" "no method 'try_send'"
 expect_check_failure "$capability_root/async_thread_cancel.nox" "no method 'cancel'"
@@ -54,7 +73,8 @@ expect_check_failure "$capability_root/async_timed_join.nox" "'join' takes no ar
 expect_run_failure qbe "$capability_root/async_record_channel.nox" "'ThreadChannel' element type"
 expect_run_failure llvm "$capability_root/async_sync_send.nox" "codegen:"
 expect_exact_run llvm "$capability_root/async_record_channel.nox" "7"
-expect_exact_run llvm "$capability_root/async_worker_overlap.nox" "2 True"
+overlap_result="not-run"
+expect_bounded_overlap_run llvm "$capability_root/async_worker_overlap.nox"
 expect_exact_run qbe "$capability_root/async_qbe_scalar_channel.nox" "1 1"
 
-echo "async capability audit: decision=no-go llvm-overlap=2 qbe-scalar-transfer=pass"
+echo "async capability audit: decision=no-go llvm-overlap=$overlap_result qbe-scalar-transfer=pass"

@@ -15,7 +15,7 @@ The pinned public APIs provide blocking `Channel.send/recv`, blocking `ThreadCha
 - LLVM accepts `ThreadChannel[Payload]`; QBE rejects the same class element type and permits only scalar-like elements.
 - `ThreadChannel.try_send`, `ThreadHandle.cancel` and `ThreadHandle.join(timeout)` are rejected by the type checker.
 - Calling `ThreadChannel.send` from a synchronous function without `await` passes `noxc check` but fails code generation; it is not a synchronous enqueue primitive.
-- Two real workers reach an atomic peak of two on LLVM with `NOX_POOL_WORKERS=4`. The scalar channel/atomic lifetime probe also completes on QBE. This proves overlap capability, not an Obsidian queue.
+- Two real workers reached an atomic peak of two on LLVM with `NOX_POOL_WORKERS=4` in the pinned local and supported CI evidence run. The bounded continuous probe reports whether a later runner observes that scheduling outcome without treating its absence as proof of a runtime defect; the pinned NOX source uses the same scheduling-sensitive classification for work stealing. The scalar channel/atomic lifetime probe completes on QBE. This proves that overlap can occur, not that Obsidian has a portable queue.
 - Atomic cells are valid only until one explicit `free`, after every worker has completed. A handle used after free is invalid.
 
 ## Decision
