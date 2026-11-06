@@ -13,7 +13,7 @@ Structured, secure logging foundations for the NOX ecosystem.
 
 Obsidian is a small standalone logging library being built for Nyx, Aether, Nova, Feather, Atlas, Quartz, Rune, Chronos, Ember, VAULT, Pulse and Aura. Those projects may depend on Obsidian; Obsidian core never depends on them.
 
-The project is experimental. The synchronous in-memory core is implemented and verified locally, but no stable package has been published. `AGENTS.md` is the engineering contract and `todo.md` contains the evidence-gated roadmap.
+The project is experimental. The synchronous scalar logging core is under evidence-gated development and no stable package has been published. `AGENTS.md` is the engineering contract and `todo.md` contains the phase roadmap.
 
 ## Design priorities
 
@@ -32,14 +32,15 @@ Obsidian wraps and extends `nox.log`; it does not replace or fork the standard l
 - Caller-isolated structured record snapshots.
 - Bounded drop-oldest memory sink with drop accounting.
 - Stable sink registration and idempotent lifecycle.
-- Pre-sink scalar field redaction and assignment masking.
+- Pre-sink, case-insensitive scalar redaction with default and application-specific keys.
+- Header, bearer-token, URL-userinfo and credential-query masking with fail-closed drop accounting.
 - Deterministic single-line text formatting with control-character escaping.
 - Canonical JSONL with RFC 3339 timestamps and preserved scalar JSON types.
 - Explicit stdout console sink and canonical-root-checked append-only file sink for trusted roots.
 - Sanitized sink error categories and explicit idempotent I/O lifecycle.
 - Deterministic LLVM and QBE tests.
 
-Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. The complete security matrix, context binding, rotation and conditional async dispatch remain gated future phases.
+Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. Nested values, exception capture, context binding, rotation and conditional async dispatch remain gated future phases.
 
 ## Toolchain
 
@@ -93,6 +94,7 @@ Compile-fail fixtures under `tests/compile_fail` must exit non-zero. Test files,
 sinks/                   Sink implementations
 examples/                Compiling usage examples
 tests/unit/              Behavioral tests
+tests/security/          Synthetic-sentinel and fail-closed acceptance tests
 tests/compile_fail/      Explicit negative compiler fixtures
 docs/                    Architecture, API, compatibility and ADRs
 .github/workflows/       CI and gated release automation
@@ -102,9 +104,9 @@ NOX 2.0 resolves package modules from the repository root; a decorative Python-s
 
 ## Security
 
-Never place real credentials or production logs in an issue, test or example. Use synthetic sentinels. Read [`SECURITY.md`](SECURITY.md) before reporting a possible vulnerability.
+Never place real credentials or production logs in an issue, test or example. Use synthetic sentinels. Read [`docs/security.md`](docs/security.md) for the redaction boundary and [`SECURITY.md`](SECURITY.md) before reporting a possible vulnerability.
 
-The current sanitizer is a baseline, not the completed Phase 4 security surface. Do not describe this repository as production-ready until the release gates in `todo.md` pass.
+Redaction is pattern- and policy-based; it cannot discover arbitrary secrets in prose. Do not describe this repository as production-ready until the release gates in `todo.md` pass.
 
 ## Releases and registry publication
 

@@ -1,5 +1,6 @@
 import nox.fs
 import nox.path
+import obsidian.redact
 import obsidian.sink_format
 from nox.fs import FileWriter, FsError
 from nox.path import PathError
@@ -29,6 +30,8 @@ def validate_relative_log_path(relative_path: str) -> None:
         raise ValueError("file sink path is too long")
     if nox.path.is_absolute(relative_path):
         raise ValueError("file sink path must be relative")
+    if obsidian.redact.path_may_contain_secret(relative_path):
+        raise ValueError("file sink path contains a sensitive key")
     if relative_path.endswith("/") or "\\" in relative_path or ":" in relative_path:
         raise ValueError("file sink path is not portable")
     for character in relative_path:

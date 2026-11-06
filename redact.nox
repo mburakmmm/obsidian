@@ -1,33 +1,144 @@
-import obsidian.fields
 import nox.log
+import nox.regex
+import obsidian.fields
 from obsidian.fields import LogField
 from obsidian.record import LogRecord
 
-def is_sensitive_key(key: str) -> bool:
-    normalized: str = key.lower()
-    return normalized == "password" or normalized == "passwd" or normalized == "token" or normalized == "access_token" or normalized == "refresh_token" or normalized == "authorization" or normalized == "api_key" or normalized == "secret" or normalized == "cookie" or normalized == "set-cookie" or normalized == "private_key"
+MAX_ADDITIONAL_REDACTION_KEYS: int = 64
+REDACTION_FAILURE_MESSAGE: str = "[REDACTION_FAILED]"
 
-def sanitize_fields(source: list[LogField]) -> list[LogField]:
+def default_sensitive_keys() -> list[str]:
+    return ["password", "passwd", "token", "access_token", "refresh_token", "authorization", "api_key", "secret", "cookie", "set-cookie", "private_key"]
+
+def validate_additional_key(key: str) -> None:
+    if len(key) == 0:
+        raise ValueError("additional redaction key must not be empty")
+    if len(key) > 128:
+        raise ValueError("additional redaction key is too long")
+    for character in key:
+        codepoint: int = ord(character)
+        allowed: bool = codepoint >= 48 and codepoint <= 57 or codepoint >= 65 and codepoint <= 90 or codepoint >= 97 and codepoint <= 122 or character == "_" or character == "-"
+        if not allowed:
+            raise ValueError("additional redaction key is not portable")
+
+class RedactionPolicy:
+    _additional_keys: list[str]
+
+    def __init__(self, additional_keys: list[str]) -> None:
+        if len(additional_keys) > MAX_ADDITIONAL_REDACTION_KEYS:
+            raise ValueError("too many additional redaction keys")
+        self._additional_keys = []
+        defaults: list[str] = default_sensitive_keys()
+        for key in additional_keys:
+            validate_additional_key(key)
+            normalized: str = key.lower()
+            if normalized in defaults or normalized in self._additional_keys:
+                raise ValueError("duplicate additional redaction key")
+            self._additional_keys.append(normalized)
+
+    def sensitive_keys(self) -> list[str]:
+
+        result: list[str] = default_sensitive_keys()
+        for key in self._additional_keys:
+            result.append(key)
+        return result
+
+    def is_sensitive(self, key: str) -> bool:
+
+        return key.lower() in self.sensitive_keys()
+
+class RedactionResult:
+    safe_record: LogRecord
+    failed: bool
+
+    def __init__(self, safe_record: LogRecord, failed: bool) -> None:
+        self.safe_record = safe_record.clone()
+        self.failed = failed
+
+protocol Redactor:
+    def sanitize(self, entry: LogRecord) -> RedactionResult:
+        pass
+
+def sensitive_key_pattern(keys: list[str]) -> str:
+    escaped: list[str] = []
+    for key in keys:
+        escaped.append(nox.regex.escape(key))
+    return "(?:" + "|".join(escaped) + ")"
+
+def sanitize_message_with_policy(message: str, policy: RedactionPolicy) -> str:
+    keys: list[str] = policy.sensitive_keys()
+    normalized: str = message.lower()
+    should_sanitize: bool = "bearer" in normalized or "://" in normalized
+    for key in keys:
+        if key in normalized:
+            should_sanitize = True
+    if not should_sanitize:
+        return message
+    key_pattern: str = sensitive_key_pattern(keys)
+    safe: str = message
+    safe = nox.regex.replace("(?i)\\b(authorization|cookie|set-cookie)\\s*:\\s*[^\\r\\n]*", "\\1: ***", safe)
+    safe = nox.regex.replace("(?i)\\b(bearer)\\s+[^\\s,;]+", "\\1 ***", safe)
+    safe = nox.regex.replace("([A-Za-z][A-Za-z0-9+.-]*://)[^/@\\s:]+:[^/@\\s]+@", "\\1***:***@", safe)
+    safe = nox.regex.replace("(?i)([?&]" + key_pattern + "=)[^&#\\s]*", "\\1***", safe)
+    safe = nox.regex.replace("(?i)(\\b" + key_pattern + "\\s*=\\s*)\"[^\"]*\"", "\\1***", safe)
+    safe = nox.regex.replace("(?i)(\\b" + key_pattern + "\\s*=\\s*)'[^']*'", "\\1***", safe)
+    safe = nox.regex.replace("(?i)(\\b" + key_pattern + "\\s*=\\s*)[^\\s&,;\"']+", "\\1***", safe)
+    safe = nox.regex.replace("(?i)([\"']?" + key_pattern + "[\"']?\\s*:\\s*)[^\\s,;&\"']+", "\\1***", safe)
+    safe = nox.regex.replace("(?i)([\"']?" + key_pattern + "[\"']?\\s*:\\s*)\"[^\"]*\"", "\\1***", safe)
+    safe = nox.regex.replace("(?i)([\"']?" + key_pattern + "[\"']?\\s*:\\s*)'[^']*'", "\\1***", safe)
+    return nox.log.mask_assignments(safe, keys)
+
+def sanitize_fields_with_policy(source: list[LogField], policy: RedactionPolicy) -> list[LogField]:
     result: list[LogField] = []
     for field in source:
-        if is_sensitive_key(field.key):
+        if policy.is_sensitive(field.key):
             result.append(LogField(field.key, obsidian.fields.string_value("***")))
         else:
             result.append(field.clone())
     return result
 
+def redaction_failure_record(entry: LogRecord) -> LogRecord:
+    empty: list[LogField] = []
+    return LogRecord(entry.timestamp_ms, entry.event_level, "obsidian.redaction", REDACTION_FAILURE_MESSAGE, empty, empty)
+
+class DefaultRedactor:
+    _policy: RedactionPolicy
+
+    def __init__(self, policy: RedactionPolicy) -> None:
+        self._policy = policy
+
+    def sanitize(self, entry: LogRecord) -> RedactionResult:
+
+        try:
+            safe_fields: list[LogField] = sanitize_fields_with_policy(entry.fields_snapshot(), self._policy)
+            safe_context: list[LogField] = sanitize_fields_with_policy(entry.context_snapshot(), self._policy)
+            safe_logger: str = sanitize_message_with_policy(entry.logger_name, self._policy)
+            safe_message: str = sanitize_message_with_policy(entry.message, self._policy)
+            safe: LogRecord = LogRecord(entry.timestamp_ms, entry.event_level, safe_logger, safe_message, safe_fields, safe_context)
+            return RedactionResult(safe, False)
+        except Exception:
+            return RedactionResult(redaction_failure_record(entry), True)
+
+def default_redactor() -> DefaultRedactor:
+    empty: list[str] = []
+    return DefaultRedactor(RedactionPolicy(empty))
+
+def is_sensitive_key(key: str) -> bool:
+    empty: list[str] = []
+    return RedactionPolicy(empty).is_sensitive(key)
+
+def sanitize_fields(source: list[LogField]) -> list[LogField]:
+    empty: list[str] = []
+    return sanitize_fields_with_policy(source, RedactionPolicy(empty))
+
 def sanitize_message(message: str) -> str:
-    keys: list[str] = ["password", "passwd", "token", "access_token", "refresh_token", "authorization", "api_key", "secret", "cookie", "set-cookie", "private_key"]
-    normalized: str = message.lower()
-    should_mask: bool = False
-    for key in keys:
-        if key in normalized:
-            should_mask = True
-    if not should_mask:
-        return message
-    return nox.log.mask_assignments(message, keys)
+    empty: list[str] = []
+    return sanitize_message_with_policy(message, RedactionPolicy(empty))
 
 def sanitize_record(entry: LogRecord) -> LogRecord:
-    safe_fields: list[LogField] = sanitize_fields(entry.fields_snapshot())
-    safe_context: list[LogField] = sanitize_fields(entry.context_snapshot())
-    return LogRecord(entry.timestamp_ms, entry.event_level, entry.logger_name, sanitize_message(entry.message), safe_fields, safe_context)
+    result: RedactionResult = default_redactor().sanitize(entry)
+    return result.safe_record
+
+def path_may_contain_secret(relative_path: str) -> bool:
+    keys: str = "password|passwd|token|access_token|refresh_token|authorization|api_key|secret|cookie|set-cookie|private_key"
+    return nox.regex.is_match("(?i)(^|[/._-])(?:" + keys + ")(?:[=._:-]|$)", relative_path)

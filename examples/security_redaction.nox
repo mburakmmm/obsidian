@@ -1,0 +1,20 @@
+import obsidian.fields
+import obsidian.redact
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.redact import DefaultRedactor, RedactionPolicy
+from obsidian.sink_format import FORMAT_TEXT
+from obsidian.sinks.console import CONSOLE_STDOUT, ConsoleSink
+
+policy: RedactionPolicy = RedactionPolicy(["client_pin"])
+redactor: DefaultRedactor = DefaultRedactor(policy)
+clock: FakeClock = FakeClock(1700000000123)
+logger: Logger = Logger("service.security", INFO, clock, redactor)
+console: ConsoleSink = ConsoleSink("security-stdout", CONSOLE_STDOUT, FORMAT_TEXT)
+logger.add_sink(console)
+
+fields: list[LogField] = [LogField("client_pin", obsidian.fields.int_value(4242))]
+logger.info("Bearer SYNTHETIC_SECURITY_SECRET https://user:SYNTHETIC_URL_SECRET@example.com/?token=SYNTHETIC_QUERY_SECRET", fields)
+logger.close()

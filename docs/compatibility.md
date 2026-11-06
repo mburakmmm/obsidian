@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0 audit complete; Phase 2 and the supported Phase 3 I/O subset pass the pinned local LLVM/QBE checks and supported CI matrix. This document records observed capability and does not extend support beyond tested jobs.
+Status: Phase 0–3 supported scope passes the CI matrix; the Phase 4 scalar-security candidate passes pinned local LLVM/QBE verification and awaits remote CI evidence. This document records observed capability and does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -10,19 +10,20 @@ Status: Phase 0 audit complete; Phase 2 and the supported Phase 3 I/O subset pas
 | Pinned test compiler | `noxc 2.0.143` | Verified release archive, `noxc --version` on 2026-11-06 |
 | Release archive SHA-256 | `fab24640892ef054bff50eeba901fa953d13424319729a9b095d3a31694589e4` | Published checksum plus local `shasum -a 256 -c` |
 | Compiler binary SHA-256 | `4070e9d4582bb961395be2b2dbbb96eb3f5278f954adf38112c2c4baf9d51676` | Extracted pinned release binary |
-| Ambient user compiler | `noxc 2.0.181` | Observed on 2026-11-06; not the support pin and not used for final Phase 2 evidence |
+| Ambient user compiler | `noxc 2.0.188` | Observed on 2026-11-06; not the support pin and not used for final Phase 4 evidence |
 | Host | macOS 27.0.1, arm64 | `sw_vers`, `uname -m` |
 | C compiler | Apple clang 21.0.0 | `clang --version` |
 | Bundled QBE | present in the verified 2.0.143 release archive | filesystem inspection |
 | Profile under test | `hosted` | filesystem, process and clock APIs are required |
 
-The compiler reports a version but not its source SHA. The annotated `v2.0.143` tag resolves to the selected commit, but GitHub reports the tag as unsigned. Release assets include per-platform SHA-256 files; local Phase 2 verification and CI check the downloaded archive against the matching checksum before use. This is integrity evidence, not signed provenance. The ambient user installation has advanced to 2.0.181 and is deliberately not treated as the project support baseline.
+The compiler reports a version but not its source SHA. The annotated `v2.0.143` tag resolves to the selected commit, but GitHub reports the tag as unsigned. Release assets include per-platform SHA-256 files; local verification and CI check the downloaded archive against the matching checksum before use. This is integrity evidence, not signed provenance. The ambient user installation has advanced to 2.0.188 and is deliberately not treated as the project support baseline.
 
 ## Audited public APIs at the pinned revision
 
 | Area | Observed public contract | Obsidian consequence | Status |
 |---|---|---|---|
 | `nox.log` | `format`, `redact`, `mask_assignments`, module-level threshold, stdout-only `debug/info/warn/error` | Wrap and extend; never change stdlib state implicitly | Phase 1 compile/behavior probes pass on LLVM/QBE |
+| `nox.regex` / strings | bounded regex search/replace, escaping, Unicode string methods | Use fixed/escaped patterns; bypass matcher when no sensitive marker so arbitrary controls retain formatter semantics | Phase 4 header/Bearer/URL/query/control probes pass locally on LLVM/QBE |
 | `nox.json` | `JsonValue`, typed accessors, `dump_string`, `JsonWriter` | Use writer/escaping; test writer nesting because it does not validate structure | Phase 2 JSONL/golden/typed round-trip probes pass on LLVM/QBE |
 | `nox.fs` | synchronous `open_append`; unbuffered `write`; explicit/idempotent `close`; metadata size; rename/create/read operations | File sink must close explicitly; `flush` cannot be advertised as `fsync` | Phase 3 append/reopen/permission/UTF-8 probes pass on supported CI jobs and local LLVM/QBE |
 | `nox.path` | `canonicalize`, `join`, `strip_prefix`, components | Constrain file/retention paths against a canonical allowed root | Phase 3 traversal/prefix/existing-symlink probes pass on supported CI jobs and local LLVM/QBE |
@@ -33,7 +34,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | `nox.atomic` | explicit allocation/`free`, handles for worker sharing | Worker ownership and join must precede free | Documented; Phase 7 deferred |
 | scheduler | LLVM M:N work-stealing; QBE single-threaded cooperative | Backend-specific concurrency evidence is mandatory | Documented; Phase 7 deferred |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; compile-fail fixtures must not match `*_test.nox` | Eight files/185 assertions pass through the hermetic package consumer on LLVM/QBE; two negative fixtures exit non-zero |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; compile-fail fixtures must not match `*_test.nox` | Nine files/226 assertions pass through the hermetic package consumer on local LLVM/QBE; three negative fixtures exit non-zero |
 
 ## Known gaps and conservative decisions
 
@@ -60,8 +61,8 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 
 | Platform/backend | Check | Build/run | Tests | Concurrency claim |
 |---|---:|---:|---:|---|
-| macOS arm64 / LLVM | Pass | Pass | Phase 3 subset: 8 files, 185 assertions, 0 skips; local and CI run `42173270729` | No concurrency claim |
-| macOS arm64 / QBE | Pass | Pass | Phase 3 subset: 8 files, 185 assertions, 0 skips; local and CI run `42173270729` | Cooperative behavior documented; no concurrency test yet |
+| macOS arm64 / LLVM | Pass | Pass | Phase 4 candidate: 9 files, 226 assertions, 0 skips locally; Phase 3 CI run `42173270729` | No concurrency claim |
+| macOS arm64 / QBE | Pass | Pass | Phase 4 candidate: 9 files, 226 assertions, 0 skips locally; Phase 3 CI run `42173270729` | Cooperative behavior documented; no concurrency test yet |
 | Linux x64 / LLVM | Pass | Pass | Phase 3 subset: 8 files, 185 assertions, 0 skips; CI run `42173270729` | None |
 | Linux x64 / QBE | Pass | Pass | Phase 3 subset: 8 files, 185 assertions, 0 skips; CI run `42173270729` | None |
 | Linux arm64 / LLVM | Pass | Pass | Phase 3 subset: 8 files, 185 assertions, 0 skips; CI run `42173270729` | None |
@@ -79,7 +80,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 ## Primary pinned sources
 
 - `docs/stdlib/log.md`, `json.md`, `fs.md`, `os.md`, `time.md`, `thread.md`, `atomic.md`
-- `docs/stdlib/path.md`, `console.md`, `test.md`
+- `docs/stdlib/path.md`, `console.md`, `test.md`, `regex.md`, `strings.md`
 - `docs/language/builtins.md`, `ffi.md`
 - `docs/language/concurrency.md`, `modules.md`
 - `docs/internals/architecture.md`

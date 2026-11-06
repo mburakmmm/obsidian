@@ -45,6 +45,20 @@ def control_path_is_rejected(root: str) -> bool:
     except ValueError as e:
         return e.message == "file sink path contains a control character"
 
+def sensitive_path_is_rejected(root: str) -> bool:
+    try:
+        FileSink("sensitive", root, "token=SYNTHETIC_PATH_SECRET.log", FORMAT_TEXT, False)
+        return False
+    except ValueError as e:
+        return e.message == "file sink path contains a sensitive key"
+
+def sensitive_component_is_rejected(root: str) -> bool:
+    try:
+        FileSink("sensitive-component", root, "logs/token.log", FORMAT_TEXT, True)
+        return False
+    except ValueError as e:
+        return e.message == "file sink path contains a sensitive key"
+
 def missing_parent_is_rejected(root: str) -> bool:
     try:
         FileSink("missing", root, "missing-parent/events.log", FORMAT_TEXT, False)
@@ -99,7 +113,7 @@ def flush_after_close_is_rejected(root: str) -> bool:
         return e.message == "file sink is closed"
 
 root: str = nox.os.current_dir()
-first: LogRecord = make_record(1700000000123, "first password=SYNTHETIC_FILE_SECRET")
+first: LogRecord = make_record(1700000000123, "first password=SYNTHETIC_FILE_SECRET Bearer SYNTHETIC_FILE_BEARER https://user:SYNTHETIC_FILE_URL@example.com/?token=SYNTHETIC_FILE_QUERY")
 second: LogRecord = make_record(1700000001123, "second")
 third: LogRecord = make_record(1700000002123, "third")
 
@@ -120,6 +134,9 @@ expected_two: str = obsidian.format_json.format_record(first) + obsidian.format_
 content_two: str = nox.fs.read_to_string(path)
 nox.test.assert_eq_str(content_two, expected_two, "file sink writes exact JSONL")
 nox.test.assert_true("SYNTHETIC_FILE_SECRET" not in content_two, "file sink masks sentinel")
+nox.test.assert_true("SYNTHETIC_FILE_BEARER" not in content_two, "file sink masks bearer sentinel")
+nox.test.assert_true("SYNTHETIC_FILE_URL" not in content_two, "file sink masks URL sentinel")
+nox.test.assert_true("SYNTHETIC_FILE_QUERY" not in content_two, "file sink masks query sentinel")
 nox.test.assert_eq_int(nox.fs.metadata(path).size, nox.strings.byte_len(content_two), "file size counts UTF-8 bytes")
 
 reopened: FileSink = FileSink("json-file-reopen", root, "obsidian-file-tests/nested/events.jsonl", FORMAT_JSON, False)
@@ -133,6 +150,8 @@ nox.test.assert_true(traversal_is_rejected(root), "path traversal rejected")
 nox.test.assert_true(absolute_path_is_rejected(root), "absolute path rejected")
 nox.test.assert_true(nonportable_path_is_rejected(root), "nonportable path rejected")
 nox.test.assert_true(control_path_is_rejected(root), "control character path rejected")
+nox.test.assert_true(sensitive_path_is_rejected(root), "sensitive-key path rejected")
+nox.test.assert_true(sensitive_component_is_rejected(root), "sensitive filename component rejected")
 nox.test.assert_true(missing_parent_is_rejected(root), "missing parent requires opt-in creation")
 nox.test.assert_true(directory_target_is_rejected(root), "directory target rejected")
 nox.test.assert_true(symlink_escape_is_rejected(root), "existing symlink escape rejected")

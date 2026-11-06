@@ -1,0 +1,7 @@
+import obsidian.fields
+from obsidian.fields import FieldValue
+
+nested: list[str] = ["nested-value"]
+value: FieldValue = obsidian.fields.string_value(nested)
+
+print(value.kind)

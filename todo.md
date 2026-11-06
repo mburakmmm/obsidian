@@ -239,8 +239,8 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 
 ### Phase 3 kapısı
 
-- [ ] Console/file yaşam döngüsü ve hata görünürlüğü kanıtlandı.
-- [ ] Kaynak handle sızıntısı ve sessiz veri kaybı bilinen testlerde yok.
+- [x] Desteklenen stdout/file alt kümesinde yaşam döngüsü ve gözlemlenebilir sanitize hata kategorileri kanıtlandı; eksik public NOX yetenekleri BLOCKED olarak kayıtlı.
+- [x] Test edilen destekli yollarda handle sızıntısı veya sessiz veri kaybı gözlenmedi; disk-full ve hostile-directory yarışına ilişkin eksik kanıt açık tutuldu.
 
 ---
 
@@ -248,39 +248,40 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 
 ### 8.1 Redaction pipeline
 
-- [ ] Redaction sink fan-out'tan önce ve tek güvenli record üzerinde uygulanıyor.
-- [ ] Denylist case-insensitive normalize ediliyor.
-- [ ] Varsayılan denylist: password/passwd/token/access_token/refresh_token/authorization/api_key/secret/cookie/set-cookie/private_key.
-- [ ] Configurable ek secret key'ler testli.
-- [ ] Nested dict/array redaction destekleniyor ya da güvenli biçimde reddediliyor.
-- [ ] Bearer token, Authorization, Cookie, Set-Cookie maskeleniyor.
-- [ ] DSN, URL credentials ve credential query parametreleri maskeleniyor.
-- [ ] Message, fields, context, exception, config error, sink error ve diagnostics aynı güvenlik sınırından geçiyor.
-- [ ] File/rotation isimlerine secret girişi reddediliyor.
-- [ ] Redaction başarısızlığında unsafe içerik drop/replace ediliyor ve yalnız sanitized counter artıyor.
-- [ ] Synthetic sentinel fixture'ları gerçek secret içermiyor.
-- [ ] Redaction sınırlamaları `docs/security.md` içinde dürüstçe belgeli.
+- [x] Redaction sink fan-out'tan önce ve tek güvenli record üzerinde uygulanıyor.
+- [x] Denylist case-insensitive normalize ediliyor.
+- [x] Varsayılan denylist: password/passwd/token/access_token/refresh_token/authorization/api_key/secret/cookie/set-cookie/private_key.
+- [x] Validasyonlu ve kopyalanan ek secret key'ler testli.
+- [x] Nested dict/array scalar `FieldValue` sınırında compile-time güvenli biçimde reddediliyor.
+- [x] Bearer token, Authorization, Cookie, Set-Cookie maskeleniyor.
+- [x] DSN/URL userinfo ve credential query parametreleri maskeleniyor.
+- [x] Mevcut message, logger name, fields, context, memory/custom/console/file sink ve sink error yolları aynı pre-sink sınırını kullanıyor.
+- NOT YET: exception metadata, config loader, rotation, diagnostics callback ve async queue henüz yok; eklendikleri fazda güvenlik matrisi tekrar zorunlu.
+- [x] File isimlerinde credential-key bileşenleri reddediliyor; rotation isimleri Phase 6'da aynı politikaya bağlanacak.
+- [x] Redaction başarısızlığında unsafe içerik drop ediliyor, exception metni gösterilmiyor ve saturating sanitize counter artıyor.
+- [x] Synthetic sentinel fixture'ları gerçek secret içermiyor.
+- [x] Redaction sınırlamaları `docs/security.md` içinde dürüstçe belgeli.
 
 ### 8.2 Güvenlik kabul matrisi
 
-- [ ] Mixed-case credential key.
-- [ ] Nested secrets.
-- [ ] Bearer token ve URL credential.
-- [ ] Multiline/log forging girdisi.
-- [ ] Unicode ve kontrol karakterleri.
-- [ ] Secret içeren exception mesajı.
-- [ ] Redaction function failure.
-- [ ] Custom sink ve recursive callback.
-- [ ] Console, memory ve file sink.
-- [ ] Sink/diagnostic fallback error.
-- [ ] Snapshot ve test failure çıktısı.
-- [ ] Maskesiz sentinel için repo/test çıktısı genel taraması.
+- [x] Mixed-case credential key.
+- [x] Nested secrets güvenli compile-time reject; recursive destek iddiası yok.
+- [x] Bearer token ve URL credential.
+- [x] Multiline/log forging girdisi.
+- [x] Unicode ve tüm ASCII kontrol karakterleri.
+- [x] Secret içeren redactor exception mesajı dışarı çıkmıyor; application exception capture henüz desteklenmiyor.
+- [x] Redaction function failure.
+- [x] Custom sink ve recursive callback.
+- [x] Console, memory ve file sink.
+- [x] Sink hataları fixed sanitize kategori; emergency diagnostic callback henüz desteklenmiyor.
+- [x] Snapshot ve test failure mesajları sentinel değerini göstermiyor.
+- [x] Hermetic test/example çıktısı maskesiz `SYNTHETIC_` sentinel için taranıyor.
 
 ### Phase 4 kapısı
 
-- [ ] Hiçbir yakalanan output, snapshot, diagnostic veya fixture içinde maskesiz sentinel yok.
-- [ ] Fail-closed yollar kanıtlı.
-- [ ] Phase 1–4 uçtan uca yol çalışıyor: `Logger.info → immutable record → redaction → formatter → memory/console sink`.
+- [x] Mevcut yakalanan output, snapshot ve sink hata yollarında maskesiz sentinel yok; henüz var olmayan output türleri kapsam dışı olarak kayıtlı.
+- [x] Fail-closed drop ve sayaç yolu kanıtlı.
+- [x] Phase 1–4 uçtan uca yol çalışıyor: `Logger.info → immutable record → redaction → formatter → memory/console sink`.
 - [ ] Ancak bu kapıdan sonra ilk alpha değerlendirilebilir.
 
 ---
@@ -542,3 +543,4 @@ File rotation ve async çalışma, sırasıyla Phase 1–4 ve Phase 6 kapıları
 | 2026-11-06 | Phase 2 uzak CI kanıtı | GitHub Actions run `42171234012`; commit `7722752`; macOS arm64, Linux x64 ve Linux arm64 | Üç işte de pinned toolchain, format, LLVM/QBE tüketici süiti, 2 compile-fail fixture ve transitive alias/import-lock probu geçti | Phase 2 kapısı desteklenen matriste geçti; Phase 3 console/file sink sırada |
 | 2026-11-06 | `0.2.x` / Phase 3 desteklenen alt küme | Explicit stdout `ConsoleSink`, trusted root için canonical-root kontrolleri yapan append-only `FileSink`, sanitize `SinkError`, opt-in parent creation ve gerçek I/O testleri eklendi | Pinned NOX 2.0.143 LLVM/QBE: 8 test dosyası, 185 assertion, 0 skip; exact stdout/file örnekleri, permission/traversal/existing-symlink/append/reopen/UTF-8 kanıtı geçti | Stderr, console write-error kanalı, dangling-symlink race ve disk-full kanıtı BLOCKED; Phase 3 kapısı açık tutuldu |
 | 2026-11-06 | Phase 3 desteklenen alt küme uzak CI kanıtı | GitHub Actions run `42173270729`; commit `50a85a7`; macOS arm64, Linux x64 ve Linux arm64 | Üç işte de pinned toolchain, format, LLVM/QBE 8 dosya/185 assertion süiti, 2 compile-fail fixture ve dependency alias/import probu geçti | Desteklenen alt küme matriste yeşil; platform API eksikleri nedeniyle Phase 3 kapısı açık, Phase 4 başlatılmadı |
+| 2026-11-06 | `0.2.x` / Phase 4 scalar güvenlik adayı | Case-insensitive default/ek denylist, header/Bearer/URL/query masking, fail-closed drop+sayaç, filename guard ve security matrix eklendi | Pinned NOX 2.0.143 LLVM/QBE: 9 test dosyası, 226 assertion, 0 skip; 3 expected compile-fail; 6 exact ve sentinel-scanned örnek; import/lock probu geçti | Yerel scalar güvenlik kapısı geçti; uzak CI kanıtı bekleniyor, exception/config/rotation/async yolları geldiklerinde matrise eklenecek |

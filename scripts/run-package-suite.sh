@@ -36,16 +36,50 @@ mkdir -p "$consumer_root/obsidian-file-tests" "$consumer_root/obsidian-file-deni
 ln -s "$probe_root/outside" "$consumer_root/obsidian-file-tests/escape-link"
 chmod 500 "$consumer_root/obsidian-file-denied"
 
-NOX_HOME="$probe_nox_home" noxc test --backend "$backend" tests
+if ! test_output="$(NOX_HOME="$probe_nox_home" noxc test --backend "$backend" tests 2>&1)"; then
+  if [[ "$test_output" == *SYNTHETIC_* ]]; then
+    echo "test suite failed and captured output contained a security sentinel" >&2
+    exit 1
+  fi
+  printf '%s\n' "$test_output"
+  exit 1
+fi
+printf '%s\n' "$test_output"
+if [[ "$test_output" == *SYNTHETIC_* ]]; then
+  echo "security sentinel appeared in captured test output" >&2
+  exit 1
+fi
 
 expected_json='{"timestamp":"2023-11-14T22:13:20.123Z","timestamp_ms":1700000000123,"level":"INFO","logger":"service.auth","message":"request completed","fields":{"status":200,"token":"***","user_id":"u-123"},"context":{"request":"req-42"},"schema_version":"obsidian.log.v1"}'
 expected_console='2023-11-14T22:13:20.123Z INFO service.auth token="***" password=***'
 expected_file='{"timestamp":"2023-11-14T22:13:20.123Z","timestamp_ms":1700000000123,"level":"INFO","logger":"service.file","message":"file event","fields":{"token":"***"},"context":{},"schema_version":"obsidian.log.v1"}'
-test "$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" examples/hello.nox)" = "obsidian 0.0.0"
-test "$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" examples/memory_logging.nox)" = "1700000000000 INFO service.auth password=*** ***"
-test "$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" examples/json_logging.nox)" = "$expected_json"
-test "$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" examples/console_logging.nox)" = "$expected_console"
-test "$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" examples/file_logging.nox)" = "$expected_file"
+expected_security='2023-11-14T22:13:20.123Z INFO service.security client_pin="***" Bearer *** https://***:***@example.com/?token=***'
+
+run_exact_example() {
+  local source_file="$1"
+  local expected="$2"
+  local output
+  if ! output="$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" "$source_file" 2>&1)"; then
+    if [[ "$output" == *SYNTHETIC_* ]]; then
+      echo "example failed and captured output contained a security sentinel" >&2
+    else
+      echo "example failed: $source_file" >&2
+    fi
+    exit 1
+  fi
+  if [[ "$output" == *SYNTHETIC_* ]]; then
+    echo "security sentinel appeared in captured example output" >&2
+    exit 1
+  fi
+  test "$output" = "$expected"
+}
+
+run_exact_example examples/hello.nox "obsidian 0.0.0"
+run_exact_example examples/memory_logging.nox "1700000000000 INFO service.auth password=*** ***"
+run_exact_example examples/json_logging.nox "$expected_json"
+run_exact_example examples/console_logging.nox "$expected_console"
+run_exact_example examples/file_logging.nox "$expected_file"
+run_exact_example examples/security_redaction.nox "$expected_security"
 
 resolved_sha="$(git -C "$package_root" rev-parse HEAD)"
 grep -q "\"resolved\": \"$resolved_sha\"" nox.lock

@@ -1,0 +1,175 @@
+import nox.test
+import obsidian.fields
+import obsidian.redact
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import MAX_REDACTION_FAILURE_COUNT, Logger
+from obsidian.record import LogRecord
+from obsidian.redact import DefaultRedactor, RedactionPolicy, RedactionResult
+from obsidian.sinks.memory import MemorySink
+
+class ExplodingRedactor:
+    def sanitize(self, entry: LogRecord) -> RedactionResult:
+
+        raise ValueError("SYNTHETIC_REDACTOR_FAILURE_SECRET")
+
+class ReentrantRedactor:
+    _logger: Logger | None
+    _empty: list[LogField]
+
+    def __init__(self) -> None:
+        self._logger = None
+        self._empty = []
+
+    def attach(self, target: Logger) -> None:
+
+        self._logger = target
+
+    def sanitize(self, entry: LogRecord) -> RedactionResult:
+
+        target: Logger | None = self._logger
+        if target is not None:
+            target.info("nested token=SYNTHETIC_REENTRANT_SECRET", self._empty)
+        return obsidian.redact.default_redactor().sanitize(entry)
+
+class CaptureSink:
+    _records: list[LogRecord]
+    _closed: bool
+
+    def __init__(self) -> None:
+        self._records = []
+        self._closed = False
+
+    def sink_name(self) -> str:
+
+        return "security-capture"
+
+    def write(self, entry: LogRecord) -> None:
+
+        self._records.append(entry.clone())
+
+    def flush(self) -> None:
+
+        pass
+
+    def close(self) -> None:
+
+        self._closed = True
+
+    def is_closed(self) -> bool:
+
+        return self._closed
+
+    def is_bounded(self) -> bool:
+
+        return True
+
+    def count(self) -> int:
+
+        return len(self._records)
+
+    def record_at(self, index: int) -> LogRecord:
+
+        return self._records[index].clone()
+
+def duplicate_additional_key_rejected() -> bool:
+    try:
+        RedactionPolicy(["token"])
+        return False
+    except ValueError as e:
+        return e.message == "duplicate additional redaction key"
+
+def duplicate_custom_key_rejected() -> bool:
+    try:
+        RedactionPolicy(["client_pin", "CLIENT_PIN"])
+        return False
+    except ValueError as e:
+        return e.message == "duplicate additional redaction key"
+
+def invalid_additional_key_rejected() -> bool:
+    try:
+        RedactionPolicy(["client pin"])
+        return False
+    except ValueError as e:
+        return e.message == "additional redaction key is not portable"
+
+def unicode_additional_key_rejected() -> bool:
+    try:
+        RedactionPolicy(["şifre"])
+        return False
+    except ValueError as e:
+        return e.message == "additional redaction key is not portable"
+
+policy: RedactionPolicy = RedactionPolicy(["client_pin"])
+redactor: DefaultRedactor = DefaultRedactor(policy)
+clock: FakeClock = FakeClock(1700000000123)
+logger: Logger = Logger("service.security", INFO, clock, redactor)
+capture: CaptureSink = CaptureSink()
+memory: MemorySink = MemorySink("security-memory", 4)
+logger.add_sink(capture)
+logger.add_sink(memory)
+
+message: str = "Authorization: Bearer SYNTHETIC_HEADER_SECRET\nCookie: session=SYNTHETIC_COOKIE_SECRET\nSet-Cookie: session=SYNTHETIC_SET_COOKIE_SECRET\nstandalone Bearer SYNTHETIC_BEARER_SECRET\npostgres://user:SYNTHETIC_URL_SECRET@example.com/db?token=SYNTHETIC_QUERY_SECRET&ok=1\nToKeN=\"SYNTHETIC_QUOTED_SECRET\" password='SYNTHETIC_SINGLE_SECRET' api_key=SYNTHETIC_ASSIGN_SECRET\n{\"secret\":\"SYNTHETIC_COLON_SECRET\"}\nCLIENT_PIN=SYNTHETIC_CUSTOM_SECRET\nUnicode İstanbul 世界\nforged"
+event_fields: list[LogField] = [LogField("ToKeN", obsidian.fields.string_value("SYNTHETIC_FIELD_SECRET")), LogField("client_pin", obsidian.fields.int_value(4242)), LogField("safe", obsidian.fields.bool_value(True))]
+nox.test.assert_true(logger.info(message, event_fields), "security event emitted")
+nox.test.assert_eq_int(capture.count(), 1, "custom sink receives one sanitized record")
+nox.test.assert_eq_int(memory.count(), 1, "memory sink receives one sanitized record")
+
+safe: LogRecord = capture.record_at(0)
+safe_message: str = safe.message
+nox.test.assert_true("SYNTHETIC_HEADER_SECRET" not in safe_message, "Authorization sentinel masked")
+nox.test.assert_true("SYNTHETIC_COOKIE_SECRET" not in safe_message, "Cookie sentinel masked")
+nox.test.assert_true("SYNTHETIC_SET_COOKIE_SECRET" not in safe_message, "Set-Cookie sentinel masked")
+nox.test.assert_true("SYNTHETIC_BEARER_SECRET" not in safe_message, "Bearer sentinel masked")
+nox.test.assert_true("SYNTHETIC_URL_SECRET" not in safe_message, "URL credential sentinel masked")
+nox.test.assert_true("SYNTHETIC_QUERY_SECRET" not in safe_message, "query sentinel masked")
+nox.test.assert_true("SYNTHETIC_QUOTED_SECRET" not in safe_message, "quoted assignment sentinel masked")
+nox.test.assert_true("SYNTHETIC_SINGLE_SECRET" not in safe_message, "single-quoted assignment sentinel masked")
+nox.test.assert_true("SYNTHETIC_ASSIGN_SECRET" not in safe_message, "assignment sentinel masked")
+nox.test.assert_true("SYNTHETIC_COLON_SECRET" not in safe_message, "colon sentinel masked")
+nox.test.assert_true("SYNTHETIC_CUSTOM_SECRET" not in safe_message, "custom key sentinel masked")
+nox.test.assert_true("{\"secret\":***}" in safe_message, "colon masking preserves surrounding structure")
+nox.test.assert_true("İstanbul 世界\nforged" in safe_message, "Unicode and multiline content preserved before formatter escaping")
+nox.test.assert_eq_str(safe.field_at(0).value.text_value, "***", "mixed-case field key masked")
+nox.test.assert_eq_str(safe.field_at(1).value.text_value, "***", "custom numeric field masked safely")
+nox.test.assert_true(safe.field_at(2).value.bool_value, "non-sensitive field type retained")
+nox.test.assert_eq_str(memory.record_at(0).message, safe.message, "fan-out receives one sanitized snapshot")
+nox.test.assert_eq_int(logger.redaction_failure_count(), 0, "successful redaction has no failures")
+
+empty_fields: list[LogField] = []
+context: list[LogField] = [LogField("Authorization", obsidian.fields.string_value("SYNTHETIC_CONTEXT_SECRET"))]
+direct: LogRecord = LogRecord(1, INFO, "component token=SYNTHETIC_LOGGER_SECRET", "safe", empty_fields, context)
+direct_result: RedactionResult = obsidian.redact.default_redactor().sanitize(direct)
+nox.test.assert_true(not direct_result.failed, "default redactor succeeds")
+nox.test.assert_true("SYNTHETIC_LOGGER_SECRET" not in direct_result.safe_record.logger_name, "logger name sanitized")
+nox.test.assert_eq_str(direct_result.safe_record.context_at(0).value.text_value, "***", "context secret masked")
+
+failure_clock: FakeClock = FakeClock(2)
+failure_logger: Logger = Logger("failure", INFO, failure_clock, ExplodingRedactor())
+failure_sink: MemorySink = MemorySink("failure-memory", 1)
+failure_logger.add_sink(failure_sink)
+nox.test.assert_true(not failure_logger.info("token=SYNTHETIC_FAILURE_INPUT", empty_fields), "redactor exception drops event")
+nox.test.assert_eq_int(failure_sink.count(), 0, "failed redaction never reaches sink")
+nox.test.assert_eq_int(failure_logger.redaction_failure_count(), 1, "redaction failure counted")
+failure_logger._redaction_failures = MAX_REDACTION_FAILURE_COUNT
+failure_logger.info("token=SYNTHETIC_SATURATION_INPUT", empty_fields)
+nox.test.assert_eq_int(failure_logger.redaction_failure_count(), MAX_REDACTION_FAILURE_COUNT, "redaction failure counter saturates")
+
+reentrant_redactor: ReentrantRedactor = ReentrantRedactor()
+reentrant_logger: Logger = Logger("reentrant-redactor", INFO, FakeClock(3), reentrant_redactor)
+reentrant_sink: MemorySink = MemorySink("reentrant-memory", 1)
+reentrant_logger.add_sink(reentrant_sink)
+reentrant_redactor.attach(reentrant_logger)
+nox.test.assert_true(not reentrant_logger.info("outer", empty_fields), "redactor re-entry fails closed")
+nox.test.assert_eq_int(reentrant_sink.count(), 0, "redactor re-entry never reaches sink")
+nox.test.assert_eq_int(reentrant_logger.redaction_failure_count(), 1, "redactor re-entry counted once")
+nox.test.assert_true(duplicate_additional_key_rejected(), "default denylist duplicate rejected")
+nox.test.assert_true(duplicate_custom_key_rejected(), "custom denylist duplicate normalized")
+nox.test.assert_true(invalid_additional_key_rejected(), "nonportable additional key rejected")
+nox.test.assert_true(unicode_additional_key_rejected(), "additional key alphabet is portable ASCII")
+
+logger.close()
+failure_logger.close()
+reentrant_logger.close()
+nox.test.assert_true(capture.is_closed(), "custom sink closed")

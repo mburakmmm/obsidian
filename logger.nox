@@ -4,8 +4,11 @@ import obsidian.record
 from obsidian.clock import Clock
 from obsidian.fields import LogField
 from obsidian.level import CRITICAL, DEBUG, ERROR, INFO, TRACE, WARNING
+from obsidian.redact import RedactionResult, Redactor
 from obsidian.record import LogRecord
 from obsidian.sink import Sink
+
+MAX_REDACTION_FAILURE_COUNT: int = 2147483647
 
 class Logger:
     logger_name: str
@@ -16,8 +19,10 @@ class Logger:
     _next_sink_id: int
     _closed: bool
     _dispatching: bool
+    _redactor: Redactor
+    _redaction_failures: int
 
-    def __init__(self, logger_name: str, threshold: int, clock: Clock) -> None:
+    def __init__(self, logger_name: str, threshold: int, clock: Clock, redactor: Redactor | None = None) -> None:
         obsidian.record.validate_logger_name(logger_name)
         if not obsidian.level.is_valid(threshold):
             raise ValueError("logger threshold is invalid")
@@ -29,6 +34,11 @@ class Logger:
         self._next_sink_id = 1
         self._closed = False
         self._dispatching = False
+        if redactor is None:
+            self._redactor = obsidian.redact.default_redactor()
+        else:
+            self._redactor = redactor
+        self._redaction_failures = 0
 
     def is_enabled(self, event_level: int) -> bool:
 
@@ -61,16 +71,24 @@ class Logger:
             return False
         if self._dispatching:
             raise ValueError("recursive logging is not allowed")
-        empty_context: list[LogField] = []
-        captured: LogRecord = LogRecord(self._clock.now_ms(), event_level, self.logger_name, message, event_fields, empty_context)
-        safe_record: LogRecord = obsidian.redact.sanitize_record(captured)
         self._dispatching = True
         try:
+            empty_context: list[LogField] = []
+            captured: LogRecord = LogRecord(self._clock.now_ms(), event_level, self.logger_name, message, event_fields, empty_context)
+            try:
+                redaction: RedactionResult = self._redactor.sanitize(captured)
+            except Exception:
+                self._record_redaction_failure()
+                return False
+            if redaction.failed:
+                self._record_redaction_failure()
+                return False
+            safe_record: LogRecord = redaction.safe_record
             for target in self._sinks:
                 target.write(safe_record.clone())
+            return True
         finally:
             self._dispatching = False
-        return True
 
     def trace_event(self, message: str, event_fields: list[LogField]) -> bool:
 
@@ -114,3 +132,12 @@ class Logger:
     def is_closed(self) -> bool:
 
         return self._closed
+
+    def redaction_failure_count(self) -> int:
+
+        return self._redaction_failures
+
+    def _record_redaction_failure(self) -> None:
+
+        if self._redaction_failures < MAX_REDACTION_FAILURE_COUNT:
+            self._redaction_failures += 1

@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phase 0 design baseline. Public APIs are not frozen.
+Status: Phase 4 scalar-security candidate. Public APIs are not frozen.
 
 ## Dependency direction
 
@@ -46,7 +46,7 @@ Logger ownership is explicit. Sinks have documented write/flush/close behavior a
 
 ## Security model
 
-All output paths consume a sanitized record. A redaction failure drops or replaces unsafe content and increments a sanitized bounded diagnostic counter. Raw records must never be passed to untrusted sinks merely because a formatter failed.
+All logger output paths consume one pre-sink sanitized snapshot. A redactor exception or failed result drops the unsafe event and increments a saturating sanitized counter; direct default formatter use substitutes a fixed placeholder on internal redaction failure. Raw records are never passed to sinks merely because redaction or formatting failed. Scalar nested values remain disabled instead of being stringified.
 
 ## Portability model
 

@@ -1,6 +1,6 @@
 # API status
 
-Status: internal development API through the supported Phase 3 subset; not frozen and not published.
+Status: internal development API through the Phase 4 scalar-security candidate; not frozen and not published.
 
 ## Levels
 
@@ -32,7 +32,7 @@ No logger, record, sink or formatter API is public yet.
 
 ## Internal field and record model
 
-`FieldValue` is an explicit tagged class for null, string, integer, float and boolean values. It does not accept arbitrary objects or call their structural representation. Nested lists/objects remain deferred pending recursive-type and ownership experiments.
+`FieldValue` is an explicit tagged class for null, string, integer, float and boolean values. It does not accept arbitrary objects or call their structural representation. Nested lists/objects are compile-time rejected and remain deferred pending recursive-type, ownership and redaction experiments.
 
 `LogField` rejects empty, oversized, control-character and reserved keys. Error messages are stable categories and do not echo the rejected key.
 
@@ -57,11 +57,11 @@ Messages and scalar string fields are limited to 65,536 Unicode code points. `fi
 
 `fields` and `context` are separate key-sorted objects. Scalar JSON kinds are retained; null and empty string remain distinct. The pinned NOX parser exposes every JSON number as `float`, so parser-based round trips cannot prove integer precision above 2^53 even though `JsonWriter.write_int` emits an integer token.
 
-Both internal formatter entry points apply the baseline sanitizer before encoding. This is defense in depth for direct internal use; logger dispatch still sanitizes before any sink boundary. The complete recursive/URL/header/exception redaction contract remains a Phase 4 release blocker.
+Both internal formatter entry points apply the default sanitizer before encoding. This is defense in depth for direct internal use; logger dispatch still sanitizes before any sink boundary. If the default sanitizer fails internally, direct formatting receives a fixed placeholder record rather than the unsafe input.
 
 ## Internal synchronous logger
 
-`Logger(name, threshold, clock)` is an explicit instance with no global default. Disabled events return `False` before reading the clock or constructing a record. Enabled events capture the clock once, apply the baseline sanitizer, and synchronously dispatch cloned snapshots to registered `Sink` implementations.
+`Logger(name, threshold, clock, redactor=None)` is an explicit instance with no global default. Disabled events return `False` before reading the clock or constructing a record. Enabled events capture the clock once, apply the selected internal redactor, and synchronously dispatch cloned snapshots to registered `Sink` implementations. A redactor exception or failed result drops the event, increments a saturating failure counter and returns `False` without exposing the unsafe record or exception text.
 
 The TRACE convenience method is temporarily named `trace_event`. At the pinned compiler revision, the natural `trace` spelling passes type-checking but produces a duplicate LLVM symbol; `log(TRACE, ...)` remains the stable semantic path. This spelling is not frozen.
 
@@ -69,12 +69,12 @@ The TRACE convenience method is temporarily named `trace_event`. At the pinned c
 
 `Sink` exposes lifecycle methods, a stable name and a bounded-storage capability flag. `MemorySink` is a bounded drop-oldest ring with an explicit drop counter and clone-returning snapshots. Recursive logging from a sink is rejected before a second record is captured. No lock is held while calling a sink because the current dispatcher is synchronous and lock-free.
 
-The baseline sanitizer masks the required scalar sensitive field names case-insensitively and delegates `key=value` message masking to `nox.log.mask_assignments`. This is not the completed Phase 4 security surface: nested values, URLs, headers, exception/config/diagnostic paths and failure injection remain gated work.
+`RedactionPolicy(additional_keys)` extends the fixed case-insensitive denylist with copied, validated application keys. `DefaultRedactor` masks scalar fields/context plus assignments, HTTP credential headers, bearer tokens, URL userinfo and sensitive query parameters. Nested values are deliberately unsupported. Exception/config/rotation/async records do not exist yet and must enter the same boundary when introduced. See `docs/security.md` and ADR-0008 for limitations.
 
 ## Internal synchronous I/O sinks
 
 `ConsoleSink(name, target, format_kind)` requires an explicit target and formatter. `CONSOLE_STDOUT` supports text or JSON output. `CONSOLE_STDERR` raises a sanitized `SinkError` because the pinned NOX API has no stderr write primitive. Console `flush()` is a logical no-op, not a process stdio flush.
 
-`FileSink(name, allowed_root, relative_path, format_kind, create_parent)` owns one append-only `FileWriter`. It validates portable relative paths, canonicalizes existing/created parents under the allowed root, rejects tested traversal/symlink escapes, writes one encoded record per unbuffered call and closes idempotently. File `flush()` is a logical no-op and does not imply `fsync` durability.
+`FileSink(name, allowed_root, relative_path, format_kind, create_parent)` owns one append-only `FileWriter`. It validates portable relative paths, rejects recognized credential-key filename components, canonicalizes existing/created parents under the allowed root, rejects tested traversal/symlink escapes, writes one encoded record per unbuffered call and closes idempotently. File `flush()` is a logical no-op and does not imply `fsync` durability.
 
 `FORMAT_TEXT` and `FORMAT_JSON` select the existing deterministic formatters. Both sinks re-enter those sanitizer-backed formatters; file/path/write failures are exposed as stable `SinkError` categories without echoing paths or record data. File storage is unbounded until Phase 6. A trusted application-owned root is required because the pinned API has no `lstat`, no-follow open or race-free directory-relative open.
