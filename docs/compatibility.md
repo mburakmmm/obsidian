@@ -31,10 +31,10 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | `nox.os` | `getenv` raises `OsError` when absent; `current_dir`, `set_var` | Environment overrides require explicit `try/except OsError` | Phase 5 missing/valid/invalid env probes pass locally and in supported CI on LLVM/QBE |
 | `nox.time` | UTC `DateTime`; wall `now_ms`; monotonic `Instant`; `boot_ms` | Inject wall clock for records and monotonic clock for timeouts/durations | Fake clock and epoch-to-RFC3339 probes pass on LLVM/QBE |
 | `nox.thread` | awaited blocking `ThreadChannel.send/recv`; join-only `ThreadHandle`; QBE scalar element restriction | No portable record queue, non-blocking overflow or timeout-aware shutdown contract | Phase 7 executable probes pass locally and in supported CI; async no-go |
-| `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 overlap/lifetime probe passes locally and in supported CI on LLVM/QBE |
-| scheduler | LLVM M:N work-stealing; QBE cooperative tasks plus separate runtimes for `nox.thread.start`; channel waits ignore task cancellation | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak is 2; QBE scalar thread-channel probe passes locally and in supported CI |
+| `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 scalar/lifetime probes pass locally and in supported CI on LLVM/QBE; LLVM overlap observation is reported separately |
+| scheduler | LLVM M:N work-stealing; QBE cooperative tasks plus separate runtimes for `nox.thread.start`; channel waits ignore task cancellation | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak 2 is proven but scheduling-sensitive; QBE scalar thread-channel probe passes locally and in supported CI |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 7 local: 14 files/325 assertions/0 skips plus seven async capability probes; the expanded remote matrix is pending |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 7 local and supported CI: 14 files/325 assertions/0 skips plus seven async capability probes; CI `42301491991` |
 
 ## Known gaps and conservative decisions
 
@@ -64,12 +64,12 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 
 | Platform/backend | Check | Build/run | Tests | Concurrency claim |
 |---|---:|---:|---:|---|
-| macOS arm64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Real worker overlap peak 2; expanded probe pending |
-| macOS arm64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Scalar thread-channel probe passes; expanded probe pending |
-| Linux x64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Real worker overlap peak 2; expanded probe pending |
-| Linux x64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Scalar thread-channel probe passes; expanded probe pending |
-| Linux arm64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Real worker overlap peak 2; expanded probe pending |
-| Linux arm64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Scalar thread-channel probe passes; expanded probe pending |
+| macOS arm64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Peak 2 proven in `42257058031`; bounded recheck reported not observed |
+| macOS arm64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Scalar thread-channel/atomic join-before-free passes |
+| Linux x64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Peak 2 proven in `42257058031`; bounded recheck reported not observed |
+| Linux x64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Scalar thread-channel/atomic join-before-free passes |
+| Linux arm64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Bounded recheck observed real worker peak 2 |
+| Linux arm64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 7 capability probes; CI `42301491991` | Scalar thread-channel/atomic join-before-free passes |
 | Windows x64 | Not run | Not run | Not run | Unsupported until evidence exists |
 
 ## Upgrade policy
