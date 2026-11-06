@@ -1,11 +1,11 @@
-import level
-import redact
-import record
-from clock import Clock
-from fields import LogField
-from level import CRITICAL, DEBUG, ERROR, INFO, TRACE, WARNING
-from record import LogRecord
-from sink import Sink
+import obsidian.level
+import obsidian.redact
+import obsidian.record
+from obsidian.clock import Clock
+from obsidian.fields import LogField
+from obsidian.level import CRITICAL, DEBUG, ERROR, INFO, TRACE, WARNING
+from obsidian.record import LogRecord
+from obsidian.sink import Sink
 
 class Logger:
     logger_name: str
@@ -18,8 +18,8 @@ class Logger:
     _dispatching: bool
 
     def __init__(self, logger_name: str, threshold: int, clock: Clock) -> None:
-        record.validate_logger_name(logger_name)
-        if not level.is_valid(threshold):
+        obsidian.record.validate_logger_name(logger_name)
+        if not obsidian.level.is_valid(threshold):
             raise ValueError("logger threshold is invalid")
         self.logger_name = logger_name
         self.threshold = threshold
@@ -32,7 +32,7 @@ class Logger:
 
     def is_enabled(self, event_level: int) -> bool:
 
-        return not self._closed and level.is_enabled(event_level, self.threshold)
+        return not self._closed and obsidian.level.is_enabled(event_level, self.threshold)
 
     def add_sink(self, target: Sink) -> int:
 
@@ -63,7 +63,7 @@ class Logger:
             raise ValueError("recursive logging is not allowed")
         empty_context: list[LogField] = []
         captured: LogRecord = LogRecord(self._clock.now_ms(), event_level, self.logger_name, message, event_fields, empty_context)
-        safe_record: LogRecord = redact.sanitize_record(captured)
+        safe_record: LogRecord = obsidian.redact.sanitize_record(captured)
         self._dispatching = True
         try:
             for target in self._sinks:

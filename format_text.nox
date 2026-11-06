@@ -1,0 +1,14 @@
+import obsidian.format_common
+import obsidian.redact
+from obsidian.fields import LogField
+from obsidian.record import LogRecord
+
+def format_record(entry: LogRecord) -> str:
+    safe: LogRecord = obsidian.redact.sanitize_record(entry)
+    pieces: list[str] = [obsidian.format_common.format_timestamp(safe.timestamp_ms), safe.level_name, obsidian.format_common.format_text_atom(safe.logger_name)]
+    combined: list[LogField] = obsidian.format_common.merged_text_fields(safe.context_snapshot(), safe.fields_snapshot())
+    for field in combined:
+        pieces.append(obsidian.format_common.format_text_atom(field.key) + "=" + obsidian.format_common.format_text_value(field.value))
+    if len(safe.message) > 0:
+        pieces.append(obsidian.format_common.escape_text(safe.message))
+    return " ".join(pieces)

@@ -28,13 +28,15 @@ Core Obsidian may depend on the pinned NOX standard library and separately appro
 - Threshold checks happen before expensive record/field construction.
 - Redaction happens before any sink, callback or diagnostic boundary.
 - Formatting/filtering/redaction remain pure and separate from I/O.
+- Formatters consume one captured record and never re-read clocks or identifiers.
+- Text flattens context with event-field precedence; JSON keeps `fields` and `context` namespaced and deterministically sorted.
 - The MVP dispatcher is synchronous and bounded sinks are preferred.
 - File rotation and asynchronous dispatch are later gated capabilities.
 - There is no default global logger in v0.1.
 
 ## Module layout
 
-NOX 2.0.143 resolves first-party modules relative to the project root. Future modules will therefore be small root-level files such as `level.nox`, `record.nox`, `logger.nox`, `format_text.nox` and `format_json.nox`. Sink modules may live under `sinks/` and be imported locally as `sinks.memory`; a downstream dependency alias named `obsidian` will expose them as `obsidian.sinks.memory`.
+NOX 2.0.143 resolves package files from the repository root, so modules remain small root-level files such as `level.nox`, `record.nox`, `logger.nox`, `format_text.nox` and `format_json.nox`; sink modules live under `sinks/`. Package-internal imports use the manifest name (`obsidian.*`) so they remain correct regardless of a consumer's chosen dependency alias. Because the pinned compiler does not resolve that self-name for a root-project build, repository tests and examples execute in an isolated downstream consumer created by `scripts/run-package-suite.sh`.
 
 There is no `__init__.nox` facade convention in the audited module contract. Public entry points will be documented by module path rather than simulated with Python package behavior.
 

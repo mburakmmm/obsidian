@@ -1,11 +1,11 @@
-import fields
+import obsidian.fields
 import nox.test
-from clock import FakeClock
-from fields import LogField
-from level import DEBUG, INFO
-from logger import Logger
-from record import LogRecord
-from sinks.memory import MemorySink
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import DEBUG, INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.sinks.memory import MemorySink
 
 class ReentrantSink:
     _logger: Logger
@@ -121,7 +121,7 @@ nox.test.assert_eq_int(first.record_at(0).timestamp_ms, 1000, "first sink timest
 nox.test.assert_eq_int(second.record_at(0).timestamp_ms, 1000, "second sink same timestamp")
 
 fake_clock.advance_ms(5)
-secret_fields: list[LogField] = [LogField("ToKeN", fields.string_value("SYNTHETIC_SECRET_SENTINEL"))]
+secret_fields: list[LogField] = [LogField("ToKeN", obsidian.fields.string_value("SYNTHETIC_SECRET_SENTINEL"))]
 nox.test.assert_true(log_instance.info("password=SYNTHETIC_SECRET_SENTINEL", secret_fields), "secret event emitted safely")
 safe_record: LogRecord = first.record_at(1)
 nox.test.assert_true("SYNTHETIC_SECRET_SENTINEL" not in safe_record.message, "message sentinel masked")

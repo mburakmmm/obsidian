@@ -1,6 +1,6 @@
 # API status
 
-Status: internal development API for `0.1.x`; not frozen and not published.
+Status: internal development API through Phase 2; not frozen and not published.
 
 ## Levels
 
@@ -11,7 +11,7 @@ import obsidian.level
 from obsidian.level import INFO, WARNING
 ```
 
-Local repository tests omit the dependency alias and import `level` directly.
+Repository tests use the same `obsidian.*` imports as consumers and execute through the hermetic downstream-package harness described in ADR-0006.
 
 | Name | Numeric severity | Notes |
 |---|---:|---|
@@ -37,6 +37,27 @@ No logger, record, sink or formatter API is public yet.
 `LogField` rejects empty, oversized, control-character and reserved keys. Error messages are stable categories and do not echo the rejected key.
 
 `LogRecord` captures timestamp milliseconds, numeric/canonical severity, logger name, message, event fields, context and `obsidian.log.v1` schema version. It deep-copies caller-owned field lists and returns clones from accessors. NOX 2.0.143 has no private or language-level immutable class fields, so this is a snapshot-isolation contract rather than an enforcement claim against deliberate mutation of underscore-prefixed internals.
+
+Messages and scalar string fields are limited to 65,536 Unicode code points. `fields` and `context` are independently limited to 256 unique keys. NaN and positive/negative infinity are rejected by `FieldValue`; null, string, integer, finite float and boolean are the supported scalar kinds.
+
+## Internal formatters
+
+`format_text.format_record(record)` returns one human-readable physical line without a trailing newline. It renders the captured UTC time as RFC 3339 with millisecond precision, flattens context/event fields with event-field precedence, sorts keys, JSON-quotes ambiguous keys/string values and escapes all ASCII controls plus DEL. Phase 2 emits no ANSI sequences, so `NO_COLOR` and non-TTY output cannot receive color codes.
+
+`format_json.format_record(record)` returns exactly one JSON object followed by exactly one newline. The fixed top-level schema order is:
+
+1. `timestamp`
+2. `timestamp_ms`
+3. `level`
+4. `logger`
+5. `message`
+6. `fields`
+7. `context`
+8. `schema_version`
+
+`fields` and `context` are separate key-sorted objects. Scalar JSON kinds are retained; null and empty string remain distinct. The pinned NOX parser exposes every JSON number as `float`, so parser-based round trips cannot prove integer precision above 2^53 even though `JsonWriter.write_int` emits an integer token.
+
+Both internal formatter entry points apply the baseline sanitizer before encoding. This is defense in depth for direct internal use; logger dispatch still sanitizes before any sink boundary. The complete recursive/URL/header/exception redaction contract remains a Phase 4 release blocker.
 
 ## Internal synchronous logger
 

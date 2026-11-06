@@ -1,4 +1,4 @@
-from record import LogRecord
+from obsidian.record import LogRecord
 
 protocol Sink:
     def sink_name(self) -> str:

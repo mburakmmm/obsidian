@@ -1,5 +1,5 @@
 import nox.test
-import version
+import obsidian.version
 
-nox.test.assert_eq_str(version.current_version(), "0.0.0", "current version")
-nox.test.assert_true(len(version.current_version()) > 0, "version is non-empty")
+nox.test.assert_eq_str(obsidian.version.current_version(), "0.0.0", "current version")
+nox.test.assert_true(len(obsidian.version.current_version()) > 0, "version is non-empty")

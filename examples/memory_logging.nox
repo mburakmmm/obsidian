@@ -1,17 +1,17 @@
-import fields
-from clock import FakeClock
-from fields import LogField
-from level import INFO
-from logger import Logger
-from record import LogRecord
-from sinks.memory import MemorySink
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.sinks.memory import MemorySink
 
 fake_clock: FakeClock = FakeClock(1700000000000)
 log_instance: Logger = Logger("service.auth", INFO, fake_clock)
 memory: MemorySink = MemorySink("example-memory", 8)
 log_instance.add_sink(memory)
 
-event_fields: list[LogField] = [LogField("token", fields.string_value("SYNTHETIC_EXAMPLE_SECRET"))]
+event_fields: list[LogField] = [LogField("token", obsidian.fields.string_value("SYNTHETIC_EXAMPLE_SECRET"))]
 log_instance.info("password=SYNTHETIC_EXAMPLE_SECRET", event_fields)
 
 entry: LogRecord = memory.record_at(0)

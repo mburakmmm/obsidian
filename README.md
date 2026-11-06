@@ -33,9 +33,11 @@ Obsidian wraps and extends `nox.log`; it does not replace or fork the standard l
 - Bounded drop-oldest memory sink with drop accounting.
 - Stable sink registration and idempotent lifecycle.
 - Pre-sink scalar field redaction and assignment masking.
+- Deterministic single-line text formatting with control-character escaping.
+- Canonical JSONL with RFC 3339 timestamps and preserved scalar JSON types.
 - Deterministic LLVM and QBE tests.
 
-Text/JSONL formatting, console/file sinks, the complete security matrix, context binding, rotation and conditional async dispatch remain gated future phases.
+Console/file sinks, the complete security matrix, context binding, rotation and conditional async dispatch remain gated future phases.
 
 ## Toolchain
 
@@ -54,32 +56,29 @@ See [`docs/compatibility.md`](docs/compatibility.md) before relying on a NOX cap
 The API is internal and may change before the first release:
 
 ```nox
-import fields
-from clock import FakeClock
-from fields import LogField
-from level import INFO
-from logger import Logger
-from sinks.memory import MemorySink
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.sinks.memory import MemorySink
 
 clock: FakeClock = FakeClock(1700000000000)
 log_instance: Logger = Logger("service.auth", INFO, clock)
 memory: MemorySink = MemorySink("memory", 128)
 log_instance.add_sink(memory)
 
-event_fields: list[LogField] = [LogField("user_id", fields.string_value("u-123"))]
+event_fields: list[LogField] = [LogField("user_id", obsidian.fields.string_value("u-123"))]
 log_instance.info("login succeeded", event_fields)
 ```
 
-Downstream packages use the dependency alias prefix, such as `from obsidian.logger import Logger`. Local repository code omits the prefix because NOX resolves first-party modules from the directory containing `nox.json`.
+Library, test and example imports use the package name `obsidian`. The pinned compiler resolves those self-imports correctly when Obsidian is loaded as a dependency, but not while compiling the package as the root project. Development therefore runs a hermetic downstream-consumer fixture; see ADR-0006.
 
 ## Development
 
 ```sh
-noxc check examples/memory_logging.nox
-noxc run --backend llvm examples/memory_logging.nox
-noxc run --backend qbe examples/memory_logging.nox
-noxc test --backend llvm tests
-noxc test --backend qbe tests
+bash scripts/run-package-suite.sh llvm
+bash scripts/run-package-suite.sh qbe
 bash scripts/verify-package-import.sh
 ```
 

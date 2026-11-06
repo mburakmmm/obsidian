@@ -1,7 +1,7 @@
-import fields
+import obsidian.fields
 import nox.log
-from fields import LogField
-from record import LogRecord
+from obsidian.fields import LogField
+from obsidian.record import LogRecord
 
 def is_sensitive_key(key: str) -> bool:
     normalized: str = key.lower()
@@ -11,13 +11,20 @@ def sanitize_fields(source: list[LogField]) -> list[LogField]:
     result: list[LogField] = []
     for field in source:
         if is_sensitive_key(field.key):
-            result.append(LogField(field.key, fields.string_value("***")))
+            result.append(LogField(field.key, obsidian.fields.string_value("***")))
         else:
             result.append(field.clone())
     return result
 
 def sanitize_message(message: str) -> str:
     keys: list[str] = ["password", "passwd", "token", "access_token", "refresh_token", "authorization", "api_key", "secret", "cookie", "set-cookie", "private_key"]
+    normalized: str = message.lower()
+    should_mask: bool = False
+    for key in keys:
+        if key in normalized:
+            should_mask = True
+    if not should_mask:
+        return message
     return nox.log.mask_assignments(message, keys)
 
 def sanitize_record(entry: LogRecord) -> LogRecord:

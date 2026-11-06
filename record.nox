@@ -1,8 +1,11 @@
-import fields
-import level
-from fields import LogField
+import obsidian.fields
+import obsidian.field_set
+import obsidian.level
+from obsidian.fields import LogField
 
 LOG_SCHEMA_VERSION: str = "obsidian.log.v1"
+MAX_MESSAGE_LENGTH: int = 65536
+MAX_FIELDS_PER_SECTION: int = 256
 
 class LogRecord:
     timestamp_ms: int
@@ -17,16 +20,21 @@ class LogRecord:
     def __init__(self, timestamp_ms: int, event_level: int, logger_name: str, message: str, event_fields: list[LogField], context: list[LogField]) -> None:
         if timestamp_ms < 0:
             raise ValueError("timestamp must not be negative")
-        if not level.is_event_level(event_level):
+        if not obsidian.level.is_event_level(event_level):
             raise ValueError("record level must be an event level")
         validate_logger_name(logger_name)
+        validate_message(message)
+        if len(event_fields) > MAX_FIELDS_PER_SECTION or len(context) > MAX_FIELDS_PER_SECTION:
+            raise ValueError("record has too many fields")
+        obsidian.field_set.validate_unique_field_keys(event_fields)
+        obsidian.field_set.validate_unique_field_keys(context)
         self.timestamp_ms = timestamp_ms
         self.event_level = event_level
-        self.level_name = level.canonical_name(event_level)
+        self.level_name = obsidian.level.canonical_name(event_level)
         self.logger_name = logger_name
         self.message = message
-        self._fields = fields.clone_fields(event_fields)
-        self._context = fields.clone_fields(context)
+        self._fields = obsidian.fields.clone_fields(event_fields)
+        self._context = obsidian.fields.clone_fields(context)
         self.schema_version = LOG_SCHEMA_VERSION
 
     def field_count(self) -> int:
@@ -47,15 +55,19 @@ class LogRecord:
 
     def fields_snapshot(self) -> list[LogField]:
 
-        return fields.clone_fields(self._fields)
+        return obsidian.fields.clone_fields(self._fields)
 
     def context_snapshot(self) -> list[LogField]:
 
-        return fields.clone_fields(self._context)
+        return obsidian.fields.clone_fields(self._context)
 
     def clone(self) -> LogRecord:
 
         return LogRecord(self.timestamp_ms, self.event_level, self.logger_name, self.message, self._fields, self._context)
+
+def validate_message(message: str) -> None:
+    if len(message) > MAX_MESSAGE_LENGTH:
+        raise ValueError("record message is too long")
 
 def validate_logger_name(logger_name: str) -> None:
     if len(logger_name) == 0:

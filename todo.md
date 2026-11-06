@@ -8,10 +8,10 @@
 
 - [x] `AGENTS.md` okundu ve geliştirme kapıları bu plana aktarıldı.
 - [x] Proje dizini incelendi: başlangıçta yalnızca `AGENTS.md` vardı; henüz Git deposu değildi.
-- [x] Yerel araç gözlemi kaydedildi: `noxc 2.0.143`.
+- [x] Yerel araç gözlemleri kaydedildi: başlangıçta `noxc 2.0.143`; 2026-11-06 ambient kurulum `2.0.181`, final faz kanıtı izole `2.0.143` arşiviyle alındı.
 - [x] Upstream ana dal gözlemi kaydedildi: `01fc411f3a17b969ceff984fbd46b9e857a592d1` (`v2.0.170`, 2026-11-05 tarihinde görülen son commit).
 - [x] Test edilecek NOX revizyonu seçilip sabitlendi.
-- [x] Yerel derleyici, sabitlenen revizyon ve `docs/compatibility.md` aynı sürümü gösteriyor.
+- [x] İzole final test derleyicisi, sabitlenen revizyon ve `docs/compatibility.md` aynı sürümü gösteriyor; ambient kullanıcı kurulumu destek kanıtına dahil edilmiyor.
 - [x] Phase 0 yerel kapısı geçti; macOS arm64 LLVM/QBE kanıtı kaydedildi.
 - [x] Phase 1 yerel kapısı geçti; senkron çekirdek iki backend'de doğrulandı.
 - [x] GitHub CI üzerinden macOS arm64 ve Linux x64/arm64 kanıtı alındı.
@@ -94,6 +94,7 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 - [x] `docs/decisions/0002-field-value-model.md` içinde typed model yönünü ve Phase 1 compile sorularını kaydet.
 - [x] `docs/decisions/0003-error-policy.md` içinde raise/status/diagnostics yönünü ve gerekli kanıtları kaydet.
 - [x] `docs/decisions/0004-package-layout.md` oluştur; denenmiş import söz dizimini kaydet.
+- [x] Gerçek çok-modüllü tüketici probu sonrası ADR-0006 ile package self-import ve hermetik test düzenini düzelt.
 - [x] CI iskeletini belgelenen macOS/Linux runner ve LLVM/QBE matrisiyle oluştur; sonuç gelene kadar platform desteği iddia etme.
 - [x] CI; test vaka/assertion/skip sayılarını ayrı raporlayacak şekilde tasarlandı.
 
@@ -174,40 +175,40 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 
 ### 6.1 Text formatter
 
-- [ ] Tek satırlı varsayılan format ve stable field ordering tanımlandı.
-- [ ] Newline, tab, carriage return ve kontrol karakterleri log forging'i önleyecek biçimde escape ediliyor.
-- [ ] UTC timestamp biçimi doğrulanmış NOX time API'siyle üretiliyor.
-- [ ] ANSI yalnız explicit/kanıtlanmış TTY koşulunda; `NO_COLOR` her zaman üstün.
-- [ ] ANSI JSON/file çıktısına sızmıyor.
-- [ ] Maksimum mesaj/alan boyutu davranışı tanımlandı.
+- [x] Tek satırlı varsayılan format ve stable field ordering tanımlandı.
+- [x] Newline, tab, carriage return ve kontrol karakterleri log forging'i önleyecek biçimde escape ediliyor.
+- [x] UTC timestamp biçimi doğrulanmış NOX time API'siyle üretiliyor.
+- [x] Phase 2'de ANSI yolu yok; TTY kanıtlanana kadar renk kapalı ve `NO_COLOR` ile uyumlu.
+- [x] ANSI JSON/file çıktısına sızmıyor.
+- [x] Mesaj/string alanı 65.536 code point, fields/context bölümü 256 unique key ile bounded.
 
 ### 6.2 JSONL formatter
 
-- [ ] Şema sürümü ve reserved alanlar belgelendi.
-- [ ] `JsonWriter` veya `dump_string` kullanılıyor; untrusted değerler concat ile encode edilmiyor.
-- [ ] Her event tam bir JSON object ve tam bir newline üretiyor.
-- [ ] String/int/float/bool/null ve desteklenen nested tipler korunuyor.
-- [ ] Embedded newline JSON string içinde escape ediliyor.
-- [ ] Non-finite float politikası reject/normalize olarak açık ve testli.
-- [ ] Unsupported value fail-closed davranıyor; invalid JSON üretmiyor.
-- [ ] Null, boş string ve eksik alan ayrımı korunuyor.
+- [x] Şema sürümü ve reserved alanlar belgelendi.
+- [x] `JsonWriter`/`dump_string` kullanılıyor; untrusted scalar değerler concat ile encode edilmiyor.
+- [x] Her event tam bir JSON object ve tam bir newline üretiyor.
+- [x] String/int/finite-float/bool/null korunuyor; nested model ADR-0002 kapsamında açıkça deferred.
+- [x] Embedded newline JSON string içinde escape ediliyor.
+- [x] Non-finite float politikası reject olarak açık ve testli.
+- [x] Tagged model unknown/unsupported value'ları fail-closed reddediyor; invalid JSON üretmiyor.
+- [x] Null, boş string ve eksik alan ayrımı korunuyor.
 
 ### 6.3 Formatter testleri
 
-- [ ] Unicode ve non-ASCII round-trip.
-- [ ] Quote, backslash ve tüm JSON kontrol karakterleri.
-- [ ] Multiline injection ve terminal escape girdileri.
-- [ ] Büyük mesaj ve sınır değerleri.
-- [ ] Her JSONL satırını `nox.json.parse` ile tekrar parse etme.
-- [ ] Tip koruma assertion'ları.
-- [ ] Exact golden yapı testi; incidental map order'a bağımlı değil.
-- [ ] Formatter hata yolunda orijinal unsafe record emit edilmiyor.
-- [ ] `examples/json_logging.nox` ve formatter API belgeleri.
+- [x] Unicode ve non-ASCII round-trip.
+- [x] Quote, backslash ve tüm JSON kontrol karakterleri.
+- [x] Multiline injection ve terminal escape girdileri.
+- [x] Büyük mesaj ve sınır değerleri.
+- [x] Her JSONL satırını `nox.json.parse` ile tekrar parse etme.
+- [x] Tip koruma assertion'ları.
+- [x] Exact golden yapı testi; incidental map order'a bağımlı değil.
+- [x] Formatter hata yolunda orijinal unsafe record emit edilmiyor.
+- [x] `examples/json_logging.nox`, ADR-0005 ve formatter API belgeleri.
 
 ### Phase 2 kapısı
 
-- [ ] Üretilen tüm JSONL satırları geçerli ve tipleri koruyor.
-- [ ] Text/JSON çıktısında injection kanıtı yok.
+- [x] Üretilen tüm JSONL satırları geçerli ve desteklenen scalar tipleri koruyor.
+- [x] Text/JSON çıktısında test edilen kontrol karakterleri için injection kanıtı yok.
 
 ---
 
@@ -534,3 +535,4 @@ File rotation ve async çalışma, sırasıyla Phase 1–4 ve Phase 6 kapıları
 | 2026-11-05 | `0.1.x` / Phase 1 | Numeric levels, typed scalar fields, caller-isolated records, injected clocks, sink protocol, bounded memory sink, synchronous logger ve baseline pre-sink redaction eklendi | LLVM/QBE: 4/4 test dosyası; 99 assertion; 0 skip; 2 expected compile-fail; deterministic sanitized example: pass | Phase 1 yerel kapısı geçti; `Logger.trace` compiler codegen kısıtı belgeli; Phase 2 formatter sırada |
 | 2026-11-05 | Release altyapısı | CI matrisi, issue/PR şablonları, katkı ve güvenlik politikaları ile immutable tag tabanlı GitHub Release + `noxc publish` hattı eklendi | Workflow/YAML/shell doğrulaması ve iki backend regresyonu; ilk remote CI sonucu ayrıca kaydedilecek | `0.0.0` yayınlanmaz; ilk yayın seçilmiş lisans, `NOXPKG_TOKEN` ve ilgili faz kapısı sonrası |
 | 2026-11-05 | Uzak CI kanıtı | GitHub Actions run `41983292400`; macOS arm64, Linux x64 ve Linux arm64 matrisi | Her platformda format, LLVM/QBE testleri, 2 compile-fail fixture ve paket alias/import probu geçti | Phase 0 uzak platform kapısı geçti; Phase 2 sırada |
+| 2026-11-06 | `0.2.x` / Phase 2 | RFC3339 text/JSONL formatter, deterministic field ordering, scalar type preservation, size/count bounds, non-finite reject politikası ve doğru package self-importları eklendi | Doğrulanmış NOX 2.0.143 arşiviyle hermetik tüketicide LLVM/QBE: 6 test dosyası, 151 assertion, 0 skip; 3 exact örnek, transitive import/lock probu geçti | Uzak Phase 2 CI kanıtı push sonrası alınacak; Phase 3 sırada |

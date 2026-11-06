@@ -64,18 +64,11 @@ jobs:
 
       - name: Check and run LLVM
         shell: bash
-        run: |
-          noxc check examples/hello.nox
-          test "$(noxc run --backend llvm examples/hello.nox)" = "obsidian 0.0.0"
-          test "$(noxc run --backend llvm examples/memory_logging.nox)" = "1700000000000 INFO service.auth password=*** ***"
-          noxc test --backend llvm tests
+        run: bash scripts/run-package-suite.sh llvm
 
       - name: Check and run QBE
         shell: bash
-        run: |
-          test "$(noxc run --backend qbe examples/hello.nox)" = "obsidian 0.0.0"
-          test "$(noxc run --backend qbe examples/memory_logging.nox)" = "1700000000000 INFO service.auth password=*** ***"
-          noxc test --backend qbe tests
+        run: bash scripts/run-package-suite.sh qbe
 
       - name: Negative compile fixture
         shell: bash
@@ -98,7 +91,7 @@ jobs:
           test_files="$(find tests -name '*_test.nox' -type f | wc -l | tr -d ' ')"
           assertions="$(grep -Rho 'nox\.test\.assert_[a-z_]*' tests | wc -l | tr -d ' ')"
           {
-            echo "### Phase 0 test evidence"
+            echo "### Obsidian test evidence"
             echo "- test files: $test_files"
             echo "- assertions: $assertions"
             echo "- skips: 0"

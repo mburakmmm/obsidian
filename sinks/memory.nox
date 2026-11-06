@@ -1,4 +1,4 @@
-from record import LogRecord
+from obsidian.record import LogRecord
 
 class MemorySink:
     _name: str

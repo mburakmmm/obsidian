@@ -1,3 +1,3 @@
-import version
+import obsidian.version
 
-print("obsidian " + version.current_version())
+print("obsidian " + obsidian.version.current_version())

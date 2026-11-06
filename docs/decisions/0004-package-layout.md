@@ -1,6 +1,6 @@
 # ADR-0004: project-root NOX modules
 
-- Status: accepted for Phase 0
+- Status: superseded by ADR-0006
 - Date: 2026-11-05
 
 ## Context
@@ -11,9 +11,9 @@ At NOX 2.0.143, first-party imports resolve `.nox` modules under the directory c
 
 ## Decision
 
-Place library modules at repository root and sink modules under `sinks/`. Local code imports `logger` or `sinks.memory`; a consumer whose dependency alias is `obsidian` imports `obsidian.logger` or `obsidian.sinks.memory`.
+Place library modules at repository root and sink modules under `sinks/`. The original Phase 0 decision used unqualified imports for local code and `obsidian.*` imports for consumers.
 
-Tests live under `tests/` but are run from repository root so the same `nox.json` is found. Negative compile fixtures do not use the `*_test.nox` suffix because `noxc test` treats compilation failure as a failed suite.
+Phase 2's multi-module dependency probe showed that the local-import half of this decision does not produce a consumable package. ADR-0006 replaces the import and test execution details while retaining the project-root file layout.
 
 ## Consequences
 

@@ -10,12 +10,22 @@ consumer_root="$probe_root/consumer"
 probe_nox_home="$probe_root/nox-home"
 
 mkdir -p "$package_root" "$consumer_root" "$probe_nox_home"
-cp "$project_root/nox.json" "$project_root/version.nox" "$package_root/"
+cp \
+  "$project_root/nox.json" \
+  "$project_root/field_keys.nox" \
+  "$project_root/field_set.nox" \
+  "$project_root/fields.nox" \
+  "$project_root/format_common.nox" \
+  "$project_root/format_json.nox" \
+  "$project_root/level.nox" \
+  "$project_root/record.nox" \
+  "$project_root/redact.nox" \
+  "$package_root/"
 
 git -C "$package_root" init -q -b main
 git -C "$package_root" config user.name "Obsidian package probe"
 git -C "$package_root" config user.email "package-probe@example.invalid"
-git -C "$package_root" add nox.json version.nox
+git -C "$package_root" add .
 git -C "$package_root" commit -q -m "package import probe"
 
 cd "$consumer_root"
@@ -27,8 +37,9 @@ NOX_HOME="$probe_nox_home" noxc fetch >/dev/null
 llvm_output="$(NOX_HOME="$probe_nox_home" noxc run --backend llvm main.nox)"
 qbe_output="$(NOX_HOME="$probe_nox_home" noxc run --backend qbe main.nox)"
 
-test "$llvm_output" = "0.0.0"
-test "$qbe_output" = "0.0.0"
+expected='{"timestamp":"1970-01-01T00:00:00.000Z","timestamp_ms":0,"level":"INFO","logger":"consumer","message":"package import","fields":{"ok":true},"context":{},"schema_version":"obsidian.log.v1"}'
+test "$llvm_output" = "$expected"
+test "$qbe_output" = "$expected"
 
 resolved_sha="$(git -C "$package_root" rev-parse HEAD)"
 grep -q "\"resolved\": \"$resolved_sha\"" nox.lock

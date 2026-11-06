@@ -16,7 +16,7 @@ The secret is the registry token stored in `$NOX_HOME/credentials`, not a GitHub
 1. Complete the applicable phase gate in `todo.md`.
 2. Set the same exact version in `nox.json` and `version.nox`; the gate checks both.
 3. Move relevant entries from `Unreleased` into `## [X.Y.Z] - YYYY-MM-DD` in `CHANGELOG.md`.
-4. Run both backend test suites, negative fixtures and the package import probe.
+4. Run `scripts/run-package-suite.sh` for LLVM and QBE, the negative fixtures and the package import probe.
 5. Commit the release preparation and wait for required CI checks.
 6. Create an annotated tag that points at that exact commit and push it without ever retargeting it:
 

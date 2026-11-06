@@ -1,0 +1,17 @@
+import obsidian.fields
+import obsidian.format_json
+import obsidian.format_text
+import nox.test
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.record import LogRecord
+
+event_fields: list[LogField] = [LogField("z", obsidian.fields.int_value(2)), LogField("same", obsidian.fields.string_value("event")), LogField("b", obsidian.fields.bool_value(True))]
+context_fields: list[LogField] = [LogField("same", obsidian.fields.string_value("context")), LogField("a", obsidian.fields.null_value())]
+entry: LogRecord = LogRecord(1700000000123, INFO, "service auth", "line1\nline2\t\\tail", event_fields, context_fields)
+
+expected_text: str = "2023-11-14T22:13:20.123Z INFO \"service auth\" a=null b=true same=\"event\" z=2 line1\\nline2\\t\\\\tail"
+expected_json: str = "{\"timestamp\":\"2023-11-14T22:13:20.123Z\",\"timestamp_ms\":1700000000123,\"level\":\"INFO\",\"logger\":\"service auth\",\"message\":\"line1\\nline2\\t\\\\tail\",\"fields\":{\"b\":true,\"same\":\"event\",\"z\":2},\"context\":{\"a\":null,\"same\":\"context\"},\"schema_version\":\"obsidian.log.v1\"}\n"
+
+nox.test.assert_eq_str(obsidian.format_text.format_record(entry), expected_text, "canonical text golden")
+nox.test.assert_eq_str(obsidian.format_json.format_record(entry), expected_json, "canonical JSONL golden")

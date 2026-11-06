@@ -1,0 +1,36 @@
+import obsidian.format_common
+import obsidian.redact
+from obsidian.fields import LogField
+from nox.json import JsonWriter
+from obsidian.record import LogRecord
+
+def write_field_object(writer: JsonWriter, source: list[LogField]) -> None:
+    ordered: list[LogField] = obsidian.format_common.sorted_fields(source)
+    writer.begin_object()
+    for field in ordered:
+        writer.write_key(field.key)
+        obsidian.format_common.write_json_value(writer, field.value)
+    writer.end_object()
+
+def format_record(entry: LogRecord) -> str:
+    safe: LogRecord = obsidian.redact.sanitize_record(entry)
+    writer: JsonWriter = JsonWriter()
+    writer.begin_object()
+    writer.write_key("timestamp")
+    writer.write_string(obsidian.format_common.format_timestamp(safe.timestamp_ms))
+    writer.write_key("timestamp_ms")
+    writer.write_int(safe.timestamp_ms)
+    writer.write_key("level")
+    writer.write_string(safe.level_name)
+    writer.write_key("logger")
+    writer.write_string(safe.logger_name)
+    writer.write_key("message")
+    writer.write_string(safe.message)
+    writer.write_key("fields")
+    write_field_object(writer, safe.fields_snapshot())
+    writer.write_key("context")
+    write_field_object(writer, safe.context_snapshot())
+    writer.write_key("schema_version")
+    writer.write_string(safe.schema_version)
+    writer.end_object()
+    return writer.build() + "\n"

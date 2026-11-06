@@ -1,0 +1,156 @@
+import obsidian.fields
+import obsidian.format_common
+import obsidian.format_json
+import obsidian.format_text
+import nox.json
+import nox.test
+import obsidian.record
+from obsidian.fields import MAX_STRING_FIELD_LENGTH, LogField
+from obsidian.level import INFO
+from obsidian.record import MAX_FIELDS_PER_SECTION, MAX_MESSAGE_LENGTH, LogRecord
+
+def object_value_by_key(source: JsonValue, key: str) -> JsonValue:
+    index: int = 0
+    while index < nox.json.object_len(source):
+        if nox.json.object_key(source, index) == key:
+            return nox.json.object_value(source, index)
+        index += 1
+    raise ValueError("JSON object key not found")
+
+def nan_rejected() -> bool:
+    try:
+        obsidian.fields.float_value(0.0 / 0.0)
+        return False
+    except ValueError as e:
+        return e.message == "float field value must be finite"
+
+def positive_infinity_rejected() -> bool:
+    try:
+        obsidian.fields.float_value(1.0 / 0.0)
+        return False
+    except ValueError as e:
+        return e.message == "float field value must be finite"
+
+def negative_infinity_rejected() -> bool:
+    try:
+        obsidian.fields.float_value(-1.0 / 0.0)
+        return False
+    except ValueError as e:
+        return e.message == "float field value must be finite"
+
+def oversized_string_rejected() -> bool:
+    try:
+        obsidian.fields.string_value("x" * (MAX_STRING_FIELD_LENGTH + 1))
+        return False
+    except ValueError as e:
+        return e.message == "string field value is too long"
+
+def oversized_message_rejected() -> bool:
+    empty: list[LogField] = []
+    try:
+        LogRecord(0, INFO, "test", "x" * (MAX_MESSAGE_LENGTH + 1), empty, empty)
+        return False
+    except ValueError as e:
+        return e.message == "record message is too long"
+
+def duplicate_fields_rejected() -> bool:
+    duplicate: list[LogField] = [LogField("same", obsidian.fields.int_value(1)), LogField("same", obsidian.fields.int_value(2))]
+    empty: list[LogField] = []
+    try:
+        LogRecord(0, INFO, "test", "duplicate", duplicate, empty)
+        return False
+    except ValueError as e:
+        return e.message == "field keys must be unique"
+
+def too_many_fields_rejected() -> bool:
+    many: list[LogField] = []
+    index: int = 0
+    while index <= MAX_FIELDS_PER_SECTION:
+        many.append(LogField("key_" + str(index), obsidian.fields.int_value(index)))
+        index += 1
+    empty: list[LogField] = []
+    try:
+        LogRecord(0, INFO, "test", "many", many, empty)
+        return False
+    except ValueError as e:
+        return e.message == "record has too many fields"
+
+nox.test.assert_eq_str(obsidian.format_common.format_timestamp(0), "1970-01-01T00:00:00.000Z", "epoch RFC3339")
+nox.test.assert_eq_str(obsidian.format_common.format_timestamp(1700000000123), "2023-11-14T22:13:20.123Z", "millisecond RFC3339")
+nox.test.assert_true(nan_rejected(), "NaN rejected")
+nox.test.assert_true(positive_infinity_rejected(), "positive infinity rejected")
+nox.test.assert_true(negative_infinity_rejected(), "negative infinity rejected")
+nox.test.assert_true(oversized_string_rejected(), "oversized string field rejected")
+nox.test.assert_true(oversized_message_rejected(), "oversized message rejected")
+nox.test.assert_true(duplicate_fields_rejected(), "duplicate fields rejected")
+nox.test.assert_true(too_many_fields_rejected(), "field count bounded")
+
+boundary_fields: list[LogField] = [LogField("value", obsidian.fields.string_value("x" * MAX_STRING_FIELD_LENGTH))]
+empty_context: list[LogField] = []
+boundary_record: LogRecord = LogRecord(0, INFO, "boundary", "x" * MAX_MESSAGE_LENGTH, boundary_fields, empty_context)
+nox.test.assert_eq_int(len(boundary_record.message), MAX_MESSAGE_LENGTH, "message boundary accepted")
+nox.test.assert_eq_int(len(boundary_record.field_at(0).value.text_value), MAX_STRING_FIELD_LENGTH, "string boundary accepted")
+
+event_fields: list[LogField] = [LogField("zeta", obsidian.fields.int_value(7)), LogField("active", obsidian.fields.bool_value(True)), LogField("empty", obsidian.fields.string_value("")), LogField("missing", obsidian.fields.null_value()), LogField("ratio", obsidian.fields.float_value(1.5)), LogField("token", obsidian.fields.string_value("SYNTHETIC_FORMATTER_SECRET"))]
+context_fields: list[LogField] = [LogField("request", obsidian.fields.string_value("req-42")), LogField("zeta", obsidian.fields.int_value(1))]
+entry: LogRecord = LogRecord(1700000000123, INFO, "service.auth", "Merhaba 世界\npassword=SYNTHETIC_FORMATTER_SECRET", event_fields, context_fields)
+
+json_line: str = obsidian.format_json.format_record(entry)
+nox.test.assert_true(json_line.endswith("\n"), "JSONL ends with newline")
+nox.test.assert_eq_int(json_line.count("\n"), 1, "JSONL has one physical newline")
+nox.test.assert_true("SYNTHETIC_FORMATTER_SECRET" not in json_line, "JSONL masks sentinel")
+
+parsed: JsonValue = nox.json.parse(json_line)
+nox.test.assert_true(nox.json.is_object(parsed), "JSONL parses as object")
+nox.test.assert_eq_int(nox.json.object_len(parsed), 8, "schema field count")
+nox.test.assert_eq_str(nox.json.object_key(parsed, 0), "timestamp", "schema order timestamp")
+nox.test.assert_eq_str(nox.json.object_key(parsed, 1), "timestamp_ms", "schema order timestamp_ms")
+nox.test.assert_eq_str(nox.json.object_key(parsed, 2), "level", "schema order level")
+nox.test.assert_eq_str(nox.json.object_key(parsed, 3), "logger", "schema order logger")
+nox.test.assert_eq_str(nox.json.object_key(parsed, 4), "message", "schema order message")
+nox.test.assert_eq_str(nox.json.object_key(parsed, 5), "fields", "schema order fields")
+nox.test.assert_eq_str(nox.json.object_key(parsed, 6), "context", "schema order context")
+nox.test.assert_eq_str(nox.json.object_key(parsed, 7), "schema_version", "schema order version")
+
+nox.test.assert_eq_str(nox.json.as_string(object_value_by_key(parsed, "timestamp")), "2023-11-14T22:13:20.123Z", "timestamp value")
+nox.test.assert_eq_int(int(nox.json.as_number(object_value_by_key(parsed, "timestamp_ms"))), 1700000000123, "timestamp_ms value")
+nox.test.assert_eq_str(nox.json.as_string(object_value_by_key(parsed, "message")), "Merhaba 世界\npassword=***", "Unicode and embedded newline round trip")
+nox.test.assert_eq_str(nox.json.as_string(object_value_by_key(parsed, "schema_version")), "obsidian.log.v1", "schema version value")
+
+parsed_fields: JsonValue = object_value_by_key(parsed, "fields")
+nox.test.assert_eq_int(nox.json.object_len(parsed_fields), 6, "typed fields count")
+nox.test.assert_eq_str(nox.json.object_key(parsed_fields, 0), "active", "fields sorted first")
+nox.test.assert_eq_str(nox.json.object_key(parsed_fields, 5), "zeta", "fields sorted last")
+nox.test.assert_true(nox.json.as_bool(object_value_by_key(parsed_fields, "active")), "boolean type retained")
+nox.test.assert_eq_str(nox.json.as_string(object_value_by_key(parsed_fields, "empty")), "", "empty string retained")
+nox.test.assert_true(nox.json.is_null(object_value_by_key(parsed_fields, "missing")), "null retained")
+nox.test.assert_eq_float(nox.json.as_number(object_value_by_key(parsed_fields, "ratio")), 1.5, "float retained")
+nox.test.assert_eq_int(int(nox.json.as_number(object_value_by_key(parsed_fields, "zeta"))), 7, "integer JSON number retained")
+nox.test.assert_eq_str(nox.json.as_string(object_value_by_key(parsed_fields, "token")), "***", "secret field masked")
+
+parsed_context: JsonValue = object_value_by_key(parsed, "context")
+nox.test.assert_eq_int(nox.json.object_len(parsed_context), 2, "context count")
+nox.test.assert_eq_str(nox.json.object_key(parsed_context, 0), "request", "context sorted")
+nox.test.assert_eq_int(int(nox.json.as_number(object_value_by_key(parsed_context, "zeta"))), 1, "JSON context remains namespaced")
+
+text_line: str = obsidian.format_text.format_record(entry)
+nox.test.assert_true("\n" not in text_line, "text output is one physical line")
+nox.test.assert_true("SYNTHETIC_FORMATTER_SECRET" not in text_line, "text masks sentinel")
+nox.test.assert_true("zeta=7" in text_line, "event field wins text collision")
+nox.test.assert_true("zeta=1" not in text_line, "context collision omitted from text")
+nox.test.assert_true("Merhaba 世界\\npassword=***" in text_line, "text preserves Unicode and escapes newline")
+
+all_controls: str = ""
+codepoint: int = 0
+while codepoint < 32:
+    all_controls += chr(codepoint)
+    codepoint += 1
+all_controls += chr(127)
+control_record: LogRecord = LogRecord(0, INFO, "control", all_controls, empty_context, empty_context)
+control_text: str = obsidian.format_text.format_record(control_record)
+control_json: str = obsidian.format_json.format_record(control_record)
+nox.test.assert_eq_int(control_text.count("\n"), 0, "all text controls escaped")
+nox.test.assert_true("\\u0000" in control_text, "NUL escaped in text")
+nox.test.assert_true("\\u001b" in control_text, "escape character escaped in text")
+nox.test.assert_true("\\u007f" in control_text, "DEL escaped in text")
+nox.test.assert_eq_str(nox.json.as_string(object_value_by_key(nox.json.parse(control_json), "message")), all_controls, "all JSON controls round trip")

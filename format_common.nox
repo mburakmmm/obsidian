@@ -1,0 +1,109 @@
+import obsidian.fields
+import obsidian.field_set
+import nox.json
+import nox.time
+from obsidian.fields import FIELD_BOOL, FIELD_FLOAT, FIELD_INT, FIELD_NULL, FIELD_STRING, FieldValue, LogField
+from nox.json import JsonWriter
+
+def format_timestamp(timestamp_ms: int) -> str:
+    if timestamp_ms < 0:
+        raise ValueError("timestamp must not be negative")
+    value: nox.time.DateTime = nox.time.from_epoch_ms(timestamp_ms)
+    milliseconds: int = timestamp_ms % 1000
+    return f"{value.year:04d}-{value.month:02d}-{value.day:02d}T{value.hour:02d}:{value.minute:02d}:{value.second:02d}.{milliseconds:03d}Z"
+
+def sorted_fields(source: list[LogField]) -> list[LogField]:
+    obsidian.field_set.validate_unique_field_keys(source)
+    remaining: list[LogField] = obsidian.fields.clone_fields(source)
+    result: list[LogField] = []
+    while len(remaining) > 0:
+        smallest: int = 0
+        index: int = 1
+        while index < len(remaining):
+            if remaining[index].key < remaining[smallest].key:
+                smallest = index
+            index += 1
+        result.append(remaining[smallest].clone())
+        del remaining[smallest]
+    return result
+
+def contains_key(source: list[LogField], key: str) -> bool:
+    for field in source:
+        if field.key == key:
+            return True
+    return False
+
+def merged_text_fields(context: list[LogField], event_fields: list[LogField]) -> list[LogField]:
+    obsidian.field_set.validate_unique_field_keys(context)
+    obsidian.field_set.validate_unique_field_keys(event_fields)
+    merged: list[LogField] = []
+    for field in context:
+        if not contains_key(event_fields, field.key):
+            merged.append(field.clone())
+    for field in event_fields:
+        merged.append(field.clone())
+    return sorted_fields(merged)
+
+def escape_text(value: str) -> str:
+    pieces: list[str] = []
+    for character in value:
+        codepoint: int = ord(character)
+        if character == "\\":
+            pieces.append("\\\\")
+        elif character == "\n":
+            pieces.append("\\n")
+        elif character == "":
+            pieces.append("\\r")
+        elif character == "\t":
+            pieces.append("\\t")
+        elif codepoint < 32 or codepoint == 127:
+            pieces.append("\\u" + format(codepoint, "04x"))
+        else:
+            pieces.append(character)
+    return "".join(pieces)
+
+def is_safe_text_atom(value: str) -> bool:
+    if len(value) == 0:
+        return False
+    for character in value:
+        if not character.isalnum() and character != "_" and character != "." and character != "-":
+            return False
+    return True
+
+def format_text_atom(value: str) -> str:
+    if is_safe_text_atom(value):
+        return value
+    return nox.json.dump_string(value)
+
+def format_text_value(value: FieldValue) -> str:
+    if value.kind == FIELD_NULL:
+        return "null"
+    if value.kind == FIELD_STRING:
+        return nox.json.dump_string(value.text_value)
+    if value.kind == FIELD_INT:
+        return str(value.int_value)
+    if value.kind == FIELD_FLOAT:
+        if not obsidian.fields.is_finite_float(value.float_value):
+            raise ValueError("float field value must be finite")
+        return nox.json.dump_number(value.float_value)
+    if value.kind == FIELD_BOOL:
+        if value.bool_value:
+            return "true"
+        return "false"
+    raise ValueError("unknown field value kind")
+
+def write_json_value(writer: JsonWriter, value: FieldValue) -> None:
+    if value.kind == FIELD_NULL:
+        writer.write_null()
+    elif value.kind == FIELD_STRING:
+        writer.write_string(value.text_value)
+    elif value.kind == FIELD_INT:
+        writer.write_int(value.int_value)
+    elif value.kind == FIELD_FLOAT:
+        if not obsidian.fields.is_finite_float(value.float_value):
+            raise ValueError("float field value must be finite")
+        writer.write_float(value.float_value)
+    elif value.kind == FIELD_BOOL:
+        writer.write_bool(value.bool_value)
+    else:
+        raise ValueError("unknown field value kind")

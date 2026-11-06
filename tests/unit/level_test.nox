@@ -1,18 +1,18 @@
-import level
+import obsidian.level
 import nox.log
 import nox.test
-from level import CRITICAL, DEBUG, ERROR, INFO, OFF, TRACE, WARN, WARNING
+from obsidian.level import CRITICAL, DEBUG, ERROR, INFO, OFF, TRACE, WARN, WARNING
 
 def unknown_name_raises() -> bool:
     try:
-        level.from_name("NOTICE")
+        obsidian.level.from_name("NOTICE")
         return False
     except ValueError as e:
         return e.message == "unknown Obsidian level name"
 
 def unknown_value_raises() -> bool:
     try:
-        level.canonical_name(999)
+        obsidian.level.canonical_name(999)
         return False
     except ValueError as e:
         return e.message == "unknown Obsidian level"
@@ -34,29 +34,29 @@ nox.test.assert_eq_int(ERROR, 40, "ERROR numeric severity")
 nox.test.assert_eq_int(CRITICAL, 50, "CRITICAL numeric severity")
 nox.test.assert_eq_int(OFF, 100, "OFF numeric severity")
 
-nox.test.assert_eq_str(level.canonical_name(TRACE), "TRACE", "TRACE canonical name")
-nox.test.assert_eq_str(level.canonical_name(WARNING), "WARNING", "WARNING canonical name")
-nox.test.assert_eq_str(level.canonical_name(CRITICAL), "CRITICAL", "CRITICAL canonical name")
-nox.test.assert_eq_str(level.canonical_name(OFF), "OFF", "OFF canonical name")
+nox.test.assert_eq_str(obsidian.level.canonical_name(TRACE), "TRACE", "TRACE canonical name")
+nox.test.assert_eq_str(obsidian.level.canonical_name(WARNING), "WARNING", "WARNING canonical name")
+nox.test.assert_eq_str(obsidian.level.canonical_name(CRITICAL), "CRITICAL", "CRITICAL canonical name")
+nox.test.assert_eq_str(obsidian.level.canonical_name(OFF), "OFF", "OFF canonical name")
 
-nox.test.assert_eq_int(level.from_name("TRACE"), TRACE, "parse TRACE")
-nox.test.assert_eq_int(level.from_name("WARN"), WARNING, "parse WARN alias")
-nox.test.assert_eq_int(level.from_name("WARNING"), WARNING, "parse WARNING")
-nox.test.assert_eq_int(level.from_name("OFF"), OFF, "parse OFF")
+nox.test.assert_eq_int(obsidian.level.from_name("TRACE"), TRACE, "parse TRACE")
+nox.test.assert_eq_int(obsidian.level.from_name("WARN"), WARNING, "parse WARN alias")
+nox.test.assert_eq_int(obsidian.level.from_name("WARNING"), WARNING, "parse WARNING")
+nox.test.assert_eq_int(obsidian.level.from_name("OFF"), OFF, "parse OFF")
 
-nox.test.assert_true(level.is_valid(DEBUG), "DEBUG is valid")
-nox.test.assert_true(level.is_valid(OFF), "OFF is valid threshold")
-nox.test.assert_true(not level.is_valid(999), "unknown level is invalid")
-nox.test.assert_true(level.is_event_level(ERROR), "ERROR is event level")
-nox.test.assert_true(not level.is_event_level(OFF), "OFF is not event level")
+nox.test.assert_true(obsidian.level.is_valid(DEBUG), "DEBUG is valid")
+nox.test.assert_true(obsidian.level.is_valid(OFF), "OFF is valid threshold")
+nox.test.assert_true(not obsidian.level.is_valid(999), "unknown level is invalid")
+nox.test.assert_true(obsidian.level.is_event_level(ERROR), "ERROR is event level")
+nox.test.assert_true(not obsidian.level.is_event_level(OFF), "OFF is not event level")
 
-nox.test.assert_true(level.is_enabled(INFO, INFO), "equal threshold enabled")
-nox.test.assert_true(level.is_enabled(ERROR, INFO), "higher severity enabled")
-nox.test.assert_true(not level.is_enabled(DEBUG, INFO), "lower severity disabled")
-nox.test.assert_true(not level.is_enabled(CRITICAL, OFF), "OFF disables events")
-nox.test.assert_true(not level.is_enabled(OFF, TRACE), "OFF cannot be emitted")
-nox.test.assert_true(not level.is_enabled(999, TRACE), "unknown event disabled")
-nox.test.assert_true(not level.is_enabled(INFO, 999), "unknown threshold disables")
+nox.test.assert_true(obsidian.level.is_enabled(INFO, INFO), "equal threshold enabled")
+nox.test.assert_true(obsidian.level.is_enabled(ERROR, INFO), "higher severity enabled")
+nox.test.assert_true(not obsidian.level.is_enabled(DEBUG, INFO), "lower severity disabled")
+nox.test.assert_true(not obsidian.level.is_enabled(CRITICAL, OFF), "OFF disables events")
+nox.test.assert_true(not obsidian.level.is_enabled(OFF, TRACE), "OFF cannot be emitted")
+nox.test.assert_true(not obsidian.level.is_enabled(999, TRACE), "unknown event disabled")
+nox.test.assert_true(not obsidian.level.is_enabled(INFO, 999), "unknown threshold disables")
 
 nox.test.assert_true(unknown_name_raises(), "unknown name raises")
 nox.test.assert_true(unknown_value_raises(), "unknown numeric value raises")

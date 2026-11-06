@@ -16,6 +16,14 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Deterministic end-to-end memory logging example with a synthetic secret proving pre-sink masking.
 - Cross-platform LLVM/QBE CI, professional repository templates and a gated tag-driven release workflow.
 - Automated noxpkg submission with `noxc publish` after release preflight and the complete CI matrix succeed.
+- Canonical RFC 3339 text and JSONL formatters with stable field ordering, scalar type preservation and exact golden fixtures.
+- Bounded record messages/string fields, bounded field counts, duplicate-key rejection and fail-closed non-finite float validation.
+- Hermetic downstream-package test harness covering the complete suite and examples on LLVM and QBE.
+
+### Changed
+
+- Baseline message masking now avoids calling the stdlib assignment masker when no sensitive key candidate is present, preserving arbitrary control characters for safe formatter escaping.
+- Package-internal, test and example imports now use the manifest package name so installed dependency graphs resolve transitively.
 
 ### Security
 

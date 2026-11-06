@@ -1,0 +1,11 @@
+from obsidian.fields import LogField
+
+def validate_unique_field_keys(source: list[LogField]) -> None:
+    outer: int = 0
+    while outer < len(source):
+        inner: int = outer + 1
+        while inner < len(source):
+            if source[outer].key == source[inner].key:
+                raise ValueError("field keys must be unique")
+            inner += 1
+        outer += 1
