@@ -1,5 +1,6 @@
 import nox.atomic
 import nox.thread
+import nox.time
 from nox.atomic import AtomicInt
 
 async def yield_once(value: int) -> int:
@@ -22,6 +23,12 @@ async def overlap_worker(channel: ThreadChannel[int]) -> int:
             updating = False
         elif peak.compare_and_swap(observed, now):
             updating = False
+    deadline_ms: int = nox.time.boot_ms() + 5000
+    while active.load() < 2 and nox.time.boot_ms() < deadline_ms:
+        pass
+    if active.load() < 2:
+        active.decrement()
+        return -1
     checksum: int = 0
     i: int = 0
     while i < 20000000:
