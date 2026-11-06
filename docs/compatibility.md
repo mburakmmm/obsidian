@@ -34,7 +34,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.1.0` ta
 | `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 scalar/lifetime probes pass locally and in supported CI on LLVM/QBE; LLVM overlap observation is reported separately |
 | scheduler | LLVM M:N work-stealing; QBE cooperative tasks; `Task.cancel` is cooperative, while `ThreadHandle` has join only and channels expose no close/timeout contract | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak 2 is proven but scheduling-sensitive; QBE scalar thread-channel probe passes locally and in supported CI |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 9 local: 17 files/392 assertions/0 skips, seven async capability probes, plus three isolated ecosystem probes/36 explicit checks per backend on LLVM/QBE; remote evidence pending |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 9 local and CI `42310679970`: 17 files/392 assertions/0 skips, seven async capability probes, plus three isolated ecosystem probes/36 explicit checks per backend on LLVM/QBE |
 
 ## Known gaps and conservative decisions
 
@@ -66,12 +66,12 @@ The compiler reports a version but not its source SHA. The annotated `v2.1.0` ta
 
 | Platform/backend | Check | Build/run | Tests | Concurrency claim |
 |---|---:|---:|---:|---|
-| macOS arm64 / LLVM | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 local: 17/392 plus 3 ecosystem probes | Async no-go revalidated; shared-logger thread safety remains unclaimed |
-| macOS arm64 / QBE | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 local: 17/392 plus 3 ecosystem probes | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
-| Linux x64 / LLVM | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 remote evidence pending | Async no-go revalidated; shared-logger thread safety remains unclaimed |
-| Linux x64 / QBE | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 remote evidence pending | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
-| Linux arm64 / LLVM | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 remote evidence pending | Async no-go revalidated; shared-logger thread safety remains unclaimed |
-| Linux arm64 / QBE | Pass | Pass | NOX 2.1 baseline: 16 files/358 assertions/0 skips plus 7 capability probes; CI `42308138269`. Phase 9 remote evidence pending | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
+| macOS arm64 / LLVM | Pass | Pass | Phase 9: 17 files/392 assertions/0 skips, 7 capability probes and 3 ecosystem probes/36 checks; CI `42310679970` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| macOS arm64 / QBE | Pass | Pass | Phase 9: 17 files/392 assertions/0 skips, 7 capability probes and 3 ecosystem probes/36 checks; CI `42310679970` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
+| Linux x64 / LLVM | Pass | Pass | Phase 9: 17 files/392 assertions/0 skips, 7 capability probes and 3 ecosystem probes/36 checks; CI `42310679970` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| Linux x64 / QBE | Pass | Pass | Phase 9: 17 files/392 assertions/0 skips, 7 capability probes and 3 ecosystem probes/36 checks; CI `42310679970` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
+| Linux arm64 / LLVM | Pass | Pass | Phase 9: 17 files/392 assertions/0 skips, 7 capability probes and 3 ecosystem probes/36 checks; CI `42310679970` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| Linux arm64 / QBE | Pass | Pass | Phase 9: 17 files/392 assertions/0 skips, 7 capability probes and 3 ecosystem probes/36 checks; CI `42310679970` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
 | Windows x64 | Not run | Not run | Not run | Unsupported until evidence exists |
 
 ## Upgrade policy

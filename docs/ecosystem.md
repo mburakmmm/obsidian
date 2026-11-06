@@ -1,6 +1,6 @@
 # Ecosystem adapters
 
-Status: Phase 9 integration preview on NOX 2.1.0. These APIs are not frozen.
+Status: Phase 9 integration preview verified on NOX 2.1.0 in local and supported CI matrices. These APIs are not frozen.
 
 Obsidian core has no Nyx, Aether, Quartz or other ecosystem dependency. Optional modules under `obsidian.adapters` are compiled only when imported by a consumer, and the consumer must add the corresponding framework package. The tested matrix is deliberately narrow:
 

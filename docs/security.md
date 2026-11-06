@@ -1,6 +1,6 @@
 # Security model and redaction limits
 
-Status: Phase 4 scalar boundary and Phase 8 filter/diagnostic extensions are verified in the supported CI matrix; Phase 9 adapter extensions are verified locally and await remote matrix evidence.
+Status: Phase 4 scalar boundary, Phase 8 filter/diagnostic extensions and Phase 9 optional adapters are verified in the supported CI matrix.
 
 ## Protected output paths
 

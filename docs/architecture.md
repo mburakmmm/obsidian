@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phase 9 optional adapter preview implemented locally. Public APIs are not frozen.
+Status: Phase 9 optional adapter preview verified in the supported CI matrix. Public APIs are not frozen.
 
 ## Dependency direction
 
