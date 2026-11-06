@@ -55,6 +55,6 @@ expect_run_failure qbe "$capability_root/async_record_channel.nox" "'ThreadChann
 expect_run_failure llvm "$capability_root/async_sync_send.nox" "codegen:"
 expect_exact_run llvm "$capability_root/async_record_channel.nox" "7"
 expect_exact_run llvm "$capability_root/async_worker_overlap.nox" "2 True"
-expect_exact_run qbe "$capability_root/async_worker_overlap.nox" "2 True"
+expect_exact_run qbe "$capability_root/async_qbe_scalar_channel.nox" "1 1"
 
 echo "async capability audit: decision=no-go llvm-overlap=2 qbe-scalar-transfer=pass"

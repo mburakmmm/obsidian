@@ -1,0 +1,20 @@
+import nox.atomic
+import nox.thread
+from nox.atomic import AtomicInt
+
+async def increment_worker(channel: ThreadChannel[int]) -> int:
+    counter_handle: int = await channel.recv()
+    counter: AtomicInt = nox.atomic.from_int_handle(counter_handle)
+    return counter.increment()
+
+async def run() -> None:
+    counter: AtomicInt = nox.atomic.new_int(0)
+    channel: ThreadChannel[int] = ThreadChannel[int](1)
+    worker: ThreadHandle[int] = nox.thread.start(increment_worker, channel)
+    await channel.send(counter.handle)
+    result: int = await worker.join()
+    print(result, counter.load())
+    counter.free()
+
+task: Task[None] = spawn run()
+await task

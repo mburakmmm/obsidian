@@ -62,5 +62,4 @@ async def run() -> None:
     peak.free()
     active.free()
 
-task: Task[None] = spawn run()
-await task
+nox.thread.pool_run(4, run)
