@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–7 evidence is green in the supported CI matrix; Phase 8 filtering/diagnostics pass pinned local LLVM/QBE verification and await remote matrix evidence. This document does not extend support beyond tested jobs.
+Status: Phase 0–8 evidence is green in the supported CI matrix. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -34,7 +34,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 scalar/lifetime probes pass locally and in supported CI on LLVM/QBE; LLVM overlap observation is reported separately |
 | scheduler | LLVM M:N work-stealing; QBE cooperative tasks plus separate runtimes for `nox.thread.start`; channel waits ignore task cancellation | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak 2 is proven but scheduling-sensitive; QBE scalar thread-channel probe passes locally and in supported CI |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 8 local: 16 files/358 assertions/0 skips plus seven async capability probes; remote matrix pending |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 8 local and CI `42306338481`: 16 files/358 assertions/0 skips plus seven async capability probes on LLVM/QBE |
 
 ## Known gaps and conservative decisions
 

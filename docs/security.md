@@ -1,6 +1,6 @@
 # Security model and redaction limits
 
-Status: Phase 4 scalar boundary verified in supported CI; Phase 8 filter/diagnostic extensions verified locally and awaiting remote CI evidence.
+Status: Phase 4 scalar boundary and Phase 8 filter/diagnostic extensions are verified in the supported CI matrix.
 
 ## Protected output paths
 

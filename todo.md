@@ -385,7 +385,7 @@ Go ise:
 
 ### Phase 8 kapısı
 
-- [x] Re-entry bounded/fail-closed, diagnostics saturating, filtre testleri deterministik; sampling unsupported olarak belgeli. Uzak CI kanıtı bekleniyor.
+- [x] Re-entry bounded/fail-closed, diagnostics saturating, filtre testleri deterministik; sampling unsupported olarak belgeli. Desteklenen uzak matris CI `42306338481` ile yeşil.
 
 ---
 
@@ -550,4 +550,4 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Ph
 | 2026-11-06 | `0.4.x` / Phase 7 async go/no-go | Thread/channel/atomic/join/cancellation probları, gerçek overlap testi ve ADR-0011 eklendi | Pinned NOX 2.0.143 yerel ve CI `42257058031`: 14 dosya/325 assertion/0 skip, 6 capability probu; LLVM overlap peak `2`, QBE class-channel expected reject | No-go desteklenen üç platformda doğrulandı; async ve `QueueConfig` kapalı, senkron dispatcher tek desteklenen yol |
 | 2026-11-07 | Phase 7 genişletilmiş matris | LLVM overlap probu bounded ve scheduling-aware yapıldı; QBE scalar channel/atomic lifecycle ayrı executable probla doğrulandı | Yerelde üç tekrar; CI `42301491991`: macOS ARM64, Linux x64, Linux ARM64 üzerinde LLVM/QBE 14 dosya/325 assertion/0 skip ve 7 capability probu geçti | Phase 7 kapandı; overlap gözlemi dürüstçe raporlanıyor, async no-go değişmedi; Phase 8 sırada |
 | 2026-11-07 | Manuel registry başvurusu | Kullanıcı isteğiyle token yapılandırmasına dokunmadan `noxc publish github.com/mburakmmm/obsidian --ref main` çalıştırıldı | noxpkg submission `6bbd1c55-e95b-4fb1-b66d-15c15a6c7909` | Başvuru onay bekliyor; registry erişilebilirliği veya kararlı sürüm iddiası yok |
-| 2026-11-07 | `0.4.x` / Phase 8 yerel aday | Exact logger filtresi, sink başına threshold, sanitize clone filtre sınırı, saturating diagnostics ve strict sabit hata kategorileri eklendi | Pinned NOX 2.0.143 LLVM/QBE: 16 dosya/358 assertion/0 skip; 7 capability probu; 9 exact ve sentinel-scanned örnek; import/lock doğrulaması geçti | Yerel Phase 8 kapısı geçti; typed route config derleyici kanıtı yok diye kapalı, sampling/source/prefix bilinçli kapalı; uzak CI bekleniyor |
+| 2026-11-07 | `0.4.x` / Phase 8 | Exact logger filtresi, sink başına threshold, sanitize clone filtre sınırı, saturating diagnostics ve strict sabit hata kategorileri eklendi | Pinned NOX 2.0.143 yerel ve CI `42306338481`: macOS ARM64, Linux x64, Linux ARM64 üzerinde LLVM/QBE 16 dosya/358 assertion/0 skip; 7 capability probu; 9 exact ve sentinel-scanned örnek; import/lock doğrulaması geçti | Phase 8 desteklenen matriste kapandı; typed route config derleyici kanıtı yok diye kapalı, sampling/source/prefix bilinçli kapalı |
