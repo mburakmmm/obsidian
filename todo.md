@@ -328,8 +328,8 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 
 ### Phase 6 kapısı
 
-- [ ] Yerel LLVM/QBE kanıtında beklenmeyen silme yok; retention dry-run exact; uzak matris bekleniyor.
-- [ ] Yerel LLVM/QBE kanıtında depolama bounded; uzak matris bekleniyor.
+- [x] Beklenmeyen silme yok; retention dry-run exact; yerel ve desteklenen uzak LLVM/QBE matrisi geçti (`42250864512`, macOS attempt 2).
+- [x] Yapılandırılmış depolama sınırı yerel ve desteklenen uzak LLVM/QBE matrisinde geçti (`42250864512`, macOS attempt 2).
 
 ---
 
@@ -546,4 +546,4 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da başlatıldı. 
 | 2026-11-06 | `0.2.x` / Phase 4 scalar güvenlik adayı | Case-insensitive default/ek denylist, header/Bearer/URL/query masking, fail-closed drop+sayaç, filename guard ve security matrix eklendi | Pinned NOX 2.0.143 LLVM/QBE: 9 test dosyası, 226 assertion, 0 skip; 3 expected compile-fail; 6 exact ve sentinel-scanned örnek; import/lock probu geçti | Yerel scalar güvenlik kapısı geçti; uzak CI kanıtı bekleniyor, exception/config/rotation/async yolları geldiklerinde matrise eklenecek |
 | 2026-11-06 | Phase 4 scalar güvenlik uzak CI kanıtı | GitHub Actions run `42206489911`; commit `fe32ffd`; macOS arm64, Linux x64 ve Linux arm64 | Üç işte de pinned toolchain, format, LLVM/QBE 9 dosya/226 assertion süiti, 3 compile-fail fixture, sentinel taraması ve dependency alias/import probu geçti | Mevcut scalar Faz 4 kapısı geçti; alpha yayınlanmadı, Phase 5 context/configuration sırada |
 | 2026-11-06 | `0.3.x` / Phase 5 context/configuration | Immutable explicit context view, request/trace/span ID, typed config/factory, atomic scalar reconfigure ve explicit env override eklendi | Pinned NOX 2.0.143 LLVM/QBE: 12 test dosyası, 276 assertion, 0 skip; 3 expected compile-fail; 7 exact örnek ve import/lock probu geçti | Uzak CI run `42211416648` ve final evidence run `42211681459` üç platformda yeşil; Phase 5 kapısı kapandı |
-| 2026-11-06 | `0.3.x` / Phase 6 size-rotation adayı | Single-process byte rotation, fixed-width archive sequence, dry-run retention, restart/rename recovery, symlink ve owned-file doğrulaması eklendi | Pinned NOX 2.0.143 yerel LLVM/QBE: 14 test dosyası, 325 assertion, 0 skip; 3 expected compile-fail; 8 exact örnek ve import/lock probu geçti | Yerel kapı geçti; desteklenen uzak matris kanıtı bekleniyor, time/cross-process rotation desteklenmiyor |
+| 2026-11-06 | `0.3.x` / Phase 6 size-rotation | Single-process byte rotation, fixed-width archive sequence, dry-run retention, restart/rename recovery, symlink ve owned-file doğrulaması eklendi | Pinned NOX 2.0.143 yerel ve desteklenen CI LLVM/QBE: 14 test dosyası, 325 assertion, 0 skip; 3 expected compile-fail; 8 exact örnek ve import/lock probu geçti | Uzak CI run `42250864512` (macOS runner kapasitesi nedeniyle attempt 2) üç platformda yeşil; Phase 6 kapandı, time/cross-process rotation desteklenmiyor |

@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–5 supported synchronous scope passes the supported CI matrix. The Phase 6 size-rotation candidate passes pinned local LLVM/QBE verification and awaits remote matrix evidence. This document does not extend support beyond tested jobs.
+Status: Phase 0–6 supported synchronous scope passes pinned local LLVM/QBE verification and the supported CI matrix. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -25,7 +25,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | `nox.log` | `format`, `redact`, `mask_assignments`, module-level threshold, stdout-only `debug/info/warn/error` | Wrap and extend; never change stdlib state implicitly | Phase 1 compile/behavior probes pass on LLVM/QBE |
 | `nox.regex` / strings | bounded regex search/replace, escaping, Unicode string methods | Use fixed/escaped patterns; bypass matcher when no sensitive marker so arbitrary controls retain formatter semantics | Phase 4 header/Bearer/URL/query/control probes pass locally and in supported CI jobs |
 | `nox.json` | `JsonValue`, typed accessors, `dump_string`, `JsonWriter` | Use writer/escaping; test writer nesting because it does not validate structure | Phase 2 JSONL/golden/typed round-trip probes pass on LLVM/QBE |
-| `nox.fs` | synchronous `open_append`; unbuffered `write`; explicit/idempotent `close`; metadata size; rename/create/read/remove operations | File sinks close explicitly; size rotation uses byte metadata; `flush` is not `fsync` | Phase 6 size/rename/retention/restart probes pass locally on LLVM/QBE; remote evidence pending |
+| `nox.fs` | synchronous `open_append`; unbuffered `write`; explicit/idempotent `close`; metadata size; rename/create/read/remove operations | File sinks close explicitly; size rotation uses byte metadata; `flush` is not `fsync` | Phase 6 size/rename/retention/restart probes pass locally and in supported CI on LLVM/QBE |
 | `nox.path` | `canonicalize`, `join`, `strip_prefix`, components | Constrain file/retention paths against a canonical allowed root | Phase 3 traversal/prefix/existing-symlink probes pass on supported CI jobs and local LLVM/QBE |
 | built-in `print` / `nox.console` | stdout only; no `file=` target, stdio flush or recoverable write-error channel | Support explicit stdout; reject stderr; document logical flush | Stdout exact-capture probe passes on supported CI jobs and locally; stderr blocked |
 | `nox.os` | `getenv` raises `OsError` when absent; `current_dir`, `set_var` | Environment overrides require explicit `try/except OsError` | Phase 5 missing/valid/invalid env probes pass locally and in supported CI on LLVM/QBE |
@@ -34,7 +34,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | `nox.atomic` | explicit allocation/`free`, handles for worker sharing | Worker ownership and join must precede free | Documented; Phase 7 deferred |
 | scheduler | LLVM M:N work-stealing; QBE single-threaded cooperative | Backend-specific concurrency evidence is mandatory | Documented; Phase 7 deferred |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; compile-fail fixtures must not match `*_test.nox` | Phase 6 local: 14 files/325 assertions/0 skips pass through the hermetic consumer on LLVM/QBE; three negative fixtures remain separate |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; compile-fail fixtures must not match `*_test.nox` | Phase 6: 14 files/325 assertions/0 skips pass through the hermetic consumer locally and in supported CI on LLVM/QBE; three negative fixtures remain separate |
 
 ## Known gaps and conservative decisions
 
@@ -64,12 +64,12 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 
 | Platform/backend | Check | Build/run | Tests | Concurrency claim |
 |---|---:|---:|---:|---|
-| macOS arm64 / LLVM | Pass | Pass | Phase 6 local: 14 files, 325 assertions, 0 skips; remote Phase 5 run `42211416648` | Overlapping explicit context tasks pass; no shared-logger claim |
-| macOS arm64 / QBE | Pass | Pass | Phase 6 local: 14 files, 325 assertions, 0 skips; remote Phase 5 run `42211416648` | Cooperative overlapping context tasks pass; no OS-thread claim |
-| Linux x64 / LLVM | Pass | Pass | Phase 5: 12 files, 276 assertions, 0 skips; CI run `42211416648` | Overlapping explicit context tasks pass; no shared-logger claim |
-| Linux x64 / QBE | Pass | Pass | Phase 5: 12 files, 276 assertions, 0 skips; CI run `42211416648` | Cooperative overlapping context tasks pass; no OS-thread claim |
-| Linux arm64 / LLVM | Pass | Pass | Phase 5: 12 files, 276 assertions, 0 skips; CI run `42211416648` | Overlapping explicit context tasks pass; no shared-logger claim |
-| Linux arm64 / QBE | Pass | Pass | Phase 5: 12 files, 276 assertions, 0 skips; CI run `42211416648` | Cooperative overlapping context tasks pass; no OS-thread claim |
+| macOS arm64 / LLVM | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` attempt 2 | Overlapping explicit context tasks pass; no shared-logger claim |
+| macOS arm64 / QBE | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` attempt 2 | Cooperative overlapping context tasks pass; no OS-thread claim |
+| Linux x64 / LLVM | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` | Overlapping explicit context tasks pass; no shared-logger claim |
+| Linux x64 / QBE | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` | Cooperative overlapping context tasks pass; no OS-thread claim |
+| Linux arm64 / LLVM | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` | Overlapping explicit context tasks pass; no shared-logger claim |
+| Linux arm64 / QBE | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` | Cooperative overlapping context tasks pass; no OS-thread claim |
 | Windows x64 | Not run | Not run | Not run | Unsupported until evidence exists |
 
 ## Upgrade policy
