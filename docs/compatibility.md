@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–6 supported synchronous scope passes pinned local LLVM/QBE verification and the supported CI matrix. This document does not extend support beyond tested jobs.
+Status: Phase 0–6 supported synchronous scope passes pinned local LLVM/QBE verification and the supported CI matrix. The Phase 7 capability audit reaches a local no-go decision for async dispatch and awaits remote matrix evidence. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -30,11 +30,11 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | built-in `print` / `nox.console` | stdout only; no `file=` target, stdio flush or recoverable write-error channel | Support explicit stdout; reject stderr; document logical flush | Stdout exact-capture probe passes on supported CI jobs and locally; stderr blocked |
 | `nox.os` | `getenv` raises `OsError` when absent; `current_dir`, `set_var` | Environment overrides require explicit `try/except OsError` | Phase 5 missing/valid/invalid env probes pass locally and in supported CI on LLVM/QBE |
 | `nox.time` | UTC `DateTime`; wall `now_ms`; monotonic `Instant`; `boot_ms` | Inject wall clock for records and monotonic clock for timeouts/durations | Fake clock and epoch-to-RFC3339 probes pass on LLVM/QBE |
-| `nox.thread` | joinable async entry, bounded `ThreadChannel`; QBE argument restrictions | Async is conditional; never infer portable sharing from LLVM | Documented; Phase 7 deferred |
-| `nox.atomic` | explicit allocation/`free`, handles for worker sharing | Worker ownership and join must precede free | Documented; Phase 7 deferred |
-| scheduler | LLVM M:N work-stealing; QBE single-threaded cooperative | Backend-specific concurrency evidence is mandatory | Documented; Phase 7 deferred |
+| `nox.thread` | awaited blocking `ThreadChannel.send/recv`; join-only `ThreadHandle`; QBE scalar element restriction | No portable record queue, non-blocking overflow or timeout-aware shutdown contract | Phase 7 executable probes pass locally; async no-go |
+| `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 overlap/lifetime probe passes locally on LLVM and QBE |
+| scheduler | LLVM M:N work-stealing; QBE cooperative tasks plus separate runtimes for `nox.thread.start`; channel waits ignore task cancellation | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak is 2 locally; QBE scalar thread-channel probe passes |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; compile-fail fixtures must not match `*_test.nox` | Phase 6: 14 files/325 assertions/0 skips pass through the hermetic consumer locally and in supported CI on LLVM/QBE; three negative fixtures remain separate |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 7 local: 14 files/325 assertions/0 skips pass on LLVM/QBE; six async capability probes and three negative fixtures pass separately |
 
 ## Known gaps and conservative decisions
 
@@ -49,7 +49,7 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | Immutable classes | NOX class fields are mutable and visibility is conventional | Deep-copy caller data, expose clone-returning accessors and keep internal storage underscore-prefixed; do not claim language-enforced immutability |
 | Cross-process file rotation | No lock/atomic rotation contract proven | Size rotation is single-process only; cross-process ownership remains unsupported |
 | Time-based rotation | Wall and metadata clocks exist, but rollback/restart boundary semantics are not yet specified or injected | Keep disabled; Phase 6 ships size-based rotation only |
-| Async multi-producer safety | Primitives exist but record transport/lifetime is unproven, especially on QBE | Async disabled until Phase 7 go/no-go evidence |
+| Async multi-producer safety | QBE rejects class-valued thread channels; no `try_send`/`try_recv`, channel close, thread cancellation or timed join; sync send fails codegen | Phase 7 no-go: keep async API and `QueueConfig` absent; re-evaluate only under ADR-0011 triggers |
 | Shared synchronous logger concurrency | Phase 5 proves overlapping task-local explicit context snapshots, not simultaneous mutation/dispatch through one logger instance | Make no shared-logger thread-safety claim; explicit context isolation is not an async dispatcher guarantee |
 | Native glue | Stderr/no-follow gaps exist, but a portable boundary has not been designed or approved | Keep unsupported paths disabled; no Zig/NNI code without a separate ADR |
 | `Logger.trace` spelling | NOX 2.0.143 type-checks it but LLVM codegen emits a duplicate `logger_Logger_trace` symbol in the current module graph | Keep the common `log(TRACE, ...)` path and temporary `trace_event` convenience method; retest on compiler upgrade before stabilizing the API |

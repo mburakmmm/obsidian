@@ -1,0 +1,20 @@
+import nox.thread
+
+class Payload:
+    value: int
+
+    def __init__(self, value: int) -> None:
+        self.value = value
+
+async def consume(channel: ThreadChannel[Payload]) -> int:
+    item: Payload = await channel.recv()
+    return item.value
+
+async def run() -> None:
+    channel: ThreadChannel[Payload] = ThreadChannel[Payload](1)
+    worker: ThreadHandle[int] = nox.thread.start(consume, channel)
+    await channel.send(Payload(7))
+    print(await worker.join())
+
+task: Task[None] = spawn run()
+await task

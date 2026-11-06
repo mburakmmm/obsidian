@@ -1,6 +1,6 @@
 # Configuration
 
-Status: internal Phase 6 candidate API; no stable package has been published.
+Status: internal API after the Phase 7 async no-go decision; no stable package has been published.
 
 Obsidian configuration is explicit and typed. It never searches `.env`, a home directory, the working tree or a network location.
 
@@ -39,5 +39,5 @@ Only the caller-named variable is read. Its value must be an exact supported lev
 - implicit environment or file discovery;
 - JSON/TOML/YAML loaders;
 - runtime sink-set replacement;
-- `QueueConfig`, because async dispatch has not passed Phase 7;
+- `QueueConfig`, because Phase 7 concluded that the pinned toolchain cannot meet the portable queue and lifecycle contract;
 - configuration values containing credentials or remote sink endpoints.

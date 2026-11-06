@@ -1,6 +1,10 @@
 # Operations
 
-Status: Phase 6 synchronous size-rotation candidate; no durability, time rotation, shared-logger thread-safety or stderr claim.
+Status: synchronous operation after the Phase 7 async no-go decision; no durability, time rotation, shared-logger thread-safety or stderr claim.
+
+## Dispatch mode
+
+Only synchronous dispatch is supported. A successful logger call means each selected sink call returned; it does not imply stable-storage durability. There is no background queue, overflow policy or timeout-based async flush/close. Do not wrap logger calls in unjoined fire-and-forget tasks: their failures would be unobserved and logger shutdown could not prove completion. See ADR-0011.
 
 ## Logger construction and context lifecycle
 

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+noxc_bin="${NOXC:-noxc}"
 probe_root="$(mktemp -d "${TMPDIR:-/tmp}/obsidian-package-import.XXXXXX")"
 trap 'rm -rf "$probe_root"' EXIT
 
@@ -30,13 +31,13 @@ git -C "$package_root" add .
 git -C "$package_root" commit -q -m "package import probe"
 
 cd "$consumer_root"
-NOX_HOME="$probe_nox_home" noxc init . >/dev/null
+NOX_HOME="$probe_nox_home" "$noxc_bin" init . >/dev/null
 cp "$project_root/tests/fixtures/consumer_main.nox" main.nox
-NOX_HOME="$probe_nox_home" noxc add obsidian "$package_root" --ref main >/dev/null
-NOX_HOME="$probe_nox_home" noxc fetch >/dev/null
+NOX_HOME="$probe_nox_home" "$noxc_bin" add obsidian "$package_root" --ref main >/dev/null
+NOX_HOME="$probe_nox_home" "$noxc_bin" fetch >/dev/null
 
-llvm_output="$(NOX_HOME="$probe_nox_home" noxc run --backend llvm main.nox)"
-qbe_output="$(NOX_HOME="$probe_nox_home" noxc run --backend qbe main.nox)"
+llvm_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" run --backend llvm main.nox)"
+qbe_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" run --backend qbe main.nox)"
 
 expected='{"timestamp":"1970-01-01T00:00:00.000Z","timestamp_ms":0,"level":"INFO","logger":"consumer","message":"package import","fields":{"ok":true},"context":{},"schema_version":"obsidian.log.v1"}'
 test "$llvm_output" = "$expected"

@@ -32,7 +32,7 @@ Sink/path errors use fixed categories and do not echo paths or record contents. 
 
 Redaction cannot discover every arbitrary secret embedded in prose. Do not log full request/response bodies, complete header maps, raw SQL parameters, private objects or production exception strings. Prefer explicit allowlisted metadata and configure application-specific keys.
 
-Nested arrays/objects are not accepted by the scalar `FieldValue` model. This is a safe rejection, not recursive redaction support. Typed in-process configuration is validated with fixed errors; explicit environment threshold parsing never echoes the supplied value. Size-rotated active/archive output and injected rename failures are covered by synthetic-sentinel tests. Config-file loading, exception metadata, time rotation, diagnostics callbacks and async dispatch are not implemented yet; each must extend and rerun this matrix before it can be advertised.
+Nested arrays/objects are not accepted by the scalar `FieldValue` model. This is a safe rejection, not recursive redaction support. Typed in-process configuration is validated with fixed errors; explicit environment threshold parsing never echoes the supplied value. Size-rotated active/archive output and injected rename failures are covered by synthetic-sentinel tests. Config-file loading, exception metadata, time rotation and diagnostics callbacks are not implemented yet. Phase 7 explicitly disables async dispatch, so no queue output path exists; any future re-evaluation must extend and rerun the complete sentinel matrix before it can be advertised.
 
 No claim is made for encrypted storage, tamper resistance, cross-process file ownership or secret discovery in arbitrary encodings.
 

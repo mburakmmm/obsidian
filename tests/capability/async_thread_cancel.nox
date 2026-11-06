@@ -1,0 +1,13 @@
+import nox.thread
+
+async def wait_for_value(channel: ThreadChannel[int]) -> int:
+    return await channel.recv()
+
+async def run() -> None:
+    channel: ThreadChannel[int] = ThreadChannel[int](1)
+    worker: ThreadHandle[int] = nox.thread.start(wait_for_value, channel)
+    worker.cancel()
+    print(await worker.join())
+
+task: Task[None] = spawn run()
+await task

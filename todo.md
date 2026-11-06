@@ -337,16 +337,16 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 
 ### 11.1 Go/no-go araştırması
 
-- [ ] Sabit NOX revizyonunda `Channel`, `ThreadChannel`, atomics, cancellation ve join kapasitesi deneylerle doğrulandı.
-- [ ] QBE scalar/type kısıtlarıyla taşınabilir record aktarım tasarımı kanıtlandı.
-- [ ] Shared buffer/atomic yaşam süresi ADR'si tamamlandı.
-- [ ] Gerçek multi-producer testi LLVM'de overlap gösterebiliyor.
-- [ ] Go/no-go kararı ADR'de verildi.
+- [x] Sabit NOX revizyonunda `Channel`, `ThreadChannel`, atomics, cancellation ve join kapasitesi executable problarla doğrulandı.
+- [x] QBE scalar/type kısıtları değerlendirildi; class-valued `LogRecord` aktarımı reddedildiği için taşınabilir record queue tasarımı kanıtlanamadı.
+- [x] Shared buffer/atomic yaşam süresi ve join-before-free şartı ADR-0011'de kaydedildi.
+- [x] Gerçek iki-worker probu LLVM'de atomik peak `2` ile overlap gösterdi; bu bir Obsidian queue iddiası olarak kullanılmadı.
+- [x] ADR-0011 no-go kararı verildi.
 
 No-go ise:
 
-- [ ] Async API kapalı/unsupported; neden `docs/compatibility.md` ve API dokümanında açık.
-- [ ] Senkron dispatcher varsayılan ve tam destekli kalıyor.
+- [x] Async API kapalı/unsupported; neden `docs/compatibility.md` ve API dokümanında açık.
+- [x] Senkron dispatcher tek desteklenen yol olarak kalıyor.
 
 Go ise:
 
@@ -364,8 +364,8 @@ Go ise:
 
 ### Phase 7 kapısı
 
-- [ ] Destek iddiası varsa gerçek overlap, exact accounting, completion ve memory lifecycle kanıtı var.
-- [ ] Kanıt yoksa async devre dışı; sentetik worker/counter ile taklit edilmedi.
+- [x] Async destek iddiası yok; overlap kapasitesi kanıtlandı ancak exact accounting/completion/lifecycle eksikleri açıkça no-go sayıldı.
+- [x] Async devre dışı; sentetik worker/counter ile taklit edilmedi.
 
 ---
 
@@ -528,7 +528,7 @@ Phase 0 tamamlanmadan Phase 1 koduna başlanmayacaktır. İlk sıra:
 5. Phase 0 kapısını kanıtlarla kapat.
 6. Sonra küçük bir PR/dilim halinde `Level → FieldValue → LogRecord → Clock → MemorySink → Logger` sırasıyla Phase 1'e geç.
 
-Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da başlatıldı. Async çalışma Phase 6 kapısı uzak matrisle kapanmadan başlatılmayacaktır.
+Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Phase 7 executable capability audit'i async için no-go verdi; senkron çekirdek Phase 8'e devam edebilir.
 
 ## 20. İlerleme günlüğü
 
@@ -547,3 +547,4 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da başlatıldı. 
 | 2026-11-06 | Phase 4 scalar güvenlik uzak CI kanıtı | GitHub Actions run `42206489911`; commit `fe32ffd`; macOS arm64, Linux x64 ve Linux arm64 | Üç işte de pinned toolchain, format, LLVM/QBE 9 dosya/226 assertion süiti, 3 compile-fail fixture, sentinel taraması ve dependency alias/import probu geçti | Mevcut scalar Faz 4 kapısı geçti; alpha yayınlanmadı, Phase 5 context/configuration sırada |
 | 2026-11-06 | `0.3.x` / Phase 5 context/configuration | Immutable explicit context view, request/trace/span ID, typed config/factory, atomic scalar reconfigure ve explicit env override eklendi | Pinned NOX 2.0.143 LLVM/QBE: 12 test dosyası, 276 assertion, 0 skip; 3 expected compile-fail; 7 exact örnek ve import/lock probu geçti | Uzak CI run `42211416648` ve final evidence run `42211681459` üç platformda yeşil; Phase 5 kapısı kapandı |
 | 2026-11-06 | `0.3.x` / Phase 6 size-rotation | Single-process byte rotation, fixed-width archive sequence, dry-run retention, restart/rename recovery, symlink ve owned-file doğrulaması eklendi | Pinned NOX 2.0.143 yerel ve desteklenen CI LLVM/QBE: 14 test dosyası, 325 assertion, 0 skip; 3 expected compile-fail; 8 exact örnek ve import/lock probu geçti | Uzak CI run `42250864512` (macOS runner kapasitesi nedeniyle attempt 2) üç platformda yeşil; Phase 6 kapandı, time/cross-process rotation desteklenmiyor |
+| 2026-11-06 | `0.4.x` / Phase 7 async go/no-go | Thread/channel/atomic/join/cancellation probları, gerçek overlap testi ve ADR-0011 eklendi | Pinned NOX 2.0.143 yerel: LLVM class-channel pass, QBE class-channel expected reject, LLVM/QBE scalar overlap peak `2`, eksik `try_send`/cancel/timed join expected reject | No-go: async ve `QueueConfig` kapalı; senkron dispatcher tek desteklenen yol, uzak CI kanıtı bekleniyor |

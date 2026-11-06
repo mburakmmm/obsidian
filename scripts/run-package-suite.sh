@@ -7,6 +7,7 @@ if [[ $# -ne 1 || ("$1" != "llvm" && "$1" != "qbe") ]]; then
 fi
 
 backend="$1"
+noxc_bin="${NOXC:-noxc}"
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 probe_root="$(mktemp -d "${TMPDIR:-/tmp}/obsidian-package-suite.XXXXXX")"
 trap 'rm -rf "$probe_root"' EXIT
@@ -26,11 +27,11 @@ git -C "$package_root" add .
 git -C "$package_root" commit -q -m "package suite fixture"
 
 cd "$consumer_root"
-NOX_HOME="$probe_nox_home" noxc init . >/dev/null
+NOX_HOME="$probe_nox_home" "$noxc_bin" init . >/dev/null
 cp -R "$project_root/tests/." tests/
 cp -R "$project_root/examples/." examples/
-NOX_HOME="$probe_nox_home" noxc add obsidian "$package_root" --ref main >/dev/null
-NOX_HOME="$probe_nox_home" noxc fetch >/dev/null
+NOX_HOME="$probe_nox_home" "$noxc_bin" add obsidian "$package_root" --ref main >/dev/null
+NOX_HOME="$probe_nox_home" "$noxc_bin" fetch >/dev/null
 
 mkdir -p "$consumer_root/obsidian-file-tests" "$consumer_root/obsidian-file-denied" "$consumer_root/obsidian-rotation-tests/main" "$consumer_root/obsidian-rotation-tests/dry" "$consumer_root/obsidian-rotation-tests/rename" "$consumer_root/obsidian-rotation-tests/oversized" "$consumer_root/obsidian-rotation-tests/oversized-active" "$consumer_root/obsidian-rotation-tests/unexpected" "$consumer_root/obsidian-rotation-tests/symlink" "$consumer_root/obsidian-rotation-tests/active-link" "$consumer_root/obsidian-rotation-tests/security" "$consumer_root/obsidian-rotation-tests/crash" "$consumer_root/obsidian-rotation-tests/config" "$consumer_root/obsidian-rotation-tests/pending" "$consumer_root/obsidian-rotation-tests/zero" "$probe_root/outside"
 ln -s "$probe_root/outside" "$consumer_root/obsidian-file-tests/escape-link"
@@ -39,7 +40,7 @@ ln -s "$consumer_root/obsidian-rotation-tests/symlink/unrelated.log" "$consumer_
 ln -s "$consumer_root/obsidian-rotation-tests/active-link/unrelated.log" "$consumer_root/obsidian-rotation-tests/active-link/events.jsonl"
 chmod 500 "$consumer_root/obsidian-file-denied"
 
-if ! test_output="$(NOX_HOME="$probe_nox_home" noxc test --backend "$backend" tests 2>&1)"; then
+if ! test_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" test --backend "$backend" tests 2>&1)"; then
   if [[ "$test_output" == *SYNTHETIC_* ]]; then
     echo "test suite failed and captured output contained a security sentinel" >&2
     exit 1
@@ -63,7 +64,7 @@ run_exact_example() {
   local source_file="$1"
   local expected="$2"
   local output
-  if ! output="$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" "$source_file" 2>&1)"; then
+  if ! output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" run --backend "$backend" "$source_file" 2>&1)"; then
     if [[ "$output" == *SYNTHETIC_* ]]; then
       echo "example failed and captured output contained a security sentinel" >&2
     else

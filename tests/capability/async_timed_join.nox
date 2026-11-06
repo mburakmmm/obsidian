@@ -1,0 +1,11 @@
+import nox.thread
+
+async def finish(value: int) -> int:
+    return value
+
+async def run() -> None:
+    worker: ThreadHandle[int] = nox.thread.start(finish, 7)
+    print(await worker.join(100))
+
+task: Task[None] = spawn run()
+await task

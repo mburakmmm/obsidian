@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phase 6 size-rotation candidate. Public APIs are not frozen.
+Status: Phase 7 async no-go decision. Public APIs are not frozen.
 
 ## Dependency direction
 
@@ -33,7 +33,7 @@ Core Obsidian may depend on the pinned NOX standard library and separately appro
 - Bound logger views deep-copy explicit context and delegate to one sink-owning parent logger.
 - Configuration is validated before activation; factory failures close resources created by that attempt.
 - The MVP dispatcher is synchronous and bounded sinks are preferred.
-- Size rotation uses a separate single-process sink; async dispatch and time-based rotation remain gated capabilities.
+- Size rotation uses a separate single-process sink; time-based rotation remains gated and async dispatch is unsupported on the pinned toolchain.
 - There is no default global logger in v0.1.
 
 ## Module layout
@@ -56,4 +56,6 @@ All logger output paths consume one pre-sink sanitized snapshot. A redactor exce
 
 ## Portability model
 
-LLVM and QBE compile the same source but have different scheduler and argument behavior. Synchronous semantics are portable. Phase 5 verifies independent explicit context snapshots while two tasks overlap on both backends; QBE evidence is cooperative, and no shared-logger thread-safety claim is made. Async dispatch remains conditional.
+LLVM and QBE compile the same source but have different scheduler and argument behavior. Synchronous semantics are portable. Phase 5 verifies independent explicit context snapshots while two tasks overlap on both backends; QBE evidence is cooperative, and no shared-logger thread-safety claim is made.
+
+The Phase 7 audit proves real worker overlap and scalar atomic/channel communication, but not a portable Obsidian queue. QBE rejects class-valued `ThreadChannel` elements, channel sends require `await`, and the public API has no non-blocking send/receive, channel close, thread cancellation or timed join. ADR-0011 therefore keeps the dispatcher synchronous and forbids fake async counters or unjoined workers.

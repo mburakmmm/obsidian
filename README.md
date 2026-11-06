@@ -41,9 +41,10 @@ Obsidian wraps and extends `nox.log`; it does not replace or fork the standard l
 - Explicit immutable context views with request, trace and span correlation identifiers.
 - Validated typed configuration, all-or-nothing logger construction and opt-in environment threshold overrides.
 - Single-process size-based file rotation with deterministic dry-run retention and bounded storage.
+- An executable Phase 7 capability audit that keeps unsupported async dispatch disabled.
 - Deterministic LLVM and QBE tests.
 
-Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. Nested values, exception capture, time-based rotation and conditional async dispatch remain gated future phases. Simultaneous calls through one shared logger have no thread-safety claim; rotating files require one owning process and a trusted directory.
+Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. Nested values, exception capture and time-based rotation remain gated future phases. Async dispatch is unsupported on the pinned toolchain because portable record transfer, non-blocking overflow and timeout-aware shutdown cannot all be proven. Simultaneous calls through one shared logger have no thread-safety claim; rotating files require one owning process and a trusted directory.
 
 ## Toolchain
 
@@ -88,6 +89,7 @@ Library, test and example imports use the package name `obsidian`. The pinned co
 ```sh
 bash scripts/run-package-suite.sh llvm
 bash scripts/run-package-suite.sh qbe
+bash scripts/run-async-capability-audit.sh
 bash scripts/verify-package-import.sh
 ```
 
@@ -101,6 +103,7 @@ sinks/                   Sink implementations
 examples/                Compiling usage examples
 tests/unit/              Behavioral tests
 tests/concurrency/       Backend-aware context/concurrency evidence
+tests/capability/        Executable compiler/runtime capability probes
 tests/security/          Synthetic-sentinel and fail-closed acceptance tests
 tests/compile_fail/      Explicit negative compiler fixtures
 docs/                    Architecture, API, compatibility and ADRs

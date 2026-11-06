@@ -1,0 +1,12 @@
+import nox.thread
+
+def push(channel: ThreadChannel[int]) -> None:
+    channel.send(7)
+
+async def run() -> None:
+    channel: ThreadChannel[int] = ThreadChannel[int](1)
+    push(channel)
+    print(await channel.recv())
+
+task: Task[None] = spawn run()
+await task

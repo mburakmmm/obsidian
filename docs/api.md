@@ -1,6 +1,6 @@
 # API status
 
-Status: internal development API through the Phase 6 size-rotation candidate; not frozen and not published.
+Status: internal development API through the Phase 7 async no-go decision; not frozen and not published.
 
 ## Levels
 
@@ -79,7 +79,11 @@ Correlation IDs are optional strings limited to 128 ASCII letters/digits plus `-
 
 `LoggerConfig`, `RedactionConfig`, `FormatterConfig` and `SinkConfig` are validated typed models. `factory.build_logger` builds the complete synchronous sink set before exposing a logger and closes already-built sinks if construction fails. `Logger.reconfigure` replaces only name, threshold and redactor after all replacement objects exist; current sink registrations are preserved.
 
-`with_threshold_environment` reads only an explicitly named variable and handles missing `nox.os.getenv` values through `OsError`. Invalid values raise a fixed sanitized category. There is no implicit `.env`, home, file or network configuration. `QueueConfig` is deliberately absent until async dispatch passes Phase 7.
+`with_threshold_environment` reads only an explicitly named variable and handles missing `nox.os.getenv` values through `OsError`. Invalid values raise a fixed sanitized category. There is no implicit `.env`, home, file or network configuration. `QueueConfig` is deliberately absent because the Phase 7 audit reached a no-go decision on the pinned toolchain.
+
+## Async dispatch
+
+There is no async logging API on NOX 2.0.143. `Logger.log`, convenience methods, sink writes, `flush` and `close` remain synchronous. Obsidian does not expose a background worker, queue capacity, overflow policy or async lifecycle counters. This prevents callers from mistaking an incomplete queue for a supported durability or ordering boundary. See ADR-0011 for the executable capability evidence and re-evaluation conditions.
 
 ## Internal synchronous I/O sinks
 

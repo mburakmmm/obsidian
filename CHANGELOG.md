@@ -32,6 +32,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Single-process size-based rotating file sink with deterministic fixed-width archive names.
 - Oldest-first dry-run retention selection, bounded archive count and restart sequence recovery.
 - Sanitized rename/reopen recovery paths and strict owned-archive regular-file validation.
+- Executable async capability probes for record transfer, non-blocking queue operations, worker lifecycle and genuine overlap.
 
 ### Changed
 
@@ -41,6 +42,8 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - File names containing recognized credential-key components are rejected before opening a handle.
 - JSONL records include optional top-level correlation identifiers; text records render them in fixed request/trace/span order.
 - Rotating output rejects oversized records/preexisting files rather than exceeding the configured storage budget.
+- Async dispatch remains disabled after the Phase 7 audit found no portable non-blocking overflow or timeout-aware worker shutdown contract in NOX 2.0.143.
+- Hermetic package and import harnesses accept an explicit `NOXC` binary override for pinned local verification.
 
 ### Security
 
