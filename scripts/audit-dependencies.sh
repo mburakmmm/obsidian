@@ -3,17 +3,19 @@ set -euo pipefail
 
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-if rg -n '^(from|import) (nyx|aether|quartz)(\.| |$)' \
-  --glob '*.nox' \
-  --glob '!adapters/**' \
-  --glob '!tests/ecosystem/**' \
-  --glob '!examples/integrations/**' \
-  "$project_root"; then
+ecosystem_imports="$(find "$project_root" -type f -name '*.nox' \
+  ! -path "$project_root/adapters/*" \
+  ! -path "$project_root/tests/ecosystem/*" \
+  ! -path "$project_root/examples/integrations/*" \
+  -exec grep -nE '^(from|import) (nyx|aether|quartz)(\.| |$)' {} + || true)"
+if [[ -n "$ecosystem_imports" ]]; then
+  printf '%s\n' "$ecosystem_imports"
   echo "core source imports an optional ecosystem package" >&2
   exit 1
 fi
 
-if ! rg -U '"requires"\s*:\s*\[\s*\]' "$project_root/nox.json" >/dev/null; then
+manifest_compact="$(tr -d '[:space:]' <"$project_root/nox.json")"
+if [[ "$manifest_compact" != *'"requires":[]'* ]]; then
   echo "core manifest must not contain ecosystem dependencies" >&2
   exit 1
 fi
