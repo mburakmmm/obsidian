@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0 audit complete; Phase 2 passes the supported matrix; the Phase 3 I/O subset passes pinned local LLVM/QBE verification and awaits remote CI evidence. This document records observed capability and does not extend support beyond tested jobs.
+Status: Phase 0 audit complete; Phase 2 and the supported Phase 3 I/O subset pass the pinned local LLVM/QBE checks and supported CI matrix. This document records observed capability and does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -24,9 +24,9 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 |---|---|---|---|
 | `nox.log` | `format`, `redact`, `mask_assignments`, module-level threshold, stdout-only `debug/info/warn/error` | Wrap and extend; never change stdlib state implicitly | Phase 1 compile/behavior probes pass on LLVM/QBE |
 | `nox.json` | `JsonValue`, typed accessors, `dump_string`, `JsonWriter` | Use writer/escaping; test writer nesting because it does not validate structure | Phase 2 JSONL/golden/typed round-trip probes pass on LLVM/QBE |
-| `nox.fs` | synchronous `open_append`; unbuffered `write`; explicit/idempotent `close`; metadata size; rename/create/read operations | File sink must close explicitly; `flush` cannot be advertised as `fsync` | Phase 3 append/reopen/permission/UTF-8 probes pass locally on LLVM/QBE |
-| `nox.path` | `canonicalize`, `join`, `strip_prefix`, components | Constrain file/retention paths against a canonical allowed root | Phase 3 traversal/prefix/existing-symlink probes pass locally on LLVM/QBE |
-| built-in `print` / `nox.console` | stdout only; no `file=` target, stdio flush or recoverable write-error channel | Support explicit stdout; reject stderr; document logical flush | Stdout exact-capture probe passes locally; stderr blocked |
+| `nox.fs` | synchronous `open_append`; unbuffered `write`; explicit/idempotent `close`; metadata size; rename/create/read operations | File sink must close explicitly; `flush` cannot be advertised as `fsync` | Phase 3 append/reopen/permission/UTF-8 probes pass on supported CI jobs and local LLVM/QBE |
+| `nox.path` | `canonicalize`, `join`, `strip_prefix`, components | Constrain file/retention paths against a canonical allowed root | Phase 3 traversal/prefix/existing-symlink probes pass on supported CI jobs and local LLVM/QBE |
+| built-in `print` / `nox.console` | stdout only; no `file=` target, stdio flush or recoverable write-error channel | Support explicit stdout; reject stderr; document logical flush | Stdout exact-capture probe passes on supported CI jobs and locally; stderr blocked |
 | `nox.os` | `getenv` raises `OsError` when absent; `current_dir`, `set_var` | Environment overrides require explicit `try/except OsError` | Documented; compile probe pending |
 | `nox.time` | UTC `DateTime`; wall `now_ms`; monotonic `Instant`; `boot_ms` | Inject wall clock for records and monotonic clock for timeouts/durations | Fake clock and epoch-to-RFC3339 probes pass on LLVM/QBE |
 | `nox.thread` | joinable async entry, bounded `ThreadChannel`; QBE argument restrictions | Async is conditional; never infer portable sharing from LLVM | Documented; Phase 7 deferred |
@@ -60,12 +60,12 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 
 | Platform/backend | Check | Build/run | Tests | Concurrency claim |
 |---|---:|---:|---:|---|
-| macOS arm64 / LLVM | Pass | Pass | Pinned 2.0.143: Phase 3 subset, 8 files, 185 assertions, 0 skips locally | No concurrency claim |
-| macOS arm64 / QBE | Pass | Pass | Pinned 2.0.143: Phase 3 subset, 8 files, 185 assertions, 0 skips locally | Cooperative behavior documented; no concurrency test yet |
-| Linux x64 / LLVM | Pass | Pass | Phase 2: 6 files, 151 assertions, 0 skips; CI run `42171234012` | None |
-| Linux x64 / QBE | Pass | Pass | Phase 2: 6 files, 151 assertions, 0 skips; CI run `42171234012` | None |
-| Linux arm64 / LLVM | Pass | Pass | Phase 2: 6 files, 151 assertions, 0 skips; CI run `42171234012` | None |
-| Linux arm64 / QBE | Pass | Pass | Phase 2: 6 files, 151 assertions, 0 skips; CI run `42171234012` | None |
+| macOS arm64 / LLVM | Pass | Pass | Phase 3 subset: 8 files, 185 assertions, 0 skips; local and CI run `42173270729` | No concurrency claim |
+| macOS arm64 / QBE | Pass | Pass | Phase 3 subset: 8 files, 185 assertions, 0 skips; local and CI run `42173270729` | Cooperative behavior documented; no concurrency test yet |
+| Linux x64 / LLVM | Pass | Pass | Phase 3 subset: 8 files, 185 assertions, 0 skips; CI run `42173270729` | None |
+| Linux x64 / QBE | Pass | Pass | Phase 3 subset: 8 files, 185 assertions, 0 skips; CI run `42173270729` | None |
+| Linux arm64 / LLVM | Pass | Pass | Phase 3 subset: 8 files, 185 assertions, 0 skips; CI run `42173270729` | None |
+| Linux arm64 / QBE | Pass | Pass | Phase 3 subset: 8 files, 185 assertions, 0 skips; CI run `42173270729` | None |
 | Windows x64 | Not run | Not run | Not run | Unsupported until evidence exists |
 
 ## Upgrade policy
