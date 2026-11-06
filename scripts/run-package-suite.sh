@@ -32,12 +32,20 @@ cp -R "$project_root/examples/." examples/
 NOX_HOME="$probe_nox_home" noxc add obsidian "$package_root" --ref main >/dev/null
 NOX_HOME="$probe_nox_home" noxc fetch >/dev/null
 
+mkdir -p "$consumer_root/obsidian-file-tests" "$consumer_root/obsidian-file-denied" "$probe_root/outside"
+ln -s "$probe_root/outside" "$consumer_root/obsidian-file-tests/escape-link"
+chmod 500 "$consumer_root/obsidian-file-denied"
+
 NOX_HOME="$probe_nox_home" noxc test --backend "$backend" tests
 
 expected_json='{"timestamp":"2023-11-14T22:13:20.123Z","timestamp_ms":1700000000123,"level":"INFO","logger":"service.auth","message":"request completed","fields":{"status":200,"token":"***","user_id":"u-123"},"context":{"request":"req-42"},"schema_version":"obsidian.log.v1"}'
+expected_console='2023-11-14T22:13:20.123Z INFO service.auth token="***" password=***'
+expected_file='{"timestamp":"2023-11-14T22:13:20.123Z","timestamp_ms":1700000000123,"level":"INFO","logger":"service.file","message":"file event","fields":{"token":"***"},"context":{},"schema_version":"obsidian.log.v1"}'
 test "$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" examples/hello.nox)" = "obsidian 0.0.0"
 test "$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" examples/memory_logging.nox)" = "1700000000000 INFO service.auth password=*** ***"
 test "$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" examples/json_logging.nox)" = "$expected_json"
+test "$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" examples/console_logging.nox)" = "$expected_console"
+test "$(NOX_HOME="$probe_nox_home" noxc run --backend "$backend" examples/file_logging.nox)" = "$expected_file"
 
 resolved_sha="$(git -C "$package_root" rev-parse HEAD)"
 grep -q "\"resolved\": \"$resolved_sha\"" nox.lock

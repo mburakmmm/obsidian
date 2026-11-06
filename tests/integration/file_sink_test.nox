@@ -1,0 +1,146 @@
+import nox.fs
+import nox.os
+import nox.path
+import nox.strings
+import nox.test
+import obsidian.fields
+import obsidian.format_json
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.record import LogRecord
+from obsidian.sink_error import SinkError
+from obsidian.sink_format import FORMAT_JSON, FORMAT_TEXT
+from obsidian.sinks.file import FileSink, is_inside_root
+
+def make_record(timestamp_ms: int, message: str) -> LogRecord:
+    event_fields: list[LogField] = [LogField("token", obsidian.fields.string_value("SYNTHETIC_FILE_SECRET")), LogField("unicode", obsidian.fields.string_value("İstanbul 世界"))]
+    context: list[LogField] = []
+    return LogRecord(timestamp_ms, INFO, "file.test", message, event_fields, context)
+
+def traversal_is_rejected(root: str) -> bool:
+    try:
+        FileSink("traversal", root, "../outside.log", FORMAT_TEXT, False)
+        return False
+    except ValueError as e:
+        return e.message == "file sink path contains traversal"
+
+def absolute_path_is_rejected(root: str) -> bool:
+    try:
+        FileSink("absolute", root, nox.path.join(root, "absolute.log"), FORMAT_TEXT, False)
+        return False
+    except ValueError as e:
+        return e.message == "file sink path must be relative"
+
+def nonportable_path_is_rejected(root: str) -> bool:
+    try:
+        FileSink("nonportable", root, "bad\\name.log", FORMAT_TEXT, False)
+        return False
+    except ValueError as e:
+        return e.message == "file sink path is not portable"
+
+def control_path_is_rejected(root: str) -> bool:
+    try:
+        FileSink("control", root, "bad\nname.log", FORMAT_TEXT, False)
+        return False
+    except ValueError as e:
+        return e.message == "file sink path contains a control character"
+
+def missing_parent_is_rejected(root: str) -> bool:
+    try:
+        FileSink("missing", root, "missing-parent/events.log", FORMAT_TEXT, False)
+        return False
+    except SinkError as e:
+        return e.message == "file sink parent directory is missing"
+
+def directory_target_is_rejected(root: str) -> bool:
+    try:
+        FileSink("directory", root, "obsidian-file-tests", FORMAT_TEXT, False)
+        return False
+    except SinkError as e:
+        return e.message == "file sink target is not a file"
+
+def symlink_escape_is_rejected(root: str) -> bool:
+    try:
+        FileSink("symlink", root, "obsidian-file-tests/escape-link/events.log", FORMAT_TEXT, False)
+        return False
+    except SinkError as e:
+        return e.message == "file sink path escapes allowed root"
+
+def permission_error_is_sanitized(root: str) -> bool:
+    try:
+        FileSink("denied", root, "obsidian-file-denied/events.log", FORMAT_TEXT, False)
+        return False
+    except SinkError as e:
+        return e.message == "file sink open failed"
+
+def invalid_root_is_sanitized(root: str) -> bool:
+    try:
+        FileSink("root", nox.path.join(root, "missing-root"), "events.log", FORMAT_TEXT, False)
+        return False
+    except SinkError as e:
+        return e.message == "file sink root validation failed"
+
+def write_after_close_is_rejected(root: str, entry: LogRecord) -> bool:
+    sink: FileSink = FileSink("closed", root, "obsidian-file-tests/closed.log", FORMAT_TEXT, False)
+    sink.close()
+    try:
+        sink.write(entry)
+        return False
+    except SinkError as e:
+        return e.message == "file sink is closed"
+
+def flush_after_close_is_rejected(root: str) -> bool:
+    sink: FileSink = FileSink("closed-flush", root, "obsidian-file-tests/closed-flush.log", FORMAT_TEXT, False)
+    sink.close()
+    try:
+        sink.flush()
+        return False
+    except SinkError as e:
+        return e.message == "file sink is closed"
+
+root: str = nox.os.current_dir()
+first: LogRecord = make_record(1700000000123, "first password=SYNTHETIC_FILE_SECRET")
+second: LogRecord = make_record(1700000001123, "second")
+third: LogRecord = make_record(1700000002123, "third")
+
+sink: FileSink = FileSink("json-file", root, "obsidian-file-tests/nested/events.jsonl", FORMAT_JSON, True)
+nox.test.assert_eq_str(sink.sink_name(), "json-file", "file sink name")
+nox.test.assert_true(not sink.is_closed(), "file sink starts open")
+nox.test.assert_true(not sink.is_bounded(), "file storage remains unbounded before rotation")
+sink.write(first)
+sink.write(second)
+sink.flush()
+nox.test.assert_eq_int(sink.write_count(), 2, "file sink write count")
+sink.close()
+sink.close()
+nox.test.assert_true(sink.is_closed(), "file close is idempotent")
+
+path: str = nox.path.join(root, "obsidian-file-tests/nested/events.jsonl")
+expected_two: str = obsidian.format_json.format_record(first) + obsidian.format_json.format_record(second)
+content_two: str = nox.fs.read_to_string(path)
+nox.test.assert_eq_str(content_two, expected_two, "file sink writes exact JSONL")
+nox.test.assert_true("SYNTHETIC_FILE_SECRET" not in content_two, "file sink masks sentinel")
+nox.test.assert_eq_int(nox.fs.metadata(path).size, nox.strings.byte_len(content_two), "file size counts UTF-8 bytes")
+
+reopened: FileSink = FileSink("json-file-reopen", root, "obsidian-file-tests/nested/events.jsonl", FORMAT_JSON, False)
+reopened.write(third)
+reopened.close()
+content_three: str = nox.fs.read_to_string(path)
+nox.test.assert_eq_str(content_three, expected_two + obsidian.format_json.format_record(third), "reopen appends without truncation")
+nox.test.assert_eq_int(content_three.count("\n"), 3, "one JSON object per appended line")
+
+nox.test.assert_true(traversal_is_rejected(root), "path traversal rejected")
+nox.test.assert_true(absolute_path_is_rejected(root), "absolute path rejected")
+nox.test.assert_true(nonportable_path_is_rejected(root), "nonportable path rejected")
+nox.test.assert_true(control_path_is_rejected(root), "control character path rejected")
+nox.test.assert_true(missing_parent_is_rejected(root), "missing parent requires opt-in creation")
+nox.test.assert_true(directory_target_is_rejected(root), "directory target rejected")
+nox.test.assert_true(symlink_escape_is_rejected(root), "existing symlink escape rejected")
+nox.test.assert_true(permission_error_is_sanitized(root), "permission error is observable and sanitized")
+nox.test.assert_true(invalid_root_is_sanitized(root), "root validation error is sanitized")
+nox.test.assert_true(write_after_close_is_rejected(root, first), "file write after close rejected")
+nox.test.assert_true(flush_after_close_is_rejected(root), "file flush after close rejected")
+nox.test.assert_true(is_inside_root("/safe/root", "/safe/root"), "root equals allowed root")
+nox.test.assert_true(is_inside_root("/safe/root", "/safe/root/child"), "child is inside root")
+nox.test.assert_true(not is_inside_root("/safe/root", "/safe/root2"), "prefix sibling is outside root")
+nox.test.assert_true(not is_inside_root("/safe/root", "safe/root/child"), "relative candidate is outside root")

@@ -1,0 +1,16 @@
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.sink_format import FORMAT_TEXT
+from obsidian.sinks.console import CONSOLE_STDOUT, ConsoleSink
+
+clock: FakeClock = FakeClock(1700000000123)
+logger: Logger = Logger("service.auth", INFO, clock)
+console: ConsoleSink = ConsoleSink("example-stdout", CONSOLE_STDOUT, FORMAT_TEXT)
+logger.add_sink(console)
+
+event_fields: list[LogField] = [LogField("token", obsidian.fields.string_value("SYNTHETIC_CONSOLE_SECRET"))]
+logger.info("password=SYNTHETIC_CONSOLE_SECRET", event_fields)
+logger.close()

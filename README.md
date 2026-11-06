@@ -35,9 +35,11 @@ Obsidian wraps and extends `nox.log`; it does not replace or fork the standard l
 - Pre-sink scalar field redaction and assignment masking.
 - Deterministic single-line text formatting with control-character escaping.
 - Canonical JSONL with RFC 3339 timestamps and preserved scalar JSON types.
+- Explicit stdout console sink and canonical-root-checked append-only file sink for trusted roots.
+- Sanitized sink error categories and explicit idempotent I/O lifecycle.
 - Deterministic LLVM and QBE tests.
 
-Console/file sinks, the complete security matrix, context binding, rotation and conditional async dispatch remain gated future phases.
+Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. The complete security matrix, context binding, rotation and conditional async dispatch remain gated future phases.
 
 ## Toolchain
 

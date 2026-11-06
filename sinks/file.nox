@@ -1,0 +1,168 @@
+import nox.fs
+import nox.path
+import obsidian.sink_format
+from nox.fs import FileWriter, FsError
+from nox.path import PathError
+from obsidian.record import LogRecord
+from obsidian.sink_error import SinkError
+
+MAX_RELATIVE_LOG_PATH_LENGTH: int = 512
+
+def is_inside_root(root: str, candidate: str) -> bool:
+    if not nox.path.is_absolute(root) or not nox.path.is_absolute(candidate):
+        return False
+    root_components: list[str] = nox.path.components(root)
+    candidate_components: list[str] = nox.path.components(candidate)
+    if len(candidate_components) < len(root_components):
+        return False
+    index: int = 0
+    while index < len(root_components):
+        if candidate_components[index] != root_components[index]:
+            return False
+        index += 1
+    return True
+
+def validate_relative_log_path(relative_path: str) -> None:
+    if len(relative_path) == 0:
+        raise ValueError("file sink path must not be empty")
+    if len(relative_path) > MAX_RELATIVE_LOG_PATH_LENGTH:
+        raise ValueError("file sink path is too long")
+    if nox.path.is_absolute(relative_path):
+        raise ValueError("file sink path must be relative")
+    if relative_path.endswith("/") or "\\" in relative_path or ":" in relative_path:
+        raise ValueError("file sink path is not portable")
+    for character in relative_path:
+        codepoint: int = ord(character)
+        if codepoint < 32 or codepoint == 127:
+            raise ValueError("file sink path contains a control character")
+    components: list[str] = nox.path.components(relative_path)
+    if len(components) == 0:
+        raise ValueError("file sink path must name a file")
+    for component in components:
+        if component == "." or component == "..":
+            raise ValueError("file sink path contains traversal")
+
+def canonical_root(allowed_root: str) -> str:
+    try:
+        root: str = nox.path.canonicalize(allowed_root)
+    except PathError:
+        raise SinkError("file sink root validation failed")
+    if not nox.fs.is_dir(root):
+        raise SinkError("file sink root is not a directory")
+    return root
+
+def resolve_parent(root: str, relative_path: str, create_parent: bool) -> str:
+    components: list[str] = nox.path.components(relative_path)
+    current: str = root
+    index: int = 0
+    while index < len(components) - 1:
+        candidate: str = nox.path.join(current, components[index])
+        if nox.fs.exists(candidate):
+            if not nox.fs.is_dir(candidate):
+                raise SinkError("file sink parent is not a directory")
+        elif create_parent:
+            try:
+                nox.fs.create_dir(candidate)
+            except FsError:
+                raise SinkError("file sink directory creation failed")
+        else:
+            raise SinkError("file sink parent directory is missing")
+        try:
+            resolved: str = nox.path.canonicalize(candidate)
+        except PathError:
+            raise SinkError("file sink parent validation failed")
+        if not is_inside_root(root, resolved):
+            raise SinkError("file sink path escapes allowed root")
+        current = resolved
+        index += 1
+    return current
+
+def resolve_target(root: str, relative_path: str, create_parent: bool) -> str:
+    validate_relative_log_path(relative_path)
+    parent: str = resolve_parent(root, relative_path, create_parent)
+    target: str = nox.path.join(parent, nox.path.basename(relative_path))
+    if nox.fs.exists(target):
+        if not nox.fs.is_file(target):
+            raise SinkError("file sink target is not a file")
+        try:
+            resolved: str = nox.path.canonicalize(target)
+        except PathError:
+            raise SinkError("file sink target validation failed")
+        if not is_inside_root(root, resolved):
+            raise SinkError("file sink path escapes allowed root")
+        return resolved
+    return target
+
+class FileSink:
+    _name: str
+    _format_kind: int
+    _writer: FileWriter
+    _writes: int
+    _closed: bool
+
+    def __init__(self, name: str, allowed_root: str, relative_path: str, format_kind: int, create_parent: bool) -> None:
+        if len(name) == 0:
+            raise ValueError("sink name must not be empty")
+        if not obsidian.sink_format.is_valid_format(format_kind):
+            raise ValueError("file sink format is invalid")
+        root: str = canonical_root(allowed_root)
+        target: str = resolve_target(root, relative_path, create_parent)
+        try:
+            writer: FileWriter = nox.fs.open_append(target)
+        except FsError:
+            raise SinkError("file sink open failed")
+        try:
+            resolved_target: str = nox.path.canonicalize(target)
+        except PathError:
+            writer.close()
+            raise SinkError("file sink target validation failed")
+        if not is_inside_root(root, resolved_target):
+            writer.close()
+            raise SinkError("file sink path escapes allowed root")
+        self._name = name
+        self._format_kind = format_kind
+        self._writer = writer
+        self._writes = 0
+        self._closed = False
+
+    def sink_name(self) -> str:
+
+        return self._name
+
+    def write(self, entry: LogRecord) -> None:
+
+        if self._closed:
+            raise SinkError("file sink is closed")
+        try:
+            encoded: str = obsidian.sink_format.encode_record(entry, self._format_kind)
+        except ValueError:
+            raise SinkError("file sink formatting failed")
+        try:
+            self._writer.write(encoded)
+        except FsError:
+            raise SinkError("file sink write failed")
+        self._writes += 1
+
+    def flush(self) -> None:
+
+        if self._closed:
+            raise SinkError("file sink is closed")
+
+    def close(self) -> None:
+
+        if self._closed:
+            return
+        self._closed = True
+        self._writer.close()
+
+    def is_closed(self) -> bool:
+
+        return self._closed
+
+    def is_bounded(self) -> bool:
+
+        return False
+
+    def write_count(self) -> int:
+
+        return self._writes

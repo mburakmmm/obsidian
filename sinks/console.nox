@@ -1,0 +1,64 @@
+import obsidian.sink_format
+from obsidian.record import LogRecord
+from obsidian.sink_error import SinkError
+
+CONSOLE_STDOUT: int = 1
+CONSOLE_STDERR: int = 2
+
+class ConsoleSink:
+    _name: str
+    _target: int
+    _format_kind: int
+    _writes: int
+    _closed: bool
+
+    def __init__(self, name: str, target: int, format_kind: int) -> None:
+        if len(name) == 0:
+            raise ValueError("sink name must not be empty")
+        if target == CONSOLE_STDERR:
+            raise SinkError("stderr output is unsupported by the pinned NOX compiler")
+        if target != CONSOLE_STDOUT:
+            raise ValueError("console sink target is invalid")
+        if not obsidian.sink_format.is_valid_format(format_kind):
+            raise ValueError("console sink format is invalid")
+        self._name = name
+        self._target = target
+        self._format_kind = format_kind
+        self._writes = 0
+        self._closed = False
+
+    def sink_name(self) -> str:
+
+        return self._name
+
+    def write(self, entry: LogRecord) -> None:
+
+        if self._closed:
+            raise SinkError("console sink is closed")
+        try:
+            encoded: str = obsidian.sink_format.encode_record(entry, self._format_kind)
+            print(encoded, end="")
+        except ValueError:
+            raise SinkError("console sink formatting failed")
+        self._writes += 1
+
+    def flush(self) -> None:
+
+        if self._closed:
+            raise SinkError("console sink is closed")
+
+    def close(self) -> None:
+
+        self._closed = True
+
+    def is_closed(self) -> bool:
+
+        return self._closed
+
+    def is_bounded(self) -> bool:
+
+        return False
+
+    def write_count(self) -> int:
+
+        return self._writes

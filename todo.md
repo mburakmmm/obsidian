@@ -217,23 +217,25 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 
 ### 7.1 Console sink
 
-- [ ] stdout/stderr seçimi explicit; varsayılan öneri stderr olarak belgeli.
-- [ ] Write/flush/close ve kapalı sink davranışı testli.
-- [ ] Gerçek stdout/stderr capture entegrasyon testleri var.
-- [ ] Write failure seçili error policy'ye gidiyor; recursive logging yok.
+- [x] Target seçimi explicit; `CONSOLE_STDOUT` gerçek çıktı üretir, stderr fallback yapılmaz.
+- BLOCKED: `CONSOLE_STDERR`, NOX 2.0.143/2.0.181 public API'sinde stderr yazımı olmadığı için sanitize `SinkError` ile kapalı; stderr önerisi dokümante edildi.
+- [x] Write/flush/close ve kapalı sink davranışı testli; close idempotent.
+- [x] Gerçek stdout exact-capture entegrasyon örneği LLVM/QBE harness'ında var.
+- BLOCKED: `print` recoverable write-error ve stdio flush kanalı sunmadığı için console broken-pipe/flush kanıtı yok.
 
 ### 7.2 File sink
 
-- [ ] `nox.fs.open_append` ve explicit/`with` close ile uygulanıyor.
-- [ ] Directory creation opt-in ve sınırlandırılmış.
-- [ ] Path canonicalization ile izinli root dışına çıkış reddediliyor.
-- [ ] `..`, absolute path, symlink ve platform path edge-case'leri testli.
-- [ ] Append/reopen ve Unicode byte size davranışı testli.
-- [ ] Permission denied, missing directory ve write failure negatif testleri var.
-- [ ] Cleanup hata yolunda da gerçekleşiyor; handle leak kanıtı yok.
-- [ ] `flush` ile `fsync` farkı açık; doğrulanmamış durability iddiası yok.
-- [ ] Disk-full testi mümkün değilse skip nedeni ve eksik kanıt kaydedildi.
-- [ ] Bu fazda rotation/retention uygulanmadı.
+- [x] `nox.fs.open_append` ve explicit idempotent close ile uygulanıyor.
+- [x] Directory creation explicit `create_parent` opt-in'iyle canonical root içinde sınırlandırıldı.
+- [x] Parent/file canonicalization ile test edilen root dışı ve mevcut symlink kaçışları reddediliyor.
+- [x] `..`, absolute path, control/non-portable path ve mevcut symlink edge-case'leri testli.
+- BLOCKED: Pinned API `lstat`/no-follow/openat sağlamadığı için dangling leaf symlink ve concurrent hostile-directory yarışı güvenli biçimde kanıtlanamıyor; trusted root zorunlu.
+- [x] Append/reopen ve Unicode byte size davranışı testli.
+- [x] Permission denied ve missing directory negatif testleri; open hatası sanitize kategoriyle görünür.
+- [x] Açılış sonrası validation hata yolu writer'ı kapatıyor; normal ve tekrar close testli.
+- [x] `flush` ile `fsync` farkı açık; doğrulanmamış durability iddiası yok.
+- [ ] Disk-full/post-open write failure simülasyonu çalıştırılmadı; eksik kanıt `docs/operations.md` içinde kayıtlı.
+- [x] Bu fazda rotation/retention uygulanmadı.
 
 ### Phase 3 kapısı
 
@@ -538,3 +540,4 @@ File rotation ve async çalışma, sırasıyla Phase 1–4 ve Phase 6 kapıları
 | 2026-11-05 | Uzak CI kanıtı | GitHub Actions run `41983292400`; macOS arm64, Linux x64 ve Linux arm64 matrisi | Her platformda format, LLVM/QBE testleri, 2 compile-fail fixture ve paket alias/import probu geçti | Phase 0 uzak platform kapısı geçti; Phase 2 sırada |
 | 2026-11-06 | `0.2.x` / Phase 2 | RFC3339 text/JSONL formatter, deterministic field ordering, scalar type preservation, size/count bounds, non-finite reject politikası ve doğru package self-importları eklendi | Doğrulanmış NOX 2.0.143 arşiviyle hermetik tüketicide LLVM/QBE: 6 test dosyası, 151 assertion, 0 skip; 3 exact örnek, transitive import/lock probu geçti | Uzak Phase 2 CI kanıtı push sonrası alınacak; Phase 3 sırada |
 | 2026-11-06 | Phase 2 uzak CI kanıtı | GitHub Actions run `42171234012`; commit `7722752`; macOS arm64, Linux x64 ve Linux arm64 | Üç işte de pinned toolchain, format, LLVM/QBE tüketici süiti, 2 compile-fail fixture ve transitive alias/import-lock probu geçti | Phase 2 kapısı desteklenen matriste geçti; Phase 3 console/file sink sırada |
+| 2026-11-06 | `0.2.x` / Phase 3 desteklenen alt küme | Explicit stdout `ConsoleSink`, trusted root için canonical-root kontrolleri yapan append-only `FileSink`, sanitize `SinkError`, opt-in parent creation ve gerçek I/O testleri eklendi | Pinned NOX 2.0.143 LLVM/QBE: 8 test dosyası, 185 assertion, 0 skip; exact stdout/file örnekleri, permission/traversal/existing-symlink/append/reopen/UTF-8 kanıtı geçti | Stderr, console write-error kanalı, dangling-symlink race ve disk-full kanıtı BLOCKED; Phase 3 kapısı açık tutuldu |

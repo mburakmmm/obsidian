@@ -1,0 +1,25 @@
+import nox.fs
+import nox.os
+import nox.path
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.sink_format import FORMAT_JSON
+from obsidian.sinks.file import FileSink
+
+root: str = nox.os.current_dir()
+relative_path: str = "obsidian-example.jsonl"
+path: str = nox.path.join(root, relative_path)
+clock: FakeClock = FakeClock(1700000000123)
+logger: Logger = Logger("service.file", INFO, clock)
+file_sink: FileSink = FileSink("example-file", root, relative_path, FORMAT_JSON, False)
+logger.add_sink(file_sink)
+
+event_fields: list[LogField] = [LogField("token", obsidian.fields.string_value("SYNTHETIC_FILE_EXAMPLE_SECRET"))]
+logger.info("file event", event_fields)
+logger.close()
+
+print(nox.fs.read_to_string(path), end="")
+nox.fs.remove_file(path)

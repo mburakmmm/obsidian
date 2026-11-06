@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0 audit complete; Phase 2 formatter evidence passes locally and in the supported CI matrix. This document records observed capability and does not extend support beyond tested jobs.
+Status: Phase 0 audit complete; Phase 2 passes the supported matrix; the Phase 3 I/O subset passes pinned local LLVM/QBE verification and awaits remote CI evidence. This document records observed capability and does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -24,15 +24,16 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 |---|---|---|---|
 | `nox.log` | `format`, `redact`, `mask_assignments`, module-level threshold, stdout-only `debug/info/warn/error` | Wrap and extend; never change stdlib state implicitly | Phase 1 compile/behavior probes pass on LLVM/QBE |
 | `nox.json` | `JsonValue`, typed accessors, `dump_string`, `JsonWriter` | Use writer/escaping; test writer nesting because it does not validate structure | Phase 2 JSONL/golden/typed round-trip probes pass on LLVM/QBE |
-| `nox.fs` | synchronous `open_append`; unbuffered `write`; explicit/idempotent `close`; metadata size; rename/create/read operations | File sink must close explicitly; `flush` cannot be advertised as `fsync` | Documented; integration probe pending |
-| `nox.path` | `canonicalize`, `join`, `strip_prefix`, components | Constrain file/retention paths against a canonical allowed root | Documented; security probe pending |
+| `nox.fs` | synchronous `open_append`; unbuffered `write`; explicit/idempotent `close`; metadata size; rename/create/read operations | File sink must close explicitly; `flush` cannot be advertised as `fsync` | Phase 3 append/reopen/permission/UTF-8 probes pass locally on LLVM/QBE |
+| `nox.path` | `canonicalize`, `join`, `strip_prefix`, components | Constrain file/retention paths against a canonical allowed root | Phase 3 traversal/prefix/existing-symlink probes pass locally on LLVM/QBE |
+| built-in `print` / `nox.console` | stdout only; no `file=` target, stdio flush or recoverable write-error channel | Support explicit stdout; reject stderr; document logical flush | Stdout exact-capture probe passes locally; stderr blocked |
 | `nox.os` | `getenv` raises `OsError` when absent; `current_dir`, `set_var` | Environment overrides require explicit `try/except OsError` | Documented; compile probe pending |
 | `nox.time` | UTC `DateTime`; wall `now_ms`; monotonic `Instant`; `boot_ms` | Inject wall clock for records and monotonic clock for timeouts/durations | Fake clock and epoch-to-RFC3339 probes pass on LLVM/QBE |
 | `nox.thread` | joinable async entry, bounded `ThreadChannel`; QBE argument restrictions | Async is conditional; never infer portable sharing from LLVM | Documented; Phase 7 deferred |
 | `nox.atomic` | explicit allocation/`free`, handles for worker sharing | Worker ownership and join must precede free | Documented; Phase 7 deferred |
 | scheduler | LLVM M:N work-stealing; QBE single-threaded cooperative | Backend-specific concurrency evidence is mandatory | Documented; Phase 7 deferred |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; compile-fail fixtures must not match `*_test.nox` | Six files/151 assertions pass through the hermetic package consumer on LLVM/QBE; two negative fixtures exit non-zero |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; compile-fail fixtures must not match `*_test.nox` | Eight files/185 assertions pass through the hermetic package consumer on LLVM/QBE; two negative fixtures exit non-zero |
 
 ## Known gaps and conservative decisions
 
@@ -47,17 +48,20 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | Immutable classes | NOX class fields are mutable and visibility is conventional | Deep-copy caller data, expose clone-returning accessors and keep internal storage underscore-prefixed; do not claim language-enforced immutability |
 | Cross-process file rotation | No lock/atomic rotation contract proven | Single-process ownership only; rotation deferred to Phase 6 |
 | Async multi-producer safety | Primitives exist but record transport/lifetime is unproven, especially on QBE | Async disabled until Phase 7 go/no-go evidence |
-| Native glue | No core capability gap yet | No Zig/NNI code permitted without a new ADR |
+| Native glue | Stderr/no-follow gaps exist, but a portable boundary has not been designed or approved | Keep unsupported paths disabled; no Zig/NNI code without a separate ADR |
 | `Logger.trace` spelling | NOX 2.0.143 type-checks it but LLVM codegen emits a duplicate `logger_Logger_trace` symbol in the current module graph | Keep the common `log(TRACE, ...)` path and temporary `trace_event` convenience method; retest on compiler upgrade before stabilizing the API |
 | Maximum finite float literal in `noxc fmt` | Formatting a source literal at IEEE-754 maximum returned `NoSpaceLeft`; parsing the exact decimal with documented `float(str)` preserves the value and formats cleanly | Keep the compile/runtime regression and avoid the problematic literal spelling at this compiler revision |
 | Root-project package self-name | 2.0.143 and 2.0.181 resolve `obsidian.*` correctly inside an installed dependency, but not while Obsidian itself is the root project | Use manifest-name self-imports and run tests/examples through the isolated downstream harness in ADR-0006 |
+| Stderr and console flush | No public API in 2.0.143 or observed 2.0.181 docs; `print(file=...)` is explicitly unsupported | Keep stderr disabled with `SinkError`; console flush is logical only; no native shim without a separate ADR |
+| Race-free no-follow file open | No `lstat`, `openat`, `O_NOFOLLOW` or equivalent public API | Require trusted allowed root; reject lexical and existing symlink escapes; do not claim hostile-directory race safety |
+| `nox.path.strip_prefix` component boundary | Pinned 2.0.143 treats `/safe/root2` as prefixed by `/safe/root`; observed 2.0.181 does not | Do not use it for confinement; compare canonical path components exactly and retain the regression test |
 
 ## Backend and platform matrix
 
 | Platform/backend | Check | Build/run | Tests | Concurrency claim |
 |---|---:|---:|---:|---|
-| macOS arm64 / LLVM | Pass | Pass | Pinned 2.0.143: 6 files, 151 assertions, 0 skips locally | No concurrency claim |
-| macOS arm64 / QBE | Pass | Pass | Pinned 2.0.143: 6 files, 151 assertions, 0 skips locally | Cooperative behavior documented; no concurrency test yet |
+| macOS arm64 / LLVM | Pass | Pass | Pinned 2.0.143: Phase 3 subset, 8 files, 185 assertions, 0 skips locally | No concurrency claim |
+| macOS arm64 / QBE | Pass | Pass | Pinned 2.0.143: Phase 3 subset, 8 files, 185 assertions, 0 skips locally | Cooperative behavior documented; no concurrency test yet |
 | Linux x64 / LLVM | Pass | Pass | Phase 2: 6 files, 151 assertions, 0 skips; CI run `42171234012` | None |
 | Linux x64 / QBE | Pass | Pass | Phase 2: 6 files, 151 assertions, 0 skips; CI run `42171234012` | None |
 | Linux arm64 / LLVM | Pass | Pass | Phase 2: 6 files, 151 assertions, 0 skips; CI run `42171234012` | None |
@@ -75,7 +79,8 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 ## Primary pinned sources
 
 - `docs/stdlib/log.md`, `json.md`, `fs.md`, `os.md`, `time.md`, `thread.md`, `atomic.md`
-- `docs/stdlib/path.md`, `test.md`
+- `docs/stdlib/path.md`, `console.md`, `test.md`
+- `docs/language/builtins.md`, `ffi.md`
 - `docs/language/concurrency.md`, `modules.md`
 - `docs/internals/architecture.md`
 - `docs/tools/packages.md`, `testing.md`, `noxc.md`

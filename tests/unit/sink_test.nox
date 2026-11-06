@@ -1,0 +1,62 @@
+import nox.test
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.record import LogRecord
+from obsidian.sink_error import SinkError
+from obsidian.sink_format import FORMAT_JSON, FORMAT_TEXT
+from obsidian.sinks.console import CONSOLE_STDERR, CONSOLE_STDOUT, ConsoleSink
+
+def stderr_is_rejected() -> bool:
+    try:
+        ConsoleSink("stderr", CONSOLE_STDERR, FORMAT_TEXT)
+        return False
+    except SinkError as e:
+        return e.message == "stderr output is unsupported by the pinned NOX compiler"
+
+def invalid_target_is_rejected() -> bool:
+    try:
+        ConsoleSink("invalid", 99, FORMAT_TEXT)
+        return False
+    except ValueError as e:
+        return e.message == "console sink target is invalid"
+
+def invalid_format_is_rejected() -> bool:
+    try:
+        ConsoleSink("invalid", CONSOLE_STDOUT, 99)
+        return False
+    except ValueError as e:
+        return e.message == "console sink format is invalid"
+
+def write_after_close_is_rejected() -> bool:
+    sink: ConsoleSink = ConsoleSink("closed", CONSOLE_STDOUT, FORMAT_JSON)
+    sink.close()
+    empty: list[LogField] = []
+    entry: LogRecord = LogRecord(0, INFO, "test", "closed", empty, empty)
+    try:
+        sink.write(entry)
+        return False
+    except SinkError as e:
+        return e.message == "console sink is closed"
+
+def flush_after_close_is_rejected() -> bool:
+    sink: ConsoleSink = ConsoleSink("closed", CONSOLE_STDOUT, FORMAT_TEXT)
+    sink.close()
+    try:
+        sink.flush()
+        return False
+    except SinkError as e:
+        return e.message == "console sink is closed"
+
+console: ConsoleSink = ConsoleSink("stdout", CONSOLE_STDOUT, FORMAT_TEXT)
+nox.test.assert_eq_str(console.sink_name(), "stdout", "console sink name")
+nox.test.assert_true(not console.is_closed(), "console starts open")
+nox.test.assert_true(not console.is_bounded(), "console storage is not bounded by Obsidian")
+console.flush()
+console.close()
+console.close()
+nox.test.assert_true(console.is_closed(), "console close is idempotent")
+nox.test.assert_true(stderr_is_rejected(), "stderr capability gap is explicit")
+nox.test.assert_true(invalid_target_is_rejected(), "invalid console target rejected")
+nox.test.assert_true(invalid_format_is_rejected(), "invalid console format rejected")
+nox.test.assert_true(write_after_close_is_rejected(), "console write after close rejected")
+nox.test.assert_true(flush_after_close_is_rejected(), "console flush after close rejected")

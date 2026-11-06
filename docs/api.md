@@ -1,6 +1,6 @@
 # API status
 
-Status: internal development API through Phase 2; not frozen and not published.
+Status: internal development API through the supported Phase 3 subset; not frozen and not published.
 
 ## Levels
 
@@ -70,3 +70,11 @@ The TRACE convenience method is temporarily named `trace_event`. At the pinned c
 `Sink` exposes lifecycle methods, a stable name and a bounded-storage capability flag. `MemorySink` is a bounded drop-oldest ring with an explicit drop counter and clone-returning snapshots. Recursive logging from a sink is rejected before a second record is captured. No lock is held while calling a sink because the current dispatcher is synchronous and lock-free.
 
 The baseline sanitizer masks the required scalar sensitive field names case-insensitively and delegates `key=value` message masking to `nox.log.mask_assignments`. This is not the completed Phase 4 security surface: nested values, URLs, headers, exception/config/diagnostic paths and failure injection remain gated work.
+
+## Internal synchronous I/O sinks
+
+`ConsoleSink(name, target, format_kind)` requires an explicit target and formatter. `CONSOLE_STDOUT` supports text or JSON output. `CONSOLE_STDERR` raises a sanitized `SinkError` because the pinned NOX API has no stderr write primitive. Console `flush()` is a logical no-op, not a process stdio flush.
+
+`FileSink(name, allowed_root, relative_path, format_kind, create_parent)` owns one append-only `FileWriter`. It validates portable relative paths, canonicalizes existing/created parents under the allowed root, rejects tested traversal/symlink escapes, writes one encoded record per unbuffered call and closes idempotently. File `flush()` is a logical no-op and does not imply `fsync` durability.
+
+`FORMAT_TEXT` and `FORMAT_JSON` select the existing deterministic formatters. Both sinks re-enter those sanitizer-backed formatters; file/path/write failures are exposed as stable `SinkError` categories without echoing paths or record data. File storage is unbounded until Phase 6. A trusted application-owned root is required because the pinned API has no `lstat`, no-follow open or race-free directory-relative open.

@@ -42,7 +42,7 @@ There is no `__init__.nox` facade convention in the audited module contract. Pub
 
 ## Lifecycle model
 
-Logger ownership is explicit. Sinks have documented write/flush/close behavior, close is idempotent, and failures follow a configured non-recursive policy. User callbacks must not execute while holding a lock required by logging.
+Logger ownership is explicit. Sinks have documented write/flush/close behavior and idempotent close. The current internal policy propagates sanitized `SinkError` failures to the caller; bounded diagnostics and configurable non-raising policy remain Phase 8 work. User callbacks do not execute while holding a lock required by logging.
 
 ## Security model
 

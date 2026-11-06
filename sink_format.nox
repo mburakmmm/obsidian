@@ -1,0 +1,16 @@
+import obsidian.format_json
+import obsidian.format_text
+from obsidian.record import LogRecord
+
+FORMAT_TEXT: int = 1
+FORMAT_JSON: int = 2
+
+def is_valid_format(format_kind: int) -> bool:
+    return format_kind == FORMAT_TEXT or format_kind == FORMAT_JSON
+
+def encode_record(entry: LogRecord, format_kind: int) -> str:
+    if format_kind == FORMAT_TEXT:
+        return obsidian.format_text.format_record(entry) + "\n"
+    if format_kind == FORMAT_JSON:
+        return obsidian.format_json.format_record(entry)
+    raise ValueError("unknown sink format")

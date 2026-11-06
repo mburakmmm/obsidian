@@ -19,11 +19,15 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Canonical RFC 3339 text and JSONL formatters with stable field ordering, scalar type preservation and exact golden fixtures.
 - Bounded record messages/string fields, bounded field counts, duplicate-key rejection and fail-closed non-finite float validation.
 - Hermetic downstream-package test harness covering the complete suite and examples on LLVM and QBE.
+- Explicit stdout console sink with deterministic text/JSON encoding and idempotent lifecycle.
+- Append-only file sink with opt-in parent creation, canonical-root checks for trusted roots and sanitized error categories.
+- Real filesystem integration coverage for append/reopen, UTF-8 byte size, permissions, traversal and existing symlink escapes.
 
 ### Changed
 
 - Baseline message masking now avoids calling the stdlib assignment masker when no sensitive key candidate is present, preserving arbitrary control characters for safe formatter escaping.
 - Package-internal, test and example imports now use the manifest package name so installed dependency graphs resolve transitively.
+- Stderr selection now fails explicitly instead of falling back silently because the pinned NOX API exposes stdout only.
 
 ### Security
 
