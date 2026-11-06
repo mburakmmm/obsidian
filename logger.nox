@@ -1,7 +1,10 @@
 import obsidian.level
+import obsidian.context
 import obsidian.redact
 import obsidian.record
 from obsidian.clock import Clock
+from obsidian.config import LoggerConfig
+from obsidian.context import BoundLogger, LogContext
 from obsidian.fields import LogField
 from obsidian.level import CRITICAL, DEBUG, ERROR, INFO, TRACE, WARNING
 from obsidian.redact import RedactionResult, Redactor
@@ -67,14 +70,23 @@ class Logger:
 
     def log(self, event_level: int, message: str, event_fields: list[LogField]) -> bool:
 
+        empty_context: list[LogField] = []
+        return self._log_with_context(event_level, message, event_fields, LogContext(empty_context))
+
+    def bind(self, fields: list[LogField], request_id: str = "", trace_id: str = "", span_id: str = "") -> BoundLogger:
+
+        return BoundLogger(self, LogContext(fields, request_id, trace_id, span_id))
+
+    def _log_with_context(self, event_level: int, message: str, event_fields: list[LogField], context: LogContext) -> bool:
+
         if not self.is_enabled(event_level):
             return False
         if self._dispatching:
             raise ValueError("recursive logging is not allowed")
         self._dispatching = True
         try:
-            empty_context: list[LogField] = []
-            captured: LogRecord = LogRecord(self._clock.now_ms(), event_level, self.logger_name, message, event_fields, empty_context)
+            effective_context: list[LogField] = obsidian.context.without_event_collisions(context.fields_snapshot(), event_fields)
+            captured: LogRecord = LogRecord(self._clock.now_ms(), event_level, self.logger_name, message, event_fields, effective_context, context.request_id, context.trace_id, context.span_id)
             try:
                 redaction: RedactionResult = self._redactor.sanitize(captured)
             except Exception:
@@ -136,6 +148,18 @@ class Logger:
     def redaction_failure_count(self) -> int:
 
         return self._redaction_failures
+
+    def reconfigure(self, config: LoggerConfig) -> None:
+
+        if self._closed:
+            raise ValueError("logger is closed")
+        validated: LoggerConfig = LoggerConfig(config.logger_name(), config.threshold(), config.redaction())
+        next_name: str = validated.logger_name()
+        next_threshold: int = validated.threshold()
+        next_redactor: Redactor = validated.redaction().build_redactor()
+        self.logger_name = next_name
+        self.threshold = next_threshold
+        self._redactor = next_redactor
 
     def _record_redaction_failure(self) -> None:
 

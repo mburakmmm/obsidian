@@ -1,0 +1,169 @@
+import nox.os
+import obsidian.level
+import obsidian.record
+import obsidian.redact
+import obsidian.sink_format
+from nox.os import OsError
+from obsidian.redact import DefaultRedactor, RedactionPolicy
+from obsidian.sink_format import FORMAT_TEXT
+
+SINK_MEMORY: int = 1
+SINK_CONSOLE: int = 2
+SINK_FILE: int = 3
+
+class RedactionConfig:
+    _additional_keys: list[str]
+
+    def __init__(self, additional_keys: list[str]) -> None:
+        policy: RedactionPolicy = RedactionPolicy(additional_keys)
+        defaults: list[str] = obsidian.redact.default_sensitive_keys()
+        self._additional_keys = []
+        for key in policy.sensitive_keys():
+            if key not in defaults:
+                self._additional_keys.append(key)
+
+    def additional_keys_snapshot(self) -> list[str]:
+
+        result: list[str] = []
+        for key in self._additional_keys:
+            result.append(key)
+        return result
+
+    def build_redactor(self) -> DefaultRedactor:
+
+        return DefaultRedactor(RedactionPolicy(self._additional_keys))
+
+class FormatterConfig:
+    _format_kind: int
+
+    def __init__(self, format_kind: int) -> None:
+        if not obsidian.sink_format.is_valid_format(format_kind):
+            raise ValueError("formatter kind is invalid")
+        self._format_kind = format_kind
+
+    def format_kind(self) -> int:
+
+        return self._format_kind
+
+class SinkConfig:
+    _kind: int
+    _name: str
+    _capacity: int
+    _target: int
+    _allowed_root: str
+    _relative_path: str
+    _create_parent: bool
+    _formatter: FormatterConfig
+
+    def __init__(self, kind: int, name: str, capacity: int, target: int, allowed_root: str, relative_path: str, create_parent: bool, formatter: FormatterConfig) -> None:
+        if kind != SINK_MEMORY and kind != SINK_CONSOLE and kind != SINK_FILE:
+            raise ValueError("sink config kind is invalid")
+        if len(name) == 0:
+            raise ValueError("sink name must not be empty")
+        if kind == SINK_MEMORY and capacity < 1:
+            raise ValueError("memory sink capacity must be positive")
+        if kind == SINK_CONSOLE and target != 1:
+            raise ValueError("console sink target is unsupported")
+        if kind == SINK_FILE and len(allowed_root) == 0:
+            raise ValueError("file sink root must not be empty")
+        if kind == SINK_FILE and len(relative_path) == 0:
+            raise ValueError("file sink path must not be empty")
+        self._kind = kind
+        self._name = name
+        self._capacity = capacity
+        self._target = target
+        self._allowed_root = allowed_root
+        self._relative_path = relative_path
+        self._create_parent = create_parent
+        self._formatter = FormatterConfig(formatter.format_kind())
+
+    def kind(self) -> int:
+
+        return self._kind
+
+    def name(self) -> str:
+
+        return self._name
+
+    def capacity(self) -> int:
+
+        return self._capacity
+
+    def target(self) -> int:
+
+        return self._target
+
+    def allowed_root(self) -> str:
+
+        return self._allowed_root
+
+    def relative_path(self) -> str:
+
+        return self._relative_path
+
+    def create_parent(self) -> bool:
+
+        return self._create_parent
+
+    def formatter(self) -> FormatterConfig:
+
+        return FormatterConfig(self._formatter.format_kind())
+
+class LoggerConfig:
+    _logger_name: str
+    _threshold: int
+    _redaction: RedactionConfig
+
+    def __init__(self, logger_name: str, threshold: int, redaction: RedactionConfig) -> None:
+        obsidian.record.validate_logger_name(logger_name)
+        if not obsidian.level.is_valid(threshold):
+            raise ValueError("logger threshold is invalid")
+        self._logger_name = logger_name
+        self._threshold = threshold
+        self._redaction = RedactionConfig(redaction.additional_keys_snapshot())
+
+    def logger_name(self) -> str:
+
+        return self._logger_name
+
+    def threshold(self) -> int:
+
+        return self._threshold
+
+    def redaction(self) -> RedactionConfig:
+
+        return RedactionConfig(self._redaction.additional_keys_snapshot())
+
+    def clone(self) -> LoggerConfig:
+
+        return LoggerConfig(self._logger_name, self._threshold, self._redaction)
+
+def memory_sink_config(name: str, capacity: int) -> SinkConfig:
+    return SinkConfig(SINK_MEMORY, name, capacity, 0, "", "", False, FormatterConfig(FORMAT_TEXT))
+
+def console_sink_config(name: str, target: int, formatter: FormatterConfig) -> SinkConfig:
+    return SinkConfig(SINK_CONSOLE, name, 0, target, "", "", False, formatter)
+
+def file_sink_config(name: str, allowed_root: str, relative_path: str, create_parent: bool, formatter: FormatterConfig) -> SinkConfig:
+    return SinkConfig(SINK_FILE, name, 0, 0, allowed_root, relative_path, create_parent, formatter)
+
+def validate_environment_name(name: str) -> None:
+    if len(name) == 0 or len(name) > 128:
+        raise ValueError("environment variable name is invalid")
+    for character in name:
+        codepoint: int = ord(character)
+        allowed: bool = codepoint >= 48 and codepoint <= 57 or codepoint >= 65 and codepoint <= 90 or character == "_"
+        if not allowed:
+            raise ValueError("environment variable name is invalid")
+
+def with_threshold_environment(base: LoggerConfig, environment_name: str) -> LoggerConfig:
+    validate_environment_name(environment_name)
+    try:
+        configured: str = nox.os.getenv(environment_name)
+    except OsError:
+        return base.clone()
+    try:
+        threshold: int = obsidian.level.from_name(configured)
+    except ValueError:
+        raise ValueError("environment threshold is invalid")
+    return LoggerConfig(base.logger_name(), threshold, base.redaction())

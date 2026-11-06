@@ -1,6 +1,7 @@
 import obsidian.fields
 import obsidian.field_set
 import obsidian.level
+import obsidian.context
 from obsidian.fields import LogField
 
 LOG_SCHEMA_VERSION: str = "obsidian.log.v1"
@@ -15,9 +16,12 @@ class LogRecord:
     message: str
     _fields: list[LogField]
     _context: list[LogField]
+    request_id: str
+    trace_id: str
+    span_id: str
     schema_version: str
 
-    def __init__(self, timestamp_ms: int, event_level: int, logger_name: str, message: str, event_fields: list[LogField], context: list[LogField]) -> None:
+    def __init__(self, timestamp_ms: int, event_level: int, logger_name: str, message: str, event_fields: list[LogField], context: list[LogField], request_id: str = "", trace_id: str = "", span_id: str = "") -> None:
         if timestamp_ms < 0:
             raise ValueError("timestamp must not be negative")
         if not obsidian.level.is_event_level(event_level):
@@ -28,6 +32,9 @@ class LogRecord:
             raise ValueError("record has too many fields")
         obsidian.field_set.validate_unique_field_keys(event_fields)
         obsidian.field_set.validate_unique_field_keys(context)
+        obsidian.context.validate_correlation_id(request_id)
+        obsidian.context.validate_correlation_id(trace_id)
+        obsidian.context.validate_correlation_id(span_id)
         self.timestamp_ms = timestamp_ms
         self.event_level = event_level
         self.level_name = obsidian.level.canonical_name(event_level)
@@ -35,6 +42,9 @@ class LogRecord:
         self.message = message
         self._fields = obsidian.fields.clone_fields(event_fields)
         self._context = obsidian.fields.clone_fields(context)
+        self.request_id = request_id
+        self.trace_id = trace_id
+        self.span_id = span_id
         self.schema_version = LOG_SCHEMA_VERSION
 
     def field_count(self) -> int:
@@ -63,7 +73,7 @@ class LogRecord:
 
     def clone(self) -> LogRecord:
 
-        return LogRecord(self.timestamp_ms, self.event_level, self.logger_name, self.message, self._fields, self._context)
+        return LogRecord(self.timestamp_ms, self.event_level, self.logger_name, self.message, self._fields, self._context, self.request_id, self.trace_id, self.span_id)
 
 def validate_message(message: str) -> None:
     if len(message) > MAX_MESSAGE_LENGTH:

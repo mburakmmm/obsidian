@@ -1,6 +1,12 @@
 # Operations
 
-Status: Phase 3 supported subset; no durability, rotation or stderr claim.
+Status: Phase 5 synchronous subset; no durability, rotation, shared-logger thread-safety or stderr claim.
+
+## Logger construction and context lifecycle
+
+Prefer `factory.build_logger` when constructing a logger from typed configs. It does not return a partially configured logger; a sink construction failure closes resources opened by that attempt and raises a sanitized category. Runtime `Logger.reconfigure` changes only name, threshold and redaction policy and never mutates the installed sink set.
+
+`Logger.bind` returns a context view that does not own sinks and therefore has no close operation. Close the parent logger exactly once. Pass a bound view explicitly to request-handling code; Obsidian does not read or install global/task-local request context.
 
 ## Console sink
 

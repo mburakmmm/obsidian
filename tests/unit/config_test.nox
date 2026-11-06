@@ -1,0 +1,121 @@
+import nox.os
+import nox.test
+import obsidian.config
+import obsidian.factory
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.config import FormatterConfig, LoggerConfig, RedactionConfig, SINK_MEMORY, SinkConfig
+from obsidian.level import DEBUG, ERROR, INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.sink import Sink
+from obsidian.sink_error import SinkError
+from obsidian.sink_format import FORMAT_JSON, FORMAT_TEXT
+
+class CleanupSink:
+    _fail: bool
+    closed: bool
+
+    def __init__(self, fail: bool) -> None:
+        self._fail = fail
+        self.closed = False
+
+    def sink_name(self) -> str:
+
+        return "cleanup"
+
+    def write(self, entry: LogRecord) -> None:
+
+        pass
+
+    def flush(self) -> None:
+
+        pass
+
+    def close(self) -> None:
+
+        self.closed = True
+        if self._fail:
+            raise ValueError("SYNTHETIC_CONFIG_SECRET")
+
+    def is_closed(self) -> bool:
+
+        return self.closed
+
+    def is_bounded(self) -> bool:
+
+        return True
+
+def invalid_formatter_raises() -> bool:
+    try:
+        FormatterConfig(99)
+        return False
+    except ValueError as e:
+        return e.message == "formatter kind is invalid"
+
+def invalid_reconfigure_preserves(logger: Logger) -> bool:
+    try:
+        invalid: LoggerConfig = LoggerConfig("bad\nname", DEBUG, RedactionConfig([]))
+        logger.reconfigure(invalid)
+        return False
+    except ValueError as e:
+        return e.message == "logger name contains a control character" and logger.logger_name == "service.config" and logger.threshold == INFO
+
+def invalid_environment_is_sanitized(base: LoggerConfig) -> bool:
+    nox.os.set_var("OBSIDIAN_TEST_BAD_LEVEL", "SYNTHETIC_CONFIG_SECRET")
+    try:
+        obsidian.config.with_threshold_environment(base, "OBSIDIAN_TEST_BAD_LEVEL")
+        return False
+    except ValueError as e:
+        return e.message == "environment threshold is invalid" and "SYNTHETIC" not in e.message
+
+def failed_factory_is_sanitized(config: LoggerConfig, clock: FakeClock) -> bool:
+    formatter: FormatterConfig = FormatterConfig(FORMAT_TEXT)
+    unsafe: SinkConfig = obsidian.config.file_sink_config("file", ".", "token=SYNTHETIC_CONFIG_SECRET.log", False, formatter)
+    try:
+        obsidian.factory.build_logger(config, [unsafe], clock)
+        return False
+    except SinkError as e:
+        return e.message == "logger factory sink construction failed" and "SYNTHETIC" not in e.message
+
+extra_keys: list[str] = ["client_pin"]
+redaction: RedactionConfig = RedactionConfig(extra_keys)
+extra_keys[0] = "mutated"
+base: LoggerConfig = LoggerConfig("service.config", INFO, redaction)
+clock: FakeClock = FakeClock(1700000000123)
+memory_config: SinkConfig = obsidian.config.memory_sink_config("configured-memory", 4)
+logger: Logger = obsidian.factory.build_logger(base, [memory_config], clock)
+
+nox.test.assert_eq_str(base.logger_name(), "service.config", "logger config name")
+nox.test.assert_eq_int(base.threshold(), INFO, "logger config threshold")
+nox.test.assert_eq_str(base.redaction().additional_keys_snapshot()[0], "client_pin", "redaction config isolates caller list")
+nox.test.assert_eq_int(memory_config.kind(), SINK_MEMORY, "memory sink config kind")
+nox.test.assert_eq_int(memory_config.capacity(), 4, "memory sink config capacity")
+nox.test.assert_true(logger.info("client_pin=SYNTHETIC_CONFIG_SECRET", []), "factory logger emits")
+nox.test.assert_true(invalid_reconfigure_preserves(logger), "invalid config preserves live logger")
+nox.test.assert_true(logger.info("still active", []), "logger remains active after invalid config")
+
+replacement: LoggerConfig = LoggerConfig("service.reconfigured", ERROR, RedactionConfig(["session_key"]))
+logger.reconfigure(replacement)
+nox.test.assert_eq_str(logger.logger_name, "service.reconfigured", "valid reconfigure swaps name")
+nox.test.assert_eq_int(logger.threshold, ERROR, "valid reconfigure swaps threshold")
+nox.test.assert_true(not logger.info("disabled", []), "reconfigured threshold active")
+nox.test.assert_true(logger.error("session_key=SYNTHETIC_CONFIG_SECRET", []), "reconfigured redactor active")
+
+missing: LoggerConfig = obsidian.config.with_threshold_environment(base, "OBSIDIAN_PHASE5_SURELY_UNSET")
+nox.test.assert_eq_int(missing.threshold(), INFO, "missing explicit environment keeps threshold")
+nox.test.assert_eq_str(missing.logger_name(), "service.config", "missing environment returns config clone")
+nox.test.assert_true(invalid_environment_is_sanitized(base), "invalid environment value is not echoed")
+nox.os.set_var("OBSIDIAN_TEST_LEVEL", "DEBUG")
+overridden: LoggerConfig = obsidian.config.with_threshold_environment(base, "OBSIDIAN_TEST_LEVEL")
+nox.test.assert_eq_int(overridden.threshold(), DEBUG, "explicit valid environment overrides threshold")
+
+nox.test.assert_true(invalid_formatter_raises(), "invalid formatter rejected")
+nox.test.assert_eq_int(FormatterConfig(FORMAT_JSON).format_kind(), FORMAT_JSON, "json formatter config accepted")
+nox.test.assert_true(failed_factory_is_sanitized(base, clock), "factory failure is sanitized")
+failing_cleanup: CleanupSink = CleanupSink(True)
+successful_cleanup: CleanupSink = CleanupSink(False)
+cleanup_sinks: list[Sink] = [failing_cleanup, successful_cleanup]
+nox.test.assert_true(not obsidian.factory.close_built_sinks(cleanup_sinks), "cleanup failure is observable")
+nox.test.assert_true(successful_cleanup.closed, "cleanup continues after one close failure")
+logger.close()

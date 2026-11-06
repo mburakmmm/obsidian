@@ -1,0 +1,33 @@
+import nox.test
+import obsidian.fields
+from obsidian.context import LogContext
+from obsidian.fields import LogField
+
+async def context_worker(started: Channel[int], release: Channel[int], worker_id: int) -> str:
+    request_id: str = "req-a"
+    tenant: str = "alpha"
+    if worker_id == 2:
+        request_id = "req-b"
+        tenant = "beta"
+    caller_fields: list[LogField] = [LogField("tenant", obsidian.fields.string_value(tenant))]
+    context: LogContext = LogContext(caller_fields, request_id)
+    caller_fields[0].value.text_value = "mutated"
+    await started.send(worker_id)
+    await release.recv()
+    return context.request_id + ":" + context.fields_snapshot()[0].value.text_value
+
+async def run_isolation() -> bool:
+    started: Channel[int] = Channel[int](2)
+    release: Channel[int] = Channel[int](2)
+    first: Task[str] = spawn context_worker(started, release, 1)
+    second: Task[str] = spawn context_worker(started, release, 2)
+    first_started: int = await started.recv()
+    second_started: int = await started.recv()
+    await release.send(1)
+    await release.send(2)
+    first_result: str = await first
+    second_result: str = await second
+    both_started: bool = first_started != second_started and first_started + second_started == 3
+    return both_started and first_result == "req-a:alpha" and second_result == "req-b:beta"
+
+nox.test.assert_true(await spawn run_isolation(), "overlapping task contexts remain isolated")

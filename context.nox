@@ -1,0 +1,137 @@
+import obsidian.field_set
+import obsidian.fields
+from obsidian.fields import LogField
+from obsidian.level import CRITICAL, DEBUG, ERROR, INFO, TRACE, WARNING
+
+MAX_CORRELATION_ID_LENGTH: int = 128
+
+def validate_correlation_id(value: str) -> None:
+    if len(value) > MAX_CORRELATION_ID_LENGTH:
+        raise ValueError("correlation id is too long")
+    for character in value:
+        codepoint: int = ord(character)
+        allowed: bool = codepoint >= 48 and codepoint <= 57 or codepoint >= 65 and codepoint <= 90 or codepoint >= 97 and codepoint <= 122 or character == "-" or character == "_" or character == "." or character == ":"
+        if not allowed:
+            raise ValueError("correlation id contains an unsupported character")
+
+def without_event_collisions(context_fields: list[LogField], event_fields: list[LogField]) -> list[LogField]:
+    obsidian.field_set.validate_unique_field_keys(context_fields)
+    obsidian.field_set.validate_unique_field_keys(event_fields)
+    result: list[LogField] = []
+    for context_field in context_fields:
+        found: bool = False
+        for event_field in event_fields:
+            if event_field.key == context_field.key:
+                found = True
+        if not found:
+            result.append(context_field.clone())
+    return result
+
+class LogContext:
+    _fields: list[LogField]
+    request_id: str
+    trace_id: str
+    span_id: str
+
+    def __init__(self, fields: list[LogField], request_id: str = "", trace_id: str = "", span_id: str = "") -> None:
+        obsidian.field_set.validate_unique_field_keys(fields)
+        validate_correlation_id(request_id)
+        validate_correlation_id(trace_id)
+        validate_correlation_id(span_id)
+        self._fields = obsidian.fields.clone_fields(fields)
+        self.request_id = request_id
+        self.trace_id = trace_id
+        self.span_id = span_id
+
+    def fields_snapshot(self) -> list[LogField]:
+
+        return obsidian.fields.clone_fields(self._fields)
+
+    def with_binding(self, fields: list[LogField], request_id: str = "", trace_id: str = "", span_id: str = "") -> LogContext:
+
+        obsidian.field_set.validate_unique_field_keys(fields)
+        merged: list[LogField] = without_event_collisions(self._fields, fields)
+        for field in fields:
+            merged.append(field.clone())
+        next_request_id: str = self.request_id
+        next_trace_id: str = self.trace_id
+        next_span_id: str = self.span_id
+        if len(request_id) > 0:
+            next_request_id = request_id
+        if len(trace_id) > 0:
+            next_trace_id = trace_id
+        if len(span_id) > 0:
+            next_span_id = span_id
+        return LogContext(merged, next_request_id, next_trace_id, next_span_id)
+
+protocol ContextLoggerTarget:
+    def is_enabled(self, event_level: int) -> bool:
+        pass
+
+    def _log_with_context(self, event_level: int, message: str, event_fields: list[LogField], context: LogContext) -> bool:
+
+        pass
+
+    def flush(self) -> None:
+
+        pass
+
+    def is_closed(self) -> bool:
+
+        pass
+
+class BoundLogger:
+    _target: ContextLoggerTarget
+    _context: LogContext
+
+    def __init__(self, target: ContextLoggerTarget, context: LogContext) -> None:
+        self._target = target
+        self._context = LogContext(context.fields_snapshot(), context.request_id, context.trace_id, context.span_id)
+
+    def bind(self, fields: list[LogField], request_id: str = "", trace_id: str = "", span_id: str = "") -> BoundLogger:
+
+        return BoundLogger(self._target, self._context.with_binding(fields, request_id, trace_id, span_id))
+
+    def context_snapshot(self) -> LogContext:
+
+        return LogContext(self._context.fields_snapshot(), self._context.request_id, self._context.trace_id, self._context.span_id)
+
+    def is_enabled(self, event_level: int) -> bool:
+
+        return self._target.is_enabled(event_level)
+
+    def log(self, event_level: int, message: str, event_fields: list[LogField]) -> bool:
+
+        return self._target._log_with_context(event_level, message, event_fields, self._context)
+
+    def trace_event(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(TRACE, message, event_fields)
+
+    def debug(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(DEBUG, message, event_fields)
+
+    def info(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(INFO, message, event_fields)
+
+    def warning(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(WARNING, message, event_fields)
+
+    def error(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(ERROR, message, event_fields)
+
+    def critical(self, message: str, event_fields: list[LogField]) -> bool:
+
+        return self.log(CRITICAL, message, event_fields)
+
+    def flush(self) -> None:
+
+        self._target.flush()
+
+    def is_closed(self) -> bool:
+
+        return self._target.is_closed()

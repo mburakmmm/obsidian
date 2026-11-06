@@ -114,7 +114,7 @@ class DefaultRedactor:
             safe_context: list[LogField] = sanitize_fields_with_policy(entry.context_snapshot(), self._policy)
             safe_logger: str = sanitize_message_with_policy(entry.logger_name, self._policy)
             safe_message: str = sanitize_message_with_policy(entry.message, self._policy)
-            safe: LogRecord = LogRecord(entry.timestamp_ms, entry.event_level, safe_logger, safe_message, safe_fields, safe_context)
+            safe: LogRecord = LogRecord(entry.timestamp_ms, entry.event_level, safe_logger, safe_message, safe_fields, safe_context, entry.request_id, entry.trace_id, entry.span_id)
             return RedactionResult(safe, False)
         except Exception:
             return RedactionResult(redaction_failure_record(entry), True)

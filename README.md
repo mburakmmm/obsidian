@@ -38,9 +38,11 @@ Obsidian wraps and extends `nox.log`; it does not replace or fork the standard l
 - Canonical JSONL with RFC 3339 timestamps and preserved scalar JSON types.
 - Explicit stdout console sink and canonical-root-checked append-only file sink for trusted roots.
 - Sanitized sink error categories and explicit idempotent I/O lifecycle.
+- Explicit immutable context views with request, trace and span correlation identifiers.
+- Validated typed configuration, all-or-nothing logger construction and opt-in environment threshold overrides.
 - Deterministic LLVM and QBE tests.
 
-Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. Nested values, exception capture, context binding, rotation and conditional async dispatch remain gated future phases.
+Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. Nested values, exception capture, rotation and conditional async dispatch remain gated future phases. Simultaneous calls through one shared logger have no thread-safety claim.
 
 ## Toolchain
 
@@ -75,6 +77,8 @@ event_fields: list[LogField] = [LogField("user_id", obsidian.fields.string_value
 log_instance.info("login succeeded", event_fields)
 ```
 
+See [`examples/request_context.nox`](examples/request_context.nox) for explicit request context and correlation IDs, and [`docs/configuration.md`](docs/configuration.md) for the validated factory and environment override.
+
 Library, test and example imports use the package name `obsidian`. The pinned compiler resolves those self-imports correctly when Obsidian is loaded as a dependency, but not while compiling the package as the root project. Development therefore runs a hermetic downstream-consumer fixture; see ADR-0006.
 
 ## Development
@@ -94,6 +98,7 @@ Compile-fail fixtures under `tests/compile_fail` must exit non-zero. Test files,
 sinks/                   Sink implementations
 examples/                Compiling usage examples
 tests/unit/              Behavioral tests
+tests/concurrency/       Backend-aware context/concurrency evidence
 tests/security/          Synthetic-sentinel and fail-closed acceptance tests
 tests/compile_fail/      Explicit negative compiler fixtures
 docs/                    Architecture, API, compatibility and ADRs

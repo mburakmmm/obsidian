@@ -1,0 +1,75 @@
+import nox.test
+import obsidian.fields
+import obsidian.format_json
+import obsidian.format_text
+from obsidian.clock import FakeClock
+from obsidian.context import BoundLogger, LogContext
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.sinks.memory import MemorySink
+
+def invalid_id_raises(value: str) -> bool:
+    fields: list[LogField] = []
+    try:
+        LogContext(fields, value)
+        return False
+    except ValueError as e:
+        return e.message == "correlation id contains an unsupported character" or e.message == "correlation id is too long"
+
+clock: FakeClock = FakeClock(1700000000123)
+logger: Logger = Logger("service.context", INFO, clock)
+memory: MemorySink = MemorySink("context-memory", 8)
+logger.add_sink(memory)
+
+caller_fields: list[LogField] = [LogField("tenant", obsidian.fields.string_value("alpha")), LogField("region", obsidian.fields.string_value("eu"))]
+alpha: BoundLogger = logger.bind(caller_fields, "req-alpha", "trace-1", "span-1")
+caller_fields[0].value.text_value = "mutated"
+caller_fields.append(LogField("late", obsidian.fields.bool_value(True)))
+
+beta_fields: list[LogField] = [LogField("tenant", obsidian.fields.string_value("beta"))]
+beta: BoundLogger = logger.bind(beta_fields, "req-beta")
+event_fields: list[LogField] = [LogField("tenant", obsidian.fields.string_value("event")), LogField("status", obsidian.fields.int_value(200))]
+nox.test.assert_true(alpha.info("alpha event", event_fields), "bound alpha emits")
+nox.test.assert_true(beta.info("beta event", []), "bound beta emits")
+
+alpha_record: LogRecord = memory.record_at(0)
+beta_record: LogRecord = memory.record_at(1)
+nox.test.assert_eq_int(alpha_record.context_count(), 1, "event collision removed from context")
+nox.test.assert_eq_str(alpha_record.context_at(0).key, "region", "unshadowed context retained")
+nox.test.assert_eq_str(alpha_record.field_at(0).value.text_value, "event", "event field wins")
+nox.test.assert_eq_str(alpha_record.request_id, "req-alpha", "request id captured")
+nox.test.assert_eq_str(alpha_record.trace_id, "trace-1", "trace id captured")
+nox.test.assert_eq_str(alpha_record.span_id, "span-1", "span id captured")
+nox.test.assert_eq_str(beta_record.context_at(0).value.text_value, "beta", "second view isolated")
+nox.test.assert_eq_str(beta_record.request_id, "req-beta", "second request id isolated")
+nox.test.assert_eq_str(beta_record.trace_id, "", "missing trace remains absent")
+nox.test.assert_eq_int(clock.reads, 2, "clock read once per bound event")
+
+nested_fields: list[LogField] = [LogField("region", obsidian.fields.string_value("us")), LogField("feature", obsidian.fields.bool_value(True))]
+nested: BoundLogger = alpha.bind(nested_fields, "req-nested")
+nested.info("nested", [])
+nested_record: LogRecord = memory.record_at(2)
+nox.test.assert_eq_int(nested_record.context_count(), 3, "nested binding merges context")
+nox.test.assert_eq_str(nested_record.context_at(0).key, "tenant", "original tenant retained")
+nox.test.assert_eq_str(nested_record.context_at(0).value.text_value, "alpha", "caller mutation isolated")
+nox.test.assert_eq_str(nested_record.context_at(1).value.text_value, "us", "nested field overrides prior context")
+nox.test.assert_eq_str(nested_record.request_id, "req-nested", "nested request overrides")
+nox.test.assert_eq_str(nested_record.trace_id, "trace-1", "nested trace inherited")
+
+text: str = obsidian.format_text.format_record(alpha_record)
+nox.test.assert_true("request_id=req-alpha trace_id=trace-1 span_id=span-1" in text, "text correlation order stable")
+json: str = obsidian.format_json.format_record(alpha_record)
+nox.test.assert_true("\"request_id\":\"req-alpha\"" in json, "json request id present")
+nox.test.assert_true("\"trace_id\":\"trace-1\"" in json, "json trace id present")
+nox.test.assert_true("\"span_id\":\"span-1\"" in json, "json span id present")
+
+nox.test.assert_true(invalid_id_raises("bad\nforged"), "control correlation id rejected")
+nox.test.assert_true(invalid_id_raises("ç"), "nonportable correlation id rejected")
+nox.test.assert_true(invalid_id_raises("x" * 129), "oversized correlation id rejected")
+nox.test.assert_true(not alpha.is_closed(), "bound view observes lifecycle")
+alpha.flush()
+nox.test.assert_eq_int(memory.flush_count(), 1, "bound flush delegates without owning sink")
+logger.close()
+nox.test.assert_true(alpha.is_closed(), "bound view observes parent close")

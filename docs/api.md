@@ -1,6 +1,6 @@
 # API status
 
-Status: internal development API through the Phase 4 scalar-security candidate; not frozen and not published.
+Status: internal development API through the Phase 5 context/configuration candidate; not frozen and not published.
 
 ## Levels
 
@@ -28,7 +28,7 @@ Repository tests use the same `obsidian.*` imports as consumers and execute thro
 
 Obsidian's `WARNING` maps to the standard library's `WARN` severity without changing `nox.log` behavior. Tests restore the prior `nox.log` module threshold after checking the mapping.
 
-No logger, record, sink or formatter API is public yet.
+No logger, record, sink, context, configuration or formatter API is public yet.
 
 ## Internal field and record model
 
@@ -70,6 +70,16 @@ The TRACE convenience method is temporarily named `trace_event`. At the pinned c
 `Sink` exposes lifecycle methods, a stable name and a bounded-storage capability flag. `MemorySink` is a bounded drop-oldest ring with an explicit drop counter and clone-returning snapshots. Recursive logging from a sink is rejected before a second record is captured. No lock is held while calling a sink because the current dispatcher is synchronous and lock-free.
 
 `RedactionPolicy(additional_keys)` extends the fixed case-insensitive denylist with copied, validated application keys. `DefaultRedactor` masks scalar fields/context plus assignments, HTTP credential headers, bearer tokens, URL userinfo and sensitive query parameters. Nested values are deliberately unsupported. Exception/config/rotation/async records do not exist yet and must enter the same boundary when introduced. See `docs/security.md` and ADR-0008 for limitations.
+
+## Internal context and configuration
+
+`Logger.bind(fields, request_id="", trace_id="", span_id="")` returns a `BoundLogger` snapshot view. It delegates to the parent dispatcher and does not own/close sinks. Nested binding creates another view; a later binding replaces same-key bound context, and event fields take precedence by removing same-key context before record capture. Caller lists and field values are copied.
+
+Correlation IDs are optional strings limited to 128 ASCII letters/digits plus `-`, `_`, `.` and `:`. Text output renders request, trace and span IDs in that fixed order. JSON emits non-empty identifiers as optional top-level properties after `context` and before `schema_version`. No implicit global or task-local propagation exists.
+
+`LoggerConfig`, `RedactionConfig`, `FormatterConfig` and `SinkConfig` are validated typed models. `factory.build_logger` builds the complete synchronous sink set before exposing a logger and closes already-built sinks if construction fails. `Logger.reconfigure` replaces only name, threshold and redactor after all replacement objects exist; current sink registrations are preserved.
+
+`with_threshold_environment` reads only an explicitly named variable and handles missing `nox.os.getenv` values through `OsError`. Invalid values raise a fixed sanitized category. There is no implicit `.env`, home, file or network configuration. `QueueConfig` is deliberately absent until async dispatch passes Phase 7.
 
 ## Internal synchronous I/O sinks
 

@@ -1,0 +1,40 @@
+from obsidian.clock import Clock
+from obsidian.config import LoggerConfig, SINK_CONSOLE, SINK_FILE, SINK_MEMORY, SinkConfig
+from obsidian.logger import Logger
+from obsidian.sink import Sink
+from obsidian.sink_error import SinkError
+from obsidian.sinks.console import ConsoleSink
+from obsidian.sinks.file import FileSink
+from obsidian.sinks.memory import MemorySink
+
+def build_sink(config: SinkConfig) -> Sink:
+    if config.kind() == SINK_MEMORY:
+        return MemorySink(config.name(), config.capacity())
+    if config.kind() == SINK_CONSOLE:
+        return ConsoleSink(config.name(), config.target(), config.formatter().format_kind())
+    if config.kind() == SINK_FILE:
+        return FileSink(config.name(), config.allowed_root(), config.relative_path(), config.formatter().format_kind(), config.create_parent())
+    raise ValueError("sink config kind is invalid")
+
+def close_built_sinks(sinks: list[Sink]) -> bool:
+    closed_all: bool = True
+    for target in sinks:
+        try:
+            target.close()
+        except Exception:
+            closed_all = False
+    return closed_all
+
+def build_logger(config: LoggerConfig, sink_configs: list[SinkConfig], clock: Clock) -> Logger:
+    built: list[Sink] = []
+    try:
+        for sink_config in sink_configs:
+            built.append(build_sink(sink_config))
+    except Exception:
+        if not close_built_sinks(built):
+            raise SinkError("logger factory cleanup failed")
+        raise SinkError("logger factory sink construction failed")
+    result: Logger = Logger(config.logger_name(), config.threshold(), clock, config.redaction().build_redactor())
+    for target in built:
+        result.add_sink(target)
+    return result

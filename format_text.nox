@@ -6,6 +6,12 @@ from obsidian.record import LogRecord
 def format_record(entry: LogRecord) -> str:
     safe: LogRecord = obsidian.redact.sanitize_record(entry)
     pieces: list[str] = [obsidian.format_common.format_timestamp(safe.timestamp_ms), safe.level_name, obsidian.format_common.format_text_atom(safe.logger_name)]
+    if len(safe.request_id) > 0:
+        pieces.append("request_id=" + obsidian.format_common.format_text_atom(safe.request_id))
+    if len(safe.trace_id) > 0:
+        pieces.append("trace_id=" + obsidian.format_common.format_text_atom(safe.trace_id))
+    if len(safe.span_id) > 0:
+        pieces.append("span_id=" + obsidian.format_common.format_text_atom(safe.span_id))
     combined: list[LogField] = obsidian.format_common.merged_text_fields(safe.context_snapshot(), safe.fields_snapshot())
     for field in combined:
         pieces.append(obsidian.format_common.format_text_atom(field.key) + "=" + obsidian.format_common.format_text_value(field.value))

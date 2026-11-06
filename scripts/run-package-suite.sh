@@ -54,6 +54,7 @@ expected_json='{"timestamp":"2023-11-14T22:13:20.123Z","timestamp_ms":1700000000
 expected_console='2023-11-14T22:13:20.123Z INFO service.auth token="***" password=***'
 expected_file='{"timestamp":"2023-11-14T22:13:20.123Z","timestamp_ms":1700000000123,"level":"INFO","logger":"service.file","message":"file event","fields":{"token":"***"},"context":{},"schema_version":"obsidian.log.v1"}'
 expected_security='2023-11-14T22:13:20.123Z INFO service.security client_pin="***" Bearer *** https://***:***@example.com/?token=***'
+expected_context='{"timestamp":"2023-11-14T22:13:20.123Z","timestamp_ms":1700000000123,"level":"INFO","logger":"service.http","message":"request completed","fields":{"status":200},"context":{"route":"/health"},"request_id":"req-42","trace_id":"trace-7","span_id":"span-3","schema_version":"obsidian.log.v1"}'
 
 run_exact_example() {
   local source_file="$1"
@@ -80,6 +81,7 @@ run_exact_example examples/json_logging.nox "$expected_json"
 run_exact_example examples/console_logging.nox "$expected_console"
 run_exact_example examples/file_logging.nox "$expected_file"
 run_exact_example examples/security_redaction.nox "$expected_security"
+run_exact_example examples/request_context.nox "$expected_context"
 
 resolved_sha="$(git -C "$package_root" rev-parse HEAD)"
 grep -q "\"resolved\": \"$resolved_sha\"" nox.lock

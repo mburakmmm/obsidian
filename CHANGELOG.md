@@ -25,6 +25,10 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Case-insensitive redaction policy with validated application-specific sensitive keys.
 - HTTP header, bearer-token, URL-userinfo, query credential and quoted assignment masking.
 - Fail-closed logger redaction with dropped-event accounting and security acceptance coverage across memory, custom, console and file sinks.
+- Immutable explicit context views with nested binding, event-field precedence and bounded request/trace/span identifiers.
+- Typed logger, redaction, formatter and sink configuration with an all-or-nothing synchronous factory.
+- Explicit threshold environment override with missing-variable handling and sanitized invalid-value errors.
+- Overlapping-task context isolation coverage on LLVM and cooperative QBE.
 
 ### Changed
 
@@ -32,6 +36,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Package-internal, test and example imports now use the manifest package name so installed dependency graphs resolve transitively.
 - Stderr selection now fails explicitly instead of falling back silently because the pinned NOX API exposes stdout only.
 - File names containing recognized credential-key components are rejected before opening a handle.
+- JSONL records include optional top-level correlation identifiers; text records render them in fixed request/trace/span order.
 
 ### Security
 

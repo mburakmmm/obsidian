@@ -12,6 +12,7 @@ probe_nox_home="$probe_root/nox-home"
 mkdir -p "$package_root" "$consumer_root" "$probe_nox_home"
 cp \
   "$project_root/nox.json" \
+  "$project_root/context.nox" \
   "$project_root/field_keys.nox" \
   "$project_root/field_set.nox" \
   "$project_root/fields.nox" \

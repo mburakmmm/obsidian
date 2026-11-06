@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phase 4 scalar-security candidate. Public APIs are not frozen.
+Status: Phase 5 context/configuration candidate. Public APIs are not frozen.
 
 ## Dependency direction
 
@@ -30,6 +30,8 @@ Core Obsidian may depend on the pinned NOX standard library and separately appro
 - Formatting/filtering/redaction remain pure and separate from I/O.
 - Formatters consume one captured record and never re-read clocks or identifiers.
 - Text flattens context with event-field precedence; JSON keeps `fields` and `context` namespaced and deterministically sorted.
+- Bound logger views deep-copy explicit context and delegate to one sink-owning parent logger.
+- Configuration is validated before activation; factory failures close resources created by that attempt.
 - The MVP dispatcher is synchronous and bounded sinks are preferred.
 - File rotation and asynchronous dispatch are later gated capabilities.
 - There is no default global logger in v0.1.
@@ -44,10 +46,12 @@ There is no `__init__.nox` facade convention in the audited module contract. Pub
 
 Logger ownership is explicit. Sinks have documented write/flush/close behavior and idempotent close. The current internal policy propagates sanitized `SinkError` failures to the caller; bounded diagnostics and configurable non-raising policy remain Phase 8 work. User callbacks do not execute while holding a lock required by logging.
 
+`BoundLogger` does not expose `close`; it delegates writes and flush to its parent and cannot duplicate sink ownership. Runtime reconfiguration changes only validated scalar logger state and leaves the installed sink set intact. New sink sets are built through an all-or-nothing factory rather than mutating a live logger incrementally.
+
 ## Security model
 
 All logger output paths consume one pre-sink sanitized snapshot. A redactor exception or failed result drops the unsafe event and increments a saturating sanitized counter; direct default formatter use substitutes a fixed placeholder on internal redaction failure. Raw records are never passed to sinks merely because redaction or formatting failed. Scalar nested values remain disabled instead of being stringified.
 
 ## Portability model
 
-LLVM and QBE compile the same source but have different scheduler and argument behavior. Synchronous semantics are portable. Concurrency support is conditional and requires separate evidence on both backends.
+LLVM and QBE compile the same source but have different scheduler and argument behavior. Synchronous semantics are portable. Phase 5 verifies independent explicit context snapshots while two tasks overlap on both backends; QBE evidence is cooperative, and no shared-logger thread-safety claim is made. Async dispatch remains conditional.

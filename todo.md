@@ -288,25 +288,25 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 
 ## 9. `0.3.x` — Phase 5: context binding ve configuration
 
-- [ ] `bind(fields)` yeni immutable logger/context view döndürüyor.
-- [ ] Event field > bound context precedence'i, reserved alan istisnalarıyla testli.
-- [ ] Context caller map mutation'ından etkilenmiyor.
-- [ ] Request/trace/span ID boyut ve karakter doğrulaması var.
-- [ ] Explicit propagation MVP; implicit global request context yok.
-- [ ] Paralel request context isolation LLVM ve QBE semantiğine uygun testli.
-- [ ] `LoggerConfig`, `SinkConfig`, `RedactionConfig`, `FormatterConfig` typed ve validasyonlu.
-- [ ] `QueueConfig` yalnız async açıldığında etkin.
-- [ ] Builder/factory API compile-test ile doğrulandı.
-- [ ] Geçersiz config mevcut çalışan logger'ı değiştirmiyor.
-- [ ] Runtime reconfigure caller açısından atomic; yarım sink seti/handle leak yok.
-- [ ] Env override explicit; eksik değişken `OsError` ile güvenli ele alınıyor.
-- [ ] `.env`, home veya network config otomatik okunmuyor.
-- [ ] Config hata metni secret echo etmiyor.
-- [ ] `examples/request_context.nox` ve config dokümanı eklendi.
+- [x] `bind(fields)` yeni immutable logger/context view döndürüyor.
+- [x] Event field > bound context precedence'i, reserved alan istisnalarıyla testli.
+- [x] Context caller map mutation'ından etkilenmiyor.
+- [x] Request/trace/span ID boyut ve karakter doğrulaması var.
+- [x] Explicit propagation MVP; implicit global request context yok.
+- [x] Paralel request context isolation LLVM ve QBE semantiğine uygun testli; shared logger thread-safety iddiası yok.
+- [x] `LoggerConfig`, `SinkConfig`, `RedactionConfig`, `FormatterConfig` typed ve validasyonlu.
+- [x] `QueueConfig` async kapalıyken bilinçli olarak sunulmuyor.
+- [x] Builder/factory API compile-test ile doğrulandı.
+- [x] Geçersiz config mevcut çalışan logger'ı değiştirmiyor.
+- [x] Runtime scalar reconfigure caller açısından atomic; sink seti değişmiyor; factory failure açtığı sink'leri kapatıyor.
+- [x] Env override explicit; eksik değişken `OsError` ile güvenli ele alınıyor.
+- [x] `.env`, home veya network config otomatik okunmuyor.
+- [x] Config hata metni secret echo etmiyor.
+- [x] `examples/request_context.nox` ve config dokümanı eklendi.
 
 ### Phase 5 kapısı
 
-- [ ] Bağlı context'ler sızmıyor; invalid reconfigure önceki logger'ı koruyor.
+- [ ] Bağlı context'ler yerel LLVM/QBE kanıtında sızmıyor ve invalid reconfigure önceki logger'ı koruyor; uzak matris bekleniyor.
 
 ---
 

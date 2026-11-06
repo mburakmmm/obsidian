@@ -30,6 +30,15 @@ def format_record(entry: LogRecord) -> str:
     write_field_object(writer, safe.fields_snapshot())
     writer.write_key("context")
     write_field_object(writer, safe.context_snapshot())
+    if len(safe.request_id) > 0:
+        writer.write_key("request_id")
+        writer.write_string(safe.request_id)
+    if len(safe.trace_id) > 0:
+        writer.write_key("trace_id")
+        writer.write_string(safe.trace_id)
+    if len(safe.span_id) > 0:
+        writer.write_key("span_id")
+        writer.write_string(safe.span_id)
     writer.write_key("schema_version")
     writer.write_string(safe.schema_version)
     writer.end_object()
