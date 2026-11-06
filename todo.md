@@ -306,7 +306,7 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 
 ### Phase 5 kapısı
 
-- [ ] Bağlı context'ler yerel LLVM/QBE kanıtında sızmıyor ve invalid reconfigure önceki logger'ı koruyor; uzak matris bekleniyor.
+- [x] Bağlı context'ler sızmıyor; invalid reconfigure önceki logger'ı koruyor; yerel ve desteklenen uzak LLVM/QBE matrisi geçti (`42211416648`).
 
 ---
 
