@@ -1,11 +1,13 @@
 from obsidian.clock import Clock
-from obsidian.config import LoggerConfig, SINK_CONSOLE, SINK_FILE, SINK_MEMORY, SinkConfig
+from obsidian.config import LoggerConfig, SINK_CONSOLE, SINK_FILE, SINK_MEMORY, SINK_ROTATING_FILE, SinkConfig
 from obsidian.logger import Logger
 from obsidian.sink import Sink
 from obsidian.sink_error import SinkError
 from obsidian.sinks.console import ConsoleSink
 from obsidian.sinks.file import FileSink
 from obsidian.sinks.memory import MemorySink
+from obsidian.rotation import RotationPolicy
+from obsidian.sinks.rotating_file import RotatingFileSink
 
 def build_sink(config: SinkConfig) -> Sink:
     if config.kind() == SINK_MEMORY:
@@ -14,6 +16,9 @@ def build_sink(config: SinkConfig) -> Sink:
         return ConsoleSink(config.name(), config.target(), config.formatter().format_kind())
     if config.kind() == SINK_FILE:
         return FileSink(config.name(), config.allowed_root(), config.relative_path(), config.formatter().format_kind(), config.create_parent())
+    if config.kind() == SINK_ROTATING_FILE:
+        policy: RotationPolicy = RotationPolicy(config.rotation_max_bytes(), config.rotation_max_archives())
+        return RotatingFileSink(config.name(), config.allowed_root(), config.relative_path(), config.formatter().format_kind(), config.create_parent(), policy)
     raise ValueError("sink config kind is invalid")
 
 def close_built_sinks(sinks: list[Sink]) -> bool:

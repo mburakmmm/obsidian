@@ -1,6 +1,6 @@
 # API status
 
-Status: internal development API through the Phase 5 context/configuration candidate; not frozen and not published.
+Status: internal development API through the Phase 6 size-rotation candidate; not frozen and not published.
 
 ## Levels
 
@@ -69,7 +69,7 @@ The TRACE convenience method is temporarily named `trace_event`. At the pinned c
 
 `Sink` exposes lifecycle methods, a stable name and a bounded-storage capability flag. `MemorySink` is a bounded drop-oldest ring with an explicit drop counter and clone-returning snapshots. Recursive logging from a sink is rejected before a second record is captured. No lock is held while calling a sink because the current dispatcher is synchronous and lock-free.
 
-`RedactionPolicy(additional_keys)` extends the fixed case-insensitive denylist with copied, validated application keys. `DefaultRedactor` masks scalar fields/context plus assignments, HTTP credential headers, bearer tokens, URL userinfo and sensitive query parameters. Nested values are deliberately unsupported. Exception/config/rotation/async records do not exist yet and must enter the same boundary when introduced. See `docs/security.md` and ADR-0008 for limitations.
+`RedactionPolicy(additional_keys)` extends the fixed case-insensitive denylist with copied, validated application keys. `DefaultRedactor` masks scalar fields/context plus assignments, HTTP credential headers, bearer tokens, URL userinfo and sensitive query parameters. Nested values are deliberately unsupported. Rotation uses the same formatter/redaction boundary; future exception and async records must enter it as well. See `docs/security.md` and ADR-0008 for limitations.
 
 ## Internal context and configuration
 
@@ -87,4 +87,12 @@ Correlation IDs are optional strings limited to 128 ASCII letters/digits plus `-
 
 `FileSink(name, allowed_root, relative_path, format_kind, create_parent)` owns one append-only `FileWriter`. It validates portable relative paths, rejects recognized credential-key filename components, canonicalizes existing/created parents under the allowed root, rejects tested traversal/symlink escapes, writes one encoded record per unbuffered call and closes idempotently. File `flush()` is a logical no-op and does not imply `fsync` durability.
 
-`FORMAT_TEXT` and `FORMAT_JSON` select the existing deterministic formatters. Both sinks re-enter those sanitizer-backed formatters; file/path/write failures are exposed as stable `SinkError` categories without echoing paths or record data. File storage is unbounded until Phase 6. A trusted application-owned root is required because the pinned API has no `lstat`, no-follow open or race-free directory-relative open.
+`FORMAT_TEXT` and `FORMAT_JSON` select the existing deterministic formatters. Both sinks re-enter those sanitizer-backed formatters; file/path/write failures are exposed as stable `SinkError` categories without echoing paths or record data. Plain `FileSink` storage is unbounded; `RotatingFileSink` supplies an explicit size budget. A trusted application-owned root is required because the pinned API has no `lstat`, no-follow open or race-free directory-relative open.
+
+## Internal size rotation
+
+`RotationPolicy(max_bytes, max_archives)` validates a positive byte limit up to 1 TiB and an archive count from 0 through 1000. `RotatingFileSink(name, allowed_root, relative_path, format_kind, create_parent, policy)` rotates before a write would cross the encoded-byte boundary and rejects a single record larger than the limit. It reports bounded storage and exposes write/rotation/current-size/archive counters for diagnostics and tests.
+
+Archives use `<basename>.NNNNNNNN`. `retention_candidates(root, relative_path, policy)` returns the deterministic oldest-first names that would be removed without mutating the filesystem; `apply_retention` deletes exactly that validated owned set. Matching symlinks, directories and canonical-path mismatches are rejected. `rotating_file_sink_config` integrates the sink with the typed factory.
+
+The contract is single-process only. Time-based rotation, compression, durable sync and hostile-directory race resistance are not supported. See ADR-0010 and `docs/recovery.md`.

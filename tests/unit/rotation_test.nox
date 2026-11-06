@@ -1,0 +1,42 @@
+import nox.test
+import obsidian.rotation
+from obsidian.rotation import RotationPolicy
+from obsidian.sink_error import SinkError
+
+def invalid_policy_raises(max_bytes: int, max_archives: int, expected: str) -> bool:
+    try:
+        RotationPolicy(max_bytes, max_archives)
+        return False
+    except ValueError as e:
+        return e.message == expected
+
+def exhausted_name_raises() -> bool:
+    try:
+        obsidian.rotation.archive_name("events.log", 100000000)
+        return False
+    except SinkError as e:
+        return e.message == "rotation archive sequence is exhausted"
+
+def invalid_archive_path_raises(path: str, expected: str) -> bool:
+    try:
+        obsidian.rotation.archive_name(path, 1)
+        return False
+    except ValueError as e:
+        return e.message == expected
+
+policy: RotationPolicy = RotationPolicy(1024, 3)
+nox.test.assert_eq_int(policy.max_bytes, 1024, "policy max bytes")
+nox.test.assert_eq_int(policy.max_archives, 3, "policy archive count")
+nox.test.assert_eq_str(obsidian.rotation.archive_name("logs/events.log", 1), "events.log.00000001", "archive name padded")
+nox.test.assert_eq_int(obsidian.rotation.archive_sequence("events.log.00000042", "events.log."), 42, "archive sequence parsed")
+nox.test.assert_eq_int(obsidian.rotation.archive_sequence("events.log.00000000", "events.log."), 0, "zero sequence rejected")
+nox.test.assert_eq_int(obsidian.rotation.archive_sequence("events.log.0000000x", "events.log."), 0, "nondigit sequence rejected")
+nox.test.assert_eq_int(obsidian.rotation.archive_sequence("other.log.00000001", "events.log."), 0, "unowned prefix ignored")
+nox.test.assert_true(invalid_policy_raises(0, 1, "rotation maximum bytes must be positive"), "zero byte policy rejected")
+nox.test.assert_true(invalid_policy_raises(1, -1, "rotation archive count must not be negative"), "negative archive count rejected")
+nox.test.assert_true(invalid_policy_raises(1, 1001, "rotation archive count is too large"), "excess archive count rejected")
+nox.test.assert_true(invalid_policy_raises(1099511627777, 1, "rotation maximum bytes is too large"), "excess byte limit rejected")
+nox.test.assert_true(exhausted_name_raises(), "archive sequence exhaustion observable")
+nox.test.assert_true(invalid_archive_path_raises("token.log", "file sink path contains a sensitive key"), "sensitive archive basename rejected")
+nox.test.assert_true(invalid_archive_path_raises("bad\nname.log", "file sink path contains a control character"), "control archive basename rejected")
+nox.test.assert_true(invalid_archive_path_raises("../events.log", "file sink path contains traversal"), "traversal archive path rejected")

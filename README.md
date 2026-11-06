@@ -40,9 +40,10 @@ Obsidian wraps and extends `nox.log`; it does not replace or fork the standard l
 - Sanitized sink error categories and explicit idempotent I/O lifecycle.
 - Explicit immutable context views with request, trace and span correlation identifiers.
 - Validated typed configuration, all-or-nothing logger construction and opt-in environment threshold overrides.
+- Single-process size-based file rotation with deterministic dry-run retention and bounded storage.
 - Deterministic LLVM and QBE tests.
 
-Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. Nested values, exception capture, rotation and conditional async dispatch remain gated future phases. Simultaneous calls through one shared logger have no thread-safety claim.
+Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. Nested values, exception capture, time-based rotation and conditional async dispatch remain gated future phases. Simultaneous calls through one shared logger have no thread-safety claim; rotating files require one owning process and a trusted directory.
 
 ## Toolchain
 
@@ -78,6 +79,7 @@ log_instance.info("login succeeded", event_fields)
 ```
 
 See [`examples/request_context.nox`](examples/request_context.nox) for explicit request context and correlation IDs, and [`docs/configuration.md`](docs/configuration.md) for the validated factory and environment override.
+See [`examples/file_rotation.nox`](examples/file_rotation.nox), [`docs/operations.md`](docs/operations.md) and [`docs/recovery.md`](docs/recovery.md) before enabling file rotation.
 
 Library, test and example imports use the package name `obsidian`. The pinned compiler resolves those self-imports correctly when Obsidian is loaded as a dependency, but not while compiling the package as the root project. Development therefore runs a hermetic downstream-consumer fixture; see ADR-0006.
 

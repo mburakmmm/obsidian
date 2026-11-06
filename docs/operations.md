@@ -1,6 +1,6 @@
 # Operations
 
-Status: Phase 5 synchronous subset; no durability, rotation, shared-logger thread-safety or stderr claim.
+Status: Phase 6 synchronous size-rotation candidate; no durability, time rotation, shared-logger thread-safety or stderr claim.
 
 ## Logger construction and context lifecycle
 
@@ -20,9 +20,19 @@ Each write is synchronous and adds exactly one newline through the selected form
 
 The sink rejects lexical traversal, absolute paths, existing symlink escapes, non-file targets and missing parents without opt-in creation. Use an application-owned root that untrusted users cannot modify. The pinned filesystem API cannot safely identify a dangling final symlink or prevent concurrent path replacement.
 
-Every `write` is an unbuffered operating-system write according to `nox.fs`. `flush()` is therefore a logical no-op and is not `fsync`; neither it nor `close()` claims stable-storage durability. Storage is unbounded until the Phase 6 rotation/retention gate is implemented.
+Every `write` is an unbuffered operating-system write according to `nox.fs`. `flush()` is therefore a logical no-op and is not `fsync`; neither it nor `close()` claims stable-storage durability. Plain `FileSink` storage remains unbounded; select `RotatingFileSink` for an explicit storage budget.
 
 Open, validation and write failures surface as sanitized `SinkError` categories. Error messages do not include the configured path, record or secret-bearing field values.
+
+## Rotating file sink
+
+`RotatingFileSink` accepts the same root/path/format inputs plus `RotationPolicy(max_bytes, max_archives)`. Rotation is checked before each write using encoded UTF-8 byte length. Exact-boundary writes remain in the active file. Records larger than `max_bytes` are rejected without writing.
+
+Owned archives are named `<basename>.00000001` and increase monotonically across restarts. Retention keeps the newest configured count and removes only validated older files matching the exact owned pattern. `retention_candidates` provides a non-mutating oldest-first dry run. With valid owned files, maximum storage is `max_bytes * (max_archives + 1)`.
+
+Only one process may own an active rotating path. Use a trusted, application-owned directory; the pinned filesystem API cannot eliminate hostile concurrent replacement or dangling-symlink races. Time-based rotation is deferred. Recovery categories and operator actions are documented in `recovery.md`.
+
+Use a dedicated log directory. The pinned `read_dir` API materializes all names at once; Obsidian refuses directories above 10,000 entries but cannot prevent the stdlib's initial list allocation.
 
 ## Unsupported evidence
 
@@ -30,4 +40,4 @@ Open, validation and write failures surface as sanitized `SinkError` categories.
 - console broken-pipe/write failure: `print` exposes no recoverable error channel.
 - disk-full simulation: not executed in the current hermetic CI environment.
 - race-free hostile-directory handling: requires a public no-follow/open-relative primitive or an approved native boundary.
-- cross-process rotation, retention and durable sync: deferred.
+- cross-process rotation, time-based rotation and durable sync: unsupported/deferred.

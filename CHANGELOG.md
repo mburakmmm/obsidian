@@ -29,6 +29,9 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Typed logger, redaction, formatter and sink configuration with an all-or-nothing synchronous factory.
 - Explicit threshold environment override with missing-variable handling and sanitized invalid-value errors.
 - Overlapping-task context isolation coverage on LLVM and cooperative QBE.
+- Single-process size-based rotating file sink with deterministic fixed-width archive names.
+- Oldest-first dry-run retention selection, bounded archive count and restart sequence recovery.
+- Sanitized rename/reopen recovery paths and strict owned-archive regular-file validation.
 
 ### Changed
 
@@ -37,6 +40,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Stderr selection now fails explicitly instead of falling back silently because the pinned NOX API exposes stdout only.
 - File names containing recognized credential-key components are rejected before opening a handle.
 - JSONL records include optional top-level correlation identifiers; text records render them in fixed request/trace/span order.
+- Rotating output rejects oversized records/preexisting files rather than exceeding the configured storage budget.
 
 ### Security
 

@@ -1,0 +1,240 @@
+import nox.fs
+import nox.os
+import nox.path
+import nox.strings
+import nox.test
+import obsidian.format_json
+import obsidian.config
+import obsidian.factory
+import obsidian.rotation
+from obsidian.clock import FakeClock
+from obsidian.config import FormatterConfig, LoggerConfig, RedactionConfig, SINK_ROTATING_FILE, SinkConfig
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.rotation import RotationPolicy
+from obsidian.sink_error import SinkError
+from obsidian.sink_format import FORMAT_JSON
+from obsidian.sinks.rotating_file import RotatingFileSink
+
+class FailFirstRenamer:
+    calls: int
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def rename(self, old_path: str, new_path: str) -> None:
+
+        self.calls += 1
+        if self.calls == 1:
+            raise ValueError("SYNTHETIC_ROTATION_RENAME_SECRET")
+        nox.fs.rename(old_path, new_path)
+
+def make_record(timestamp_ms: int, message: str) -> LogRecord:
+    fields: list[LogField] = []
+    context: list[LogField] = []
+    return LogRecord(timestamp_ms, INFO, "rotation.test", message, fields, context)
+
+def rename_failure_is_recoverable(root: str, first: LogRecord, second: LogRecord, max_bytes: int) -> bool:
+    relative: str = "obsidian-rotation-tests/rename/events.jsonl"
+    renamer: FailFirstRenamer = FailFirstRenamer()
+    sink: RotatingFileSink = RotatingFileSink("rename", root, relative, FORMAT_JSON, False, RotationPolicy(max_bytes, 2), renamer)
+    sink.write(first)
+    try:
+        sink.write(second)
+        return False
+    except SinkError as e:
+        if e.message != "file rotation rename failed" or "SYNTHETIC" in e.message:
+            return False
+    active: str = nox.path.join(root, relative)
+    if nox.fs.read_to_string(active) != obsidian.format_json.format_record(first):
+        return False
+    sink.write(second)
+    sink.close()
+    archive: str = nox.path.join(root, "obsidian-rotation-tests/rename/events.jsonl.00000001")
+    return renamer.calls == 2 and nox.fs.read_to_string(archive) == obsidian.format_json.format_record(first) and nox.fs.read_to_string(active) == obsidian.format_json.format_record(second)
+
+def oversized_record_is_rejected(root: str, max_bytes: int) -> bool:
+    sink: RotatingFileSink = RotatingFileSink("oversized", root, "obsidian-rotation-tests/oversized/events.jsonl", FORMAT_JSON, False, RotationPolicy(max_bytes, 1))
+    try:
+        sink.write(make_record(1700000000000, "message-that-is-deliberately-longer"))
+        return False
+    except SinkError as e:
+        sink.close()
+        return e.message == "rotating file record exceeds maximum size"
+
+def oversized_active_is_rejected(root: str, max_bytes: int) -> bool:
+    relative: str = "obsidian-rotation-tests/oversized-active/events.jsonl"
+    nox.fs.write_string(nox.path.join(root, relative), "x" * (max_bytes + 1))
+    try:
+        RotatingFileSink("oversized-active", root, relative, FORMAT_JSON, False, RotationPolicy(max_bytes, 1))
+        return False
+    except SinkError as e:
+        return e.message == "file rotation target exceeds maximum size"
+
+def unexpected_directory_is_rejected(root: str, max_bytes: int) -> bool:
+    relative: str = "obsidian-rotation-tests/unexpected/events.jsonl"
+    nox.fs.create_dir(nox.path.join(root, "obsidian-rotation-tests/unexpected/events.jsonl.00000001"))
+    try:
+        obsidian.rotation.retention_candidates(root, relative, RotationPolicy(max_bytes, 1))
+        return False
+    except SinkError as e:
+        return e.message == "rotation archive is not a regular file"
+
+def archive_symlink_is_rejected(root: str, max_bytes: int) -> bool:
+    try:
+        obsidian.rotation.retention_candidates(root, "obsidian-rotation-tests/symlink/events.jsonl", RotationPolicy(max_bytes, 1))
+        return False
+    except SinkError as e:
+        return e.message == "rotation archive is not a regular file"
+
+def active_symlink_is_rejected(root: str, max_bytes: int) -> bool:
+    try:
+        RotatingFileSink("active-link", root, "obsidian-rotation-tests/active-link/events.jsonl", FORMAT_JSON, False, RotationPolicy(max_bytes, 1))
+        return False
+    except SinkError as e:
+        return e.message == "file rotation target is not a regular file"
+
+def rotated_secret_is_masked(root: str) -> bool:
+    first_secret: LogRecord = make_record(1700000000100, "token=SYNTHETIC_ROTATION_SECRET")
+    second_secret: LogRecord = make_record(1700000000101, "token=SYNTHETIC_ROTATION_SECRET")
+    safe_size: int = nox.strings.byte_len(obsidian.format_json.format_record(first_secret))
+    relative: str = "obsidian-rotation-tests/security/events.jsonl"
+    sink: RotatingFileSink = RotatingFileSink("security", root, relative, FORMAT_JSON, False, RotationPolicy(safe_size, 1))
+    sink.write(first_secret)
+    sink.write(second_secret)
+    sink.close()
+    active: str = nox.fs.read_to_string(nox.path.join(root, relative))
+    archive: str = nox.fs.read_to_string(nox.path.join(root, "obsidian-rotation-tests/security/events.jsonl.00000001"))
+    return "SYNTHETIC_ROTATION_SECRET" not in active and "SYNTHETIC_ROTATION_SECRET" not in archive and "token=***" in active and "token=***" in archive
+
+def simulated_restart_recovers_sequence(root: str, first: LogRecord, second: LogRecord, line_size: int) -> bool:
+    relative: str = "obsidian-rotation-tests/crash/events.jsonl"
+    parent: str = nox.path.join(root, "obsidian-rotation-tests/crash")
+    first_line: str = obsidian.format_json.format_record(first)
+    nox.fs.write_string(nox.path.join(root, relative), first_line)
+    nox.fs.write_string(nox.path.join(parent, "events.jsonl.00000001"), first_line)
+    sink: RotatingFileSink = RotatingFileSink("crash-restart", root, relative, FORMAT_JSON, False, RotationPolicy(line_size, 2))
+    sink.write(second)
+    sink.close()
+    archive_two: str = nox.path.join(parent, "events.jsonl.00000002")
+    return nox.fs.exists(nox.path.join(parent, "events.jsonl.00000001")) and nox.fs.read_to_string(archive_two) == first_line and nox.fs.read_to_string(nox.path.join(root, relative)) == obsidian.format_json.format_record(second)
+
+def configured_factory_builds_rotation(root: str) -> bool:
+    formatter: FormatterConfig = FormatterConfig(FORMAT_JSON)
+    sink_config: SinkConfig = obsidian.config.rotating_file_sink_config("configured-rotation", root, "obsidian-rotation-tests/config/events.jsonl", False, formatter, 4096, 1)
+    logger_config: LoggerConfig = LoggerConfig("rotation.config", INFO, RedactionConfig([]))
+    clock: FakeClock = FakeClock(1700000000200)
+    logger: Logger = obsidian.factory.build_logger(logger_config, [sink_config], clock)
+    emitted: bool = logger.info("configured rotation", [])
+    logger.close()
+    target: str = nox.path.join(root, "obsidian-rotation-tests/config/events.jsonl")
+    return sink_config.kind() == SINK_ROTATING_FILE and sink_config.rotation_max_bytes() == 4096 and emitted and nox.fs.exists(target)
+
+def constructor_defers_retention(root: str, entry: LogRecord, max_bytes: int) -> bool:
+    relative: str = "obsidian-rotation-tests/pending/events.jsonl"
+    parent: str = nox.path.join(root, "obsidian-rotation-tests/pending")
+    first_archive: str = nox.path.join(parent, "events.jsonl.00000001")
+    second_archive: str = nox.path.join(parent, "events.jsonl.00000002")
+    third_archive: str = nox.path.join(parent, "events.jsonl.00000003")
+    nox.fs.write_string(first_archive, "a")
+    nox.fs.write_string(second_archive, "b")
+    nox.fs.write_string(third_archive, "c")
+    sink: RotatingFileSink = RotatingFileSink("pending", root, relative, FORMAT_JSON, False, RotationPolicy(max_bytes, 1))
+    if not nox.fs.exists(first_archive) or not nox.fs.exists(second_archive):
+        sink.close()
+        return False
+    sink.write(entry)
+    sink.close()
+    return not nox.fs.exists(first_archive) and not nox.fs.exists(second_archive) and nox.fs.exists(third_archive)
+
+def zero_archive_policy_bounds_to_active(root: str, first: LogRecord, second: LogRecord, line_size: int) -> bool:
+    relative: str = "obsidian-rotation-tests/zero/events.jsonl"
+    sink: RotatingFileSink = RotatingFileSink("zero", root, relative, FORMAT_JSON, False, RotationPolicy(line_size, 0))
+    sink.write(first)
+    sink.write(second)
+    archive_count: int = sink.archive_count()
+    active_size: int = sink.current_size_bytes()
+    sink.close()
+    return archive_count == 0 and active_size == line_size and nox.fs.read_to_string(nox.path.join(root, relative)) == obsidian.format_json.format_record(second)
+
+root: str = nox.os.current_dir()
+first: LogRecord = make_record(1700000000000, "one")
+second: LogRecord = make_record(1700000000001, "two")
+third: LogRecord = make_record(1700000000002, "tri")
+fourth: LogRecord = make_record(1700000000003, "for")
+fifth: LogRecord = make_record(1700000000004, "fiv")
+sixth: LogRecord = make_record(1700000000005, "six")
+seventh: LogRecord = make_record(1700000000006, "sev")
+eighth: LogRecord = make_record(1700000000007, "eig")
+ninth: LogRecord = make_record(1700000000008, "nin")
+line_size: int = nox.strings.byte_len(obsidian.format_json.format_record(first))
+max_bytes: int = line_size * 2
+policy: RotationPolicy = RotationPolicy(max_bytes, 2)
+relative: str = "obsidian-rotation-tests/main/events.jsonl"
+sink: RotatingFileSink = RotatingFileSink("rotating", root, relative, FORMAT_JSON, False, policy)
+
+nox.test.assert_true(sink.is_bounded(), "rotating sink advertises bounded storage")
+sink.write(first)
+sink.write(second)
+nox.test.assert_eq_int(sink.rotation_count(), 0, "exact byte boundary does not rotate")
+nox.test.assert_eq_int(sink.current_size_bytes(), max_bytes, "active size reaches exact boundary")
+sink.write(third)
+nox.test.assert_eq_int(sink.rotation_count(), 1, "overflow rotates before write")
+nox.test.assert_eq_int(sink.archive_count(), 1, "first archive retained")
+sink.write(fourth)
+sink.write(fifth)
+sink.write(sixth)
+sink.write(seventh)
+nox.test.assert_eq_int(sink.rotation_count(), 3, "three rotations counted")
+nox.test.assert_eq_int(sink.archive_count(), 2, "retention bounds archive count")
+
+active: str = nox.path.join(root, relative)
+archive_one: str = nox.path.join(root, "obsidian-rotation-tests/main/events.jsonl.00000001")
+archive_two: str = nox.path.join(root, "obsidian-rotation-tests/main/events.jsonl.00000002")
+archive_three: str = nox.path.join(root, "obsidian-rotation-tests/main/events.jsonl.00000003")
+nox.test.assert_true(not nox.fs.exists(archive_one), "oldest archive deleted")
+nox.test.assert_eq_str(nox.fs.read_to_string(archive_two), obsidian.format_json.format_record(third) + obsidian.format_json.format_record(fourth), "second archive exact")
+nox.test.assert_eq_str(nox.fs.read_to_string(archive_three), obsidian.format_json.format_record(fifth) + obsidian.format_json.format_record(sixth), "third archive exact")
+nox.test.assert_eq_str(nox.fs.read_to_string(active), obsidian.format_json.format_record(seventh), "active contains post-rotation event")
+total_bytes: int = nox.fs.metadata(active).size + nox.fs.metadata(archive_two).size + nox.fs.metadata(archive_three).size
+nox.test.assert_true(total_bytes <= max_bytes * 3, "configured files remain within byte budget")
+sink.close()
+
+reopened: RotatingFileSink = RotatingFileSink("reopened", root, relative, FORMAT_JSON, False, policy)
+reopened.write(eighth)
+reopened.write(ninth)
+reopened.close()
+archive_four: str = nox.path.join(root, "obsidian-rotation-tests/main/events.jsonl.00000004")
+nox.test.assert_true(nox.fs.exists(archive_four), "restart continues archive sequence")
+nox.test.assert_true(not nox.fs.exists(archive_two), "restart retention deletes oldest owned archive")
+nox.test.assert_eq_str(nox.fs.read_to_string(archive_four), obsidian.format_json.format_record(seventh) + obsidian.format_json.format_record(eighth), "restart archive preserves active content")
+nox.test.assert_eq_str(nox.fs.read_to_string(active), obsidian.format_json.format_record(ninth), "restart active receives new event")
+
+dry_relative: str = "obsidian-rotation-tests/dry/events.jsonl"
+dry_parent: str = nox.path.join(root, "obsidian-rotation-tests/dry")
+nox.fs.write_string(nox.path.join(dry_parent, "events.jsonl.00000001"), "a")
+nox.fs.write_string(nox.path.join(dry_parent, "events.jsonl.00000002"), "b")
+nox.fs.write_string(nox.path.join(dry_parent, "events.jsonl.00000003"), "c")
+nox.fs.write_string(nox.path.join(dry_parent, "unrelated.txt"), "keep")
+dry_candidates: list[str] = obsidian.rotation.retention_candidates(root, dry_relative, RotationPolicy(10, 1))
+nox.test.assert_eq_int(len(dry_candidates), 2, "dry-run returns exact removal count")
+nox.test.assert_eq_str(dry_candidates[0], "events.jsonl.00000001", "dry-run oldest first")
+nox.test.assert_eq_str(dry_candidates[1], "events.jsonl.00000002", "dry-run second oldest")
+nox.test.assert_true(nox.fs.exists(nox.path.join(dry_parent, dry_candidates[0])), "dry-run does not delete")
+nox.test.assert_eq_int(obsidian.rotation.apply_retention(root, dry_relative, RotationPolicy(10, 1)), 2, "retention deletes selected archives")
+nox.test.assert_true(nox.fs.exists(nox.path.join(dry_parent, "events.jsonl.00000003")), "newest archive remains")
+nox.test.assert_true(nox.fs.exists(nox.path.join(dry_parent, "unrelated.txt")), "unrelated file remains")
+
+nox.test.assert_true(rename_failure_is_recoverable(root, first, second, line_size), "rename failure preserves active file and recovers")
+nox.test.assert_true(oversized_record_is_rejected(root, line_size), "oversized record rejected before write")
+nox.test.assert_true(oversized_active_is_rejected(root, line_size), "oversized preexisting active file rejected")
+nox.test.assert_true(unexpected_directory_is_rejected(root, max_bytes), "unexpected matching directory rejected")
+nox.test.assert_true(archive_symlink_is_rejected(root, max_bytes), "matching archive symlink rejected")
+nox.test.assert_true(active_symlink_is_rejected(root, max_bytes), "active symlink rejected")
+nox.test.assert_true(rotated_secret_is_masked(root), "active and rotated output mask secret sentinel")
+nox.test.assert_true(simulated_restart_recovers_sequence(root, first, second, line_size), "preexisting crash state resumes deterministic sequence")
+nox.test.assert_true(configured_factory_builds_rotation(root), "typed factory builds rotating sink")
+nox.test.assert_true(constructor_defers_retention(root, first, max_bytes), "constructor is non-destructive and first write enforces retention")
+nox.test.assert_true(zero_archive_policy_bounds_to_active(root, first, second, line_size), "zero archive policy bounds storage to active file")

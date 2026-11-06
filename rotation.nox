@@ -1,0 +1,159 @@
+import nox.fs
+import nox.path
+from nox.fs import FsError
+from nox.path import PathError
+from obsidian.sink_error import SinkError
+from obsidian.sinks.file import canonical_root, is_inside_root, resolve_parent, validate_relative_log_path
+
+ARCHIVE_DIGITS: int = 8
+MAX_ARCHIVE_SEQUENCE: int = 99999999
+MAX_RETAINED_ARCHIVES: int = 1000
+MAX_ROTATION_BYTES: int = 1099511627776
+MAX_DIRECTORY_ENTRIES: int = 10000
+
+class RotationPolicy:
+    max_bytes: int
+    max_archives: int
+
+    def __init__(self, max_bytes: int, max_archives: int) -> None:
+        if max_bytes < 1:
+            raise ValueError("rotation maximum bytes must be positive")
+        if max_bytes > MAX_ROTATION_BYTES:
+            raise ValueError("rotation maximum bytes is too large")
+        if max_archives < 0:
+            raise ValueError("rotation archive count must not be negative")
+        if max_archives > MAX_RETAINED_ARCHIVES:
+            raise ValueError("rotation archive count is too large")
+        self.max_bytes = max_bytes
+        self.max_archives = max_archives
+
+    def clone(self) -> RotationPolicy:
+
+        return RotationPolicy(self.max_bytes, self.max_archives)
+
+def archive_prefix(relative_path: str) -> str:
+    validate_relative_log_path(relative_path)
+    return nox.path.basename(relative_path) + "."
+
+def archive_sequence(name: str, prefix: str) -> int:
+    if not name.startswith(prefix):
+        return 0
+    suffix: str = name[len(prefix):]
+    if len(suffix) != ARCHIVE_DIGITS:
+        return 0
+    result: int = 0
+    for character in suffix:
+        codepoint: int = ord(character)
+        if codepoint < 48 or codepoint > 57:
+            return 0
+        result = result * 10 + codepoint - 48
+    if result < 1:
+        return 0
+    return result
+
+def archive_name(relative_path: str, sequence: int) -> str:
+    if sequence < 1 or sequence > MAX_ARCHIVE_SEQUENCE:
+        raise SinkError("rotation archive sequence is exhausted")
+    return archive_prefix(relative_path) + format(sequence, "08d")
+
+def rotation_target(root: str, relative_path: str, create_parent: bool) -> str:
+    validate_relative_log_path(relative_path)
+    parent: str = resolve_parent(root, relative_path, create_parent)
+    target: str = nox.path.join(parent, nox.path.basename(relative_path))
+    if nox.fs.exists(target):
+        if not nox.fs.is_file(target):
+            raise SinkError("file rotation target is not a regular file")
+        try:
+            resolved: str = nox.path.canonicalize(target)
+        except PathError:
+            raise SinkError("file rotation target validation failed")
+        if not is_inside_root(root, resolved) or resolved != target:
+            raise SinkError("file rotation target is not a regular file")
+    return target
+
+def archive_names_in_root(root: str, relative_path: str, max_bytes: int) -> list[str]:
+    validate_relative_log_path(relative_path)
+    parent: str = resolve_parent(root, relative_path, False)
+    prefix: str = archive_prefix(relative_path)
+    try:
+        entries: list[str] = nox.fs.read_dir(parent)
+    except FsError:
+        raise SinkError("rotation directory listing failed")
+    if len(entries) > MAX_DIRECTORY_ENTRIES:
+        raise SinkError("rotation directory has too many entries")
+    result: list[str] = []
+    for name in entries:
+        if archive_sequence(name, prefix) > 0:
+            candidate: str = nox.path.join(parent, name)
+            if not nox.fs.is_file(candidate):
+                raise SinkError("rotation archive is not a regular file")
+            try:
+                resolved: str = nox.path.canonicalize(candidate)
+            except PathError:
+                raise SinkError("rotation archive validation failed")
+            if not is_inside_root(root, resolved) or resolved != candidate:
+                raise SinkError("rotation archive is not a regular file")
+            try:
+                size: int = nox.fs.metadata(candidate).size
+            except FsError:
+                raise SinkError("rotation archive metadata failed")
+            if size > max_bytes:
+                raise SinkError("rotation archive exceeds maximum size")
+            result.append(name)
+    return sorted(result)
+
+def archive_names(allowed_root: str, relative_path: str, max_bytes: int) -> list[str]:
+    policy: RotationPolicy = RotationPolicy(max_bytes, 0)
+    root: str = canonical_root(allowed_root)
+    return archive_names_in_root(root, relative_path, policy.max_bytes)
+
+def next_archive_sequence_in_root(root: str, relative_path: str, max_bytes: int) -> int:
+    names: list[str] = archive_names_in_root(root, relative_path, max_bytes)
+    prefix: str = archive_prefix(relative_path)
+    highest: int = 0
+    for name in names:
+        sequence: int = archive_sequence(name, prefix)
+        if sequence > highest:
+            highest = sequence
+    if highest >= MAX_ARCHIVE_SEQUENCE:
+        raise SinkError("rotation archive sequence is exhausted")
+    return highest + 1
+
+def retention_candidates_in_root(root: str, relative_path: str, policy: RotationPolicy) -> list[str]:
+    names: list[str] = archive_names_in_root(root, relative_path, policy.max_bytes)
+    remove_count: int = len(names) - policy.max_archives
+    result: list[str] = []
+    index: int = 0
+    while index < remove_count:
+        result.append(names[index])
+        index += 1
+    return result
+
+def retention_candidates(allowed_root: str, relative_path: str, policy: RotationPolicy) -> list[str]:
+    root: str = canonical_root(allowed_root)
+    return retention_candidates_in_root(root, relative_path, policy)
+
+def apply_retention_in_root(root: str, relative_path: str, policy: RotationPolicy) -> int:
+    parent: str = resolve_parent(root, relative_path, False)
+    candidates: list[str] = retention_candidates_in_root(root, relative_path, policy)
+    removed: int = 0
+    for name in candidates:
+        candidate: str = nox.path.join(parent, name)
+        if not nox.fs.is_file(candidate):
+            raise SinkError("rotation archive is not a regular file")
+        try:
+            resolved: str = nox.path.canonicalize(candidate)
+        except PathError:
+            raise SinkError("rotation archive validation failed")
+        if not is_inside_root(root, resolved) or resolved != candidate:
+            raise SinkError("rotation archive is not a regular file")
+        try:
+            nox.fs.remove_file(candidate)
+        except FsError:
+            raise SinkError("rotation retention deletion failed")
+        removed += 1
+    return removed
+
+def apply_retention(allowed_root: str, relative_path: str, policy: RotationPolicy) -> int:
+    root: str = canonical_root(allowed_root)
+    return apply_retention_in_root(root, relative_path, policy)

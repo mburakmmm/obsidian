@@ -1,0 +1,19 @@
+import nox.os
+import nox.strings
+import obsidian.format_json
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.record import LogRecord
+from obsidian.rotation import RotationPolicy
+from obsidian.sink_format import FORMAT_JSON
+from obsidian.sinks.rotating_file import RotatingFileSink
+
+empty: list[LogField] = []
+first: LogRecord = LogRecord(1700000000000, INFO, "service.rotation", "one", empty, empty)
+second: LogRecord = LogRecord(1700000000001, INFO, "service.rotation", "two", empty, empty)
+max_bytes: int = nox.strings.byte_len(obsidian.format_json.format_record(first))
+sink: RotatingFileSink = RotatingFileSink("rotation", nox.os.current_dir(), "obsidian-rotation-example/events.jsonl", FORMAT_JSON, True, RotationPolicy(max_bytes, 1))
+sink.write(first)
+sink.write(second)
+print("rotations=" + str(sink.rotation_count()) + " archives=" + str(sink.archive_count()) + " bounded=" + str(sink.is_bounded()).lower())
+sink.close()

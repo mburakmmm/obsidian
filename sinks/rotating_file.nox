@@ -1,0 +1,191 @@
+import nox.fs
+import nox.path
+import nox.strings
+import obsidian.rotation
+import obsidian.sink_format
+from nox.fs import FileWriter, FsError
+from nox.path import PathError
+from obsidian.record import LogRecord
+from obsidian.rotation import RotationPolicy
+from obsidian.sink_error import SinkError
+from obsidian.sinks.file import canonical_root, is_inside_root
+
+protocol Renamer:
+    def rename(self, old_path: str, new_path: str) -> None:
+        pass
+
+class SystemRenamer:
+    def rename(self, old_path: str, new_path: str) -> None:
+        nox.fs.rename(old_path, new_path)
+
+class RotatingFileSink:
+    _name: str
+    _root: str
+    _relative_path: str
+    _target: str
+    _format_kind: int
+    _policy: RotationPolicy
+    _renamer: Renamer
+    _writer: FileWriter
+    _current_size: int
+    _next_sequence: int
+    _writes: int
+    _rotations: int
+    _closed: bool
+    _retention_pending: bool
+
+    def __init__(self, name: str, allowed_root: str, relative_path: str, format_kind: int, create_parent: bool, policy: RotationPolicy, renamer: Renamer | None = None) -> None:
+        if len(name) == 0:
+            raise ValueError("sink name must not be empty")
+        if not obsidian.sink_format.is_valid_format(format_kind):
+            raise ValueError("rotating file sink format is invalid")
+        selected_policy: RotationPolicy = policy.clone()
+        root: str = canonical_root(allowed_root)
+        target: str = obsidian.rotation.rotation_target(root, relative_path, create_parent)
+        current_size: int = 0
+        if nox.fs.exists(target):
+            try:
+                current_size = nox.fs.metadata(target).size
+            except FsError:
+                raise SinkError("file rotation target metadata failed")
+            if current_size > selected_policy.max_bytes:
+                raise SinkError("file rotation target exceeds maximum size")
+        next_sequence: int = obsidian.rotation.next_archive_sequence_in_root(root, relative_path, selected_policy.max_bytes)
+        retention_pending: bool = len(obsidian.rotation.retention_candidates_in_root(root, relative_path, selected_policy)) > 0
+        try:
+            writer: FileWriter = nox.fs.open_append(target)
+        except FsError:
+            raise SinkError("rotating file sink open failed")
+        try:
+            resolved_target: str = nox.path.canonicalize(target)
+        except PathError:
+            writer.close()
+            raise SinkError("file rotation target validation failed")
+        if not is_inside_root(root, resolved_target) or resolved_target != target:
+            writer.close()
+            raise SinkError("file rotation target is not a regular file")
+        self._name = name
+        self._root = root
+        self._relative_path = relative_path
+        self._target = target
+        self._format_kind = format_kind
+        self._policy = selected_policy
+        if renamer is None:
+            self._renamer = SystemRenamer()
+        else:
+            self._renamer = renamer
+        self._writer = writer
+        self._current_size = current_size
+        self._next_sequence = next_sequence
+        self._writes = 0
+        self._rotations = 0
+        self._closed = False
+        self._retention_pending = retention_pending
+
+    def sink_name(self) -> str:
+
+        return self._name
+
+    def write(self, entry: LogRecord) -> None:
+
+        if self._closed:
+            raise SinkError("rotating file sink is closed")
+        try:
+            encoded: str = obsidian.sink_format.encode_record(entry, self._format_kind)
+        except ValueError:
+            raise SinkError("rotating file sink formatting failed")
+        encoded_size: int = nox.strings.byte_len(encoded)
+        if encoded_size > self._policy.max_bytes:
+            raise SinkError("rotating file record exceeds maximum size")
+        if self._retention_pending:
+            obsidian.rotation.apply_retention_in_root(self._root, self._relative_path, self._policy)
+            self._retention_pending = False
+        if self._current_size > 0 and self._current_size + encoded_size > self._policy.max_bytes:
+            self._rotate()
+        try:
+            self._writer.write(encoded)
+        except FsError:
+            try:
+                self._current_size = nox.fs.metadata(self._target).size
+            except FsError:
+                self._writer.close()
+                self._closed = True
+                raise SinkError("rotating file size recovery failed")
+            if self._current_size > self._policy.max_bytes:
+                self._writer.close()
+                self._closed = True
+                raise SinkError("rotating file size recovery failed")
+            raise SinkError("rotating file sink write failed")
+        self._current_size += encoded_size
+        self._writes += 1
+
+    def _rotate(self) -> None:
+
+        archive: str = nox.path.join(nox.path.dirname(self._target), obsidian.rotation.archive_name(self._relative_path, self._next_sequence))
+        if nox.fs.exists(archive):
+            raise SinkError("rotation archive collision")
+        self._writer.close()
+        try:
+            self._renamer.rename(self._target, archive)
+        except Exception:
+            try:
+                self._writer = nox.fs.open_append(self._target)
+            except FsError:
+                self._closed = True
+                raise SinkError("file rotation recovery failed")
+            raise SinkError("file rotation rename failed")
+        try:
+            next_writer: FileWriter = nox.fs.open_append(self._target)
+        except FsError:
+            try:
+                self._renamer.rename(archive, self._target)
+                self._writer = nox.fs.open_append(self._target)
+            except Exception:
+                self._closed = True
+                raise SinkError("file rotation recovery failed")
+            raise SinkError("file rotation reopen failed")
+        self._writer = next_writer
+        self._current_size = 0
+        self._next_sequence += 1
+        self._rotations += 1
+        try:
+            obsidian.rotation.apply_retention_in_root(self._root, self._relative_path, self._policy)
+        except SinkError:
+            self._retention_pending = True
+            raise SinkError("rotation retention failed")
+
+    def flush(self) -> None:
+
+        if self._closed:
+            raise SinkError("rotating file sink is closed")
+
+    def close(self) -> None:
+
+        if self._closed:
+            return
+        self._closed = True
+        self._writer.close()
+
+    def is_closed(self) -> bool:
+
+        return self._closed
+
+    def is_bounded(self) -> bool:
+
+        return True
+
+    def write_count(self) -> int:
+
+        return self._writes
+
+    def rotation_count(self) -> int:
+
+        return self._rotations
+
+    def current_size_bytes(self) -> int:
+
+        return self._current_size
+
+    def archive_count(self) -> int:
+
+        return len(obsidian.rotation.archive_names_in_root(self._root, self._relative_path, self._policy.max_bytes))

@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phase 5 context/configuration candidate. Public APIs are not frozen.
+Status: Phase 6 size-rotation candidate. Public APIs are not frozen.
 
 ## Dependency direction
 
@@ -33,7 +33,7 @@ Core Obsidian may depend on the pinned NOX standard library and separately appro
 - Bound logger views deep-copy explicit context and delegate to one sink-owning parent logger.
 - Configuration is validated before activation; factory failures close resources created by that attempt.
 - The MVP dispatcher is synchronous and bounded sinks are preferred.
-- File rotation and asynchronous dispatch are later gated capabilities.
+- Size rotation uses a separate single-process sink; async dispatch and time-based rotation remain gated capabilities.
 - There is no default global logger in v0.1.
 
 ## Module layout
@@ -47,6 +47,8 @@ There is no `__init__.nox` facade convention in the audited module contract. Pub
 Logger ownership is explicit. Sinks have documented write/flush/close behavior and idempotent close. The current internal policy propagates sanitized `SinkError` failures to the caller; bounded diagnostics and configurable non-raising policy remain Phase 8 work. User callbacks do not execute while holding a lock required by logging.
 
 `BoundLogger` does not expose `close`; it delegates writes and flush to its parent and cannot duplicate sink ownership. Runtime reconfiguration changes only validated scalar logger state and leaves the installed sink set intact. New sink sets are built through an all-or-nothing factory rather than mutating a live logger incrementally.
+
+`RotatingFileSink` owns exactly one active handle. It closes before rename, reopens after rotation and never shares ownership with another Obsidian object. Retention is a separate deterministic policy over exact owned archive names; dry-run selection and deletion use the same candidate function.
 
 ## Security model
 

@@ -32,8 +32,11 @@ cp -R "$project_root/examples/." examples/
 NOX_HOME="$probe_nox_home" noxc add obsidian "$package_root" --ref main >/dev/null
 NOX_HOME="$probe_nox_home" noxc fetch >/dev/null
 
-mkdir -p "$consumer_root/obsidian-file-tests" "$consumer_root/obsidian-file-denied" "$probe_root/outside"
+mkdir -p "$consumer_root/obsidian-file-tests" "$consumer_root/obsidian-file-denied" "$consumer_root/obsidian-rotation-tests/main" "$consumer_root/obsidian-rotation-tests/dry" "$consumer_root/obsidian-rotation-tests/rename" "$consumer_root/obsidian-rotation-tests/oversized" "$consumer_root/obsidian-rotation-tests/oversized-active" "$consumer_root/obsidian-rotation-tests/unexpected" "$consumer_root/obsidian-rotation-tests/symlink" "$consumer_root/obsidian-rotation-tests/active-link" "$consumer_root/obsidian-rotation-tests/security" "$consumer_root/obsidian-rotation-tests/crash" "$consumer_root/obsidian-rotation-tests/config" "$consumer_root/obsidian-rotation-tests/pending" "$consumer_root/obsidian-rotation-tests/zero" "$probe_root/outside"
 ln -s "$probe_root/outside" "$consumer_root/obsidian-file-tests/escape-link"
+touch "$consumer_root/obsidian-rotation-tests/symlink/unrelated.log" "$consumer_root/obsidian-rotation-tests/active-link/unrelated.log"
+ln -s "$consumer_root/obsidian-rotation-tests/symlink/unrelated.log" "$consumer_root/obsidian-rotation-tests/symlink/events.jsonl.00000001"
+ln -s "$consumer_root/obsidian-rotation-tests/active-link/unrelated.log" "$consumer_root/obsidian-rotation-tests/active-link/events.jsonl"
 chmod 500 "$consumer_root/obsidian-file-denied"
 
 if ! test_output="$(NOX_HOME="$probe_nox_home" noxc test --backend "$backend" tests 2>&1)"; then
@@ -82,6 +85,7 @@ run_exact_example examples/console_logging.nox "$expected_console"
 run_exact_example examples/file_logging.nox "$expected_file"
 run_exact_example examples/security_redaction.nox "$expected_security"
 run_exact_example examples/request_context.nox "$expected_context"
+run_exact_example examples/file_rotation.nox "rotations=1 archives=1 bounded=true"
 
 resolved_sha="$(git -C "$package_root" rev-parse HEAD)"
 grep -q "\"resolved\": \"$resolved_sha\"" nox.lock

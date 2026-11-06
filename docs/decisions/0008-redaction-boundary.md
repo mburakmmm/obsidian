@@ -17,10 +17,10 @@ Every sink and callback must receive only sanitized records. The current NOX fie
 - The logger re-entry guard covers record capture, redaction and sink dispatch, so a redactor or sink callback cannot recursively invoke the same logger.
 - Direct formatter use applies the default redactor again. Internal failure produces a fixed placeholder record, never the unsafe input.
 - The scalar-only `FieldValue` model rejects nested collections at compile time. Nested support remains disabled until recursive ownership and redaction are designed together.
-- File names containing recognized credential-key components are rejected. Rotation naming must repeat this check when Phase 6 is implemented.
+- File names containing recognized credential-key components are rejected. Phase 6 rotation derives archive names only from the already validated basename plus a numeric suffix and reruns the synthetic-sentinel matrix.
 
 ## Consequences
 
 - Custom sinks, memory snapshots, console output and file output receive the same pre-sink sanitized snapshot through `Logger`.
 - Arbitrary secrets with no recognizable key, header, bearer prefix, URL-userinfo position or explicit additional key cannot be discovered reliably. Callers must not log request bodies, full header maps or opaque private objects.
-- Exception metadata, runtime configuration, rotation and async queue records do not yet exist. Their future implementations must enter this same boundary and rerun the security matrix before release claims expand.
+- Exception metadata and async queue records do not yet exist. Runtime configuration and Phase 6 rotation enter the same boundary and have dedicated sanitized-error/sentinel tests; future output paths must do the same.

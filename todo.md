@@ -256,8 +256,8 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 - [x] Bearer token, Authorization, Cookie, Set-Cookie maskeleniyor.
 - [x] DSN/URL userinfo ve credential query parametreleri maskeleniyor.
 - [x] Mevcut message, logger name, fields, context, memory/custom/console/file sink ve sink error yolları aynı pre-sink sınırını kullanıyor.
-- NOT YET: exception metadata, config loader, rotation, diagnostics callback ve async queue henüz yok; eklendikleri fazda güvenlik matrisi tekrar zorunlu.
-- [x] File isimlerinde credential-key bileşenleri reddediliyor; rotation isimleri Phase 6'da aynı politikaya bağlanacak.
+- NOT YET: exception metadata, config-file loader, time rotation, diagnostics callback ve async queue henüz yok; eklendikleri fazda güvenlik matrisi tekrar zorunlu.
+- [x] File isimlerinde credential-key bileşenleri reddediliyor; Phase 6 archive isimleri doğrulanmış basename + numeric suffix ile aynı politikaya bağlı.
 - [x] Redaction başarısızlığında unsafe içerik drop ediliyor, exception metni gösterilmiyor ve saturating sanitize counter artıyor.
 - [x] Synthetic sentinel fixture'ları gerçek secret içermiyor.
 - [x] Redaction sınırlamaları `docs/security.md` içinde dürüstçe belgeli.
@@ -312,24 +312,24 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 
 ## 10. `0.3.x` — Phase 6: rotation ve retention
 
-- [ ] Rotation ADR: single-process ownership, naming, recovery ve sınırlar.
-- [ ] Önce size-based rotation uygulandı; byte ölçümü doğrulandı.
-- [ ] Time-based rotation yalnız güvenilir UTC/clock kanıtından sonra değerlendirildi.
-- [ ] Rename failure aktif dosyayı kaybettirmiyor; sanitized error görünür.
-- [ ] Rotation filename secret/control/path traversal içeremiyor.
-- [ ] Retention yalnız yapılandırılmış log dizinindeki kendi dosyalarını seçiyor.
-- [ ] Symlink/unexpected file türleri güvenli biçimde reddediliyor.
-- [ ] Retention deterministic ve dry-run/test modu var.
-- [ ] Boundary, restart, crash simulation, rename failure ve cleanup testleri.
-- [ ] İlgisiz dosya silmeme testi.
-- [ ] Disk kullanımı yapılandırılmış sınır altında kalıyor.
-- [ ] Cross-process rotation desteklenmiyor olarak belgeli; kanıtsız vaat yok.
-- [ ] `examples/file_rotation.nox`, operations ve recovery dokümanı.
+- [x] Rotation ADR: single-process ownership, naming, recovery ve sınırlar.
+- [x] Önce size-based rotation uygulandı; UTF-8 byte ölçümü doğrulandı.
+- [x] Time-based rotation değerlendirildi; rollback/restart/clock-injection sözleşmesi kanıtlanmadığı için devre dışı bırakıldı.
+- [x] Rename failure aktif dosyayı kaybettirmiyor; sanitized error görünür.
+- [x] Rotation filename secret/control/path traversal içeremiyor.
+- [x] Retention yalnız yapılandırılmış log dizinindeki kendi dosyalarını seçiyor.
+- [x] Symlink/unexpected file türleri güvenli biçimde reddediliyor; dangling/race sınırı belgeli.
+- [x] Retention deterministic ve dry-run/test modu var.
+- [x] Boundary, restart/crash-state simulation, rename failure ve cleanup testleri.
+- [x] İlgisiz dosya silmeme testi.
+- [x] Disk kullanımı yapılandırılmış sınır altında kalıyor; oversized input fail-closed.
+- [x] Cross-process rotation desteklenmiyor olarak belgeli; kanıtsız vaat yok.
+- [x] `examples/file_rotation.nox`, operations ve recovery dokümanı.
 
 ### Phase 6 kapısı
 
-- [ ] Beklenmeyen silme yok; retention hedefleri dry-run ile doğrulanıyor.
-- [ ] Yapılandırılmış durumda depolama bounded.
+- [ ] Yerel LLVM/QBE kanıtında beklenmeyen silme yok; retention dry-run exact; uzak matris bekleniyor.
+- [ ] Yerel LLVM/QBE kanıtında depolama bounded; uzak matris bekleniyor.
 
 ---
 
@@ -528,7 +528,7 @@ Phase 0 tamamlanmadan Phase 1 koduna başlanmayacaktır. İlk sıra:
 5. Phase 0 kapısını kanıtlarla kapat.
 6. Sonra küçük bir PR/dilim halinde `Level → FieldValue → LogRecord → Clock → MemorySink → Logger` sırasıyla Phase 1'e geç.
 
-File rotation ve async çalışma, sırasıyla Phase 1–4 ve Phase 6 kapıları geçilmeden başlatılmayacaktır.
+Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da başlatıldı. Async çalışma Phase 6 kapısı uzak matrisle kapanmadan başlatılmayacaktır.
 
 ## 20. İlerleme günlüğü
 
@@ -545,3 +545,5 @@ File rotation ve async çalışma, sırasıyla Phase 1–4 ve Phase 6 kapıları
 | 2026-11-06 | Phase 3 desteklenen alt küme uzak CI kanıtı | GitHub Actions run `42173270729`; commit `50a85a7`; macOS arm64, Linux x64 ve Linux arm64 | Üç işte de pinned toolchain, format, LLVM/QBE 8 dosya/185 assertion süiti, 2 compile-fail fixture ve dependency alias/import probu geçti | Desteklenen alt küme matriste yeşil; platform API eksikleri nedeniyle Phase 3 kapısı açık, Phase 4 başlatılmadı |
 | 2026-11-06 | `0.2.x` / Phase 4 scalar güvenlik adayı | Case-insensitive default/ek denylist, header/Bearer/URL/query masking, fail-closed drop+sayaç, filename guard ve security matrix eklendi | Pinned NOX 2.0.143 LLVM/QBE: 9 test dosyası, 226 assertion, 0 skip; 3 expected compile-fail; 6 exact ve sentinel-scanned örnek; import/lock probu geçti | Yerel scalar güvenlik kapısı geçti; uzak CI kanıtı bekleniyor, exception/config/rotation/async yolları geldiklerinde matrise eklenecek |
 | 2026-11-06 | Phase 4 scalar güvenlik uzak CI kanıtı | GitHub Actions run `42206489911`; commit `fe32ffd`; macOS arm64, Linux x64 ve Linux arm64 | Üç işte de pinned toolchain, format, LLVM/QBE 9 dosya/226 assertion süiti, 3 compile-fail fixture, sentinel taraması ve dependency alias/import probu geçti | Mevcut scalar Faz 4 kapısı geçti; alpha yayınlanmadı, Phase 5 context/configuration sırada |
+| 2026-11-06 | `0.3.x` / Phase 5 context/configuration | Immutable explicit context view, request/trace/span ID, typed config/factory, atomic scalar reconfigure ve explicit env override eklendi | Pinned NOX 2.0.143 LLVM/QBE: 12 test dosyası, 276 assertion, 0 skip; 3 expected compile-fail; 7 exact örnek ve import/lock probu geçti | Uzak CI run `42211416648` ve final evidence run `42211681459` üç platformda yeşil; Phase 5 kapısı kapandı |
+| 2026-11-06 | `0.3.x` / Phase 6 size-rotation adayı | Single-process byte rotation, fixed-width archive sequence, dry-run retention, restart/rename recovery, symlink ve owned-file doğrulaması eklendi | Pinned NOX 2.0.143 yerel LLVM/QBE: 14 test dosyası, 325 assertion, 0 skip; 3 expected compile-fail; 8 exact örnek ve import/lock probu geçti | Yerel kapı geçti; desteklenen uzak matris kanıtı bekleniyor, time/cross-process rotation desteklenmiyor |
