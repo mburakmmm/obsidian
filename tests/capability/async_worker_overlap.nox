@@ -1,19 +1,19 @@
 import nox.atomic
 import nox.thread
-from nox.atomic import AtomicBool, AtomicInt
+from nox.atomic import AtomicInt
+
+async def yield_once(value: int) -> int:
+    return value
 
 async def overlap_worker(channel: ThreadChannel[int]) -> int:
     active_handle: int = await channel.recv()
     peak_handle: int = await channel.recv()
     ready_handle: int = await channel.recv()
-    gate_handle: int = await channel.recv()
     active: AtomicInt = nox.atomic.from_int_handle(active_handle)
     peak: AtomicInt = nox.atomic.from_int_handle(peak_handle)
     ready: AtomicInt = nox.atomic.from_int_handle(ready_handle)
-    gate: AtomicBool = nox.atomic.from_bool_handle(gate_handle)
     ready.increment()
-    while not gate.load():
-        pass
+    await channel.recv()
     now: int = active.increment()
     updating: bool = True
     while updating:
@@ -34,26 +34,23 @@ async def run() -> None:
     active: AtomicInt = nox.atomic.new_int(0)
     peak: AtomicInt = nox.atomic.new_int(0)
     ready: AtomicInt = nox.atomic.new_int(0)
-    gate: AtomicBool = nox.atomic.new_bool(False)
-    first_channel: ThreadChannel[int] = ThreadChannel[int](4)
-    second_channel: ThreadChannel[int] = ThreadChannel[int](4)
+    first_channel: ThreadChannel[int] = ThreadChannel[int](3)
+    second_channel: ThreadChannel[int] = ThreadChannel[int](3)
     first: ThreadHandle[int] = nox.thread.start(overlap_worker, first_channel)
     second: ThreadHandle[int] = nox.thread.start(overlap_worker, second_channel)
     await first_channel.send(active.handle)
     await first_channel.send(peak.handle)
     await first_channel.send(ready.handle)
-    await first_channel.send(gate.handle)
     await second_channel.send(active.handle)
     await second_channel.send(peak.handle)
     await second_channel.send(ready.handle)
-    await second_channel.send(gate.handle)
     while ready.load() < 2:
-        pass
-    gate.store(True)
+        await spawn yield_once(0)
+    await first_channel.send(1)
+    await second_channel.send(1)
     first_result: int = await first.join()
     second_result: int = await second.join()
     print(peak.load(), first_result == second_result)
-    gate.free()
     ready.free()
     peak.free()
     active.free()
