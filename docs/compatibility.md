@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–6 supported synchronous scope passes pinned local LLVM/QBE verification and the supported CI matrix. The Phase 7 capability audit reaches a local no-go decision for async dispatch and awaits remote matrix evidence. This document does not extend support beyond tested jobs.
+Status: Phase 0–6 supported synchronous scope and the Phase 7 async no-go capability audit pass pinned local LLVM/QBE verification and the supported CI matrix. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -30,11 +30,11 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 | built-in `print` / `nox.console` | stdout only; no `file=` target, stdio flush or recoverable write-error channel | Support explicit stdout; reject stderr; document logical flush | Stdout exact-capture probe passes on supported CI jobs and locally; stderr blocked |
 | `nox.os` | `getenv` raises `OsError` when absent; `current_dir`, `set_var` | Environment overrides require explicit `try/except OsError` | Phase 5 missing/valid/invalid env probes pass locally and in supported CI on LLVM/QBE |
 | `nox.time` | UTC `DateTime`; wall `now_ms`; monotonic `Instant`; `boot_ms` | Inject wall clock for records and monotonic clock for timeouts/durations | Fake clock and epoch-to-RFC3339 probes pass on LLVM/QBE |
-| `nox.thread` | awaited blocking `ThreadChannel.send/recv`; join-only `ThreadHandle`; QBE scalar element restriction | No portable record queue, non-blocking overflow or timeout-aware shutdown contract | Phase 7 executable probes pass locally; async no-go |
-| `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 overlap/lifetime probe passes locally on LLVM and QBE |
-| scheduler | LLVM M:N work-stealing; QBE cooperative tasks plus separate runtimes for `nox.thread.start`; channel waits ignore task cancellation | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak is 2 locally; QBE scalar thread-channel probe passes |
+| `nox.thread` | awaited blocking `ThreadChannel.send/recv`; join-only `ThreadHandle`; QBE scalar element restriction | No portable record queue, non-blocking overflow or timeout-aware shutdown contract | Phase 7 executable probes pass locally and in supported CI; async no-go |
+| `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 overlap/lifetime probe passes locally and in supported CI on LLVM/QBE |
+| scheduler | LLVM M:N work-stealing; QBE cooperative tasks plus separate runtimes for `nox.thread.start`; channel waits ignore task cancellation | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak is 2; QBE scalar thread-channel probe passes locally and in supported CI |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 7 local: 14 files/325 assertions/0 skips pass on LLVM/QBE; six async capability probes and three negative fixtures pass separately |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 7 local and supported CI: 14 files/325 assertions/0 skips; six async capability probes and three negative fixtures pass separately |
 
 ## Known gaps and conservative decisions
 
@@ -64,12 +64,12 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 
 | Platform/backend | Check | Build/run | Tests | Concurrency claim |
 |---|---:|---:|---:|---|
-| macOS arm64 / LLVM | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` attempt 2 | Overlapping explicit context tasks pass; no shared-logger claim |
-| macOS arm64 / QBE | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` attempt 2 | Cooperative overlapping context tasks pass; no OS-thread claim |
-| Linux x64 / LLVM | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` | Overlapping explicit context tasks pass; no shared-logger claim |
-| Linux x64 / QBE | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` | Cooperative overlapping context tasks pass; no OS-thread claim |
-| Linux arm64 / LLVM | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` | Overlapping explicit context tasks pass; no shared-logger claim |
-| Linux arm64 / QBE | Pass | Pass | Phase 6: 14 files, 325 assertions, 0 skips; CI run `42250864512` | Cooperative overlapping context tasks pass; no OS-thread claim |
+| macOS arm64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Real worker overlap peak 2; async remains unsupported |
+| macOS arm64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Scalar thread-channel probe passes; class record transfer rejected |
+| Linux x64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Real worker overlap peak 2; async remains unsupported |
+| Linux x64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Scalar thread-channel probe passes; class record transfer rejected |
+| Linux arm64 / LLVM | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Real worker overlap peak 2; async remains unsupported |
+| Linux arm64 / QBE | Pass | Pass | Phase 7: 14 files/325 assertions/0 skips plus 6 capability probes; CI `42257058031` | Scalar thread-channel probe passes; class record transfer rejected |
 | Windows x64 | Not run | Not run | Not run | Unsupported until evidence exists |
 
 ## Upgrade policy
