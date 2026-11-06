@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0 audit complete; Phase 2 formatter evidence recorded. This document records observed capability and does not extend support beyond tested jobs.
+Status: Phase 0 audit complete; Phase 2 formatter evidence passes locally and in the supported CI matrix. This document records observed capability and does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -58,10 +58,10 @@ The compiler reports a version but not its source SHA. The annotated `v2.0.143` 
 |---|---:|---:|---:|---|
 | macOS arm64 / LLVM | Pass | Pass | Pinned 2.0.143: 6 files, 151 assertions, 0 skips locally | No concurrency claim |
 | macOS arm64 / QBE | Pass | Pass | Pinned 2.0.143: 6 files, 151 assertions, 0 skips locally | Cooperative behavior documented; no concurrency test yet |
-| Linux x64 / LLVM | Phase 1 CI pass | Phase 1 CI pass | Phase 2 CI pending | None |
-| Linux x64 / QBE | Phase 1 CI pass | Phase 1 CI pass | Phase 2 CI pending | None |
-| Linux arm64 / LLVM | Phase 1 CI pass | Phase 1 CI pass | Phase 2 CI pending | None |
-| Linux arm64 / QBE | Phase 1 CI pass | Phase 1 CI pass | Phase 2 CI pending | None |
+| Linux x64 / LLVM | Pass | Pass | Phase 2: 6 files, 151 assertions, 0 skips; CI run `42171234012` | None |
+| Linux x64 / QBE | Pass | Pass | Phase 2: 6 files, 151 assertions, 0 skips; CI run `42171234012` | None |
+| Linux arm64 / LLVM | Pass | Pass | Phase 2: 6 files, 151 assertions, 0 skips; CI run `42171234012` | None |
+| Linux arm64 / QBE | Pass | Pass | Phase 2: 6 files, 151 assertions, 0 skips; CI run `42171234012` | None |
 | Windows x64 | Not run | Not run | Not run | Unsupported until evidence exists |
 
 ## Upgrade policy

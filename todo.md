@@ -15,6 +15,7 @@
 - [x] Phase 0 yerel kapısı geçti; macOS arm64 LLVM/QBE kanıtı kaydedildi.
 - [x] Phase 1 yerel kapısı geçti; senkron çekirdek iki backend'de doğrulandı.
 - [x] GitHub CI üzerinden macOS arm64 ve Linux x64/arm64 kanıtı alındı.
+- [x] Phase 2 formatter ve gerçek tüketici paket grafiği, GitHub CI run `42171234012` ile macOS arm64 ve Linux x64/arm64 üzerinde LLVM/QBE geçti.
 
 Not: Yukarıdaki upstream commit yalnızca planlama anındaki gözlemdir; uyumluluk revizyonu olarak henüz onaylanmış değildir. Kurulu derleyici ile upstream arasında sürüm farkı bulunduğu için gerçek uyumluluk deneyi yapılmadan hiçbir NOX API'si varsayılmayacaktır.
 
@@ -536,3 +537,4 @@ File rotation ve async çalışma, sırasıyla Phase 1–4 ve Phase 6 kapıları
 | 2026-11-05 | Release altyapısı | CI matrisi, issue/PR şablonları, katkı ve güvenlik politikaları ile immutable tag tabanlı GitHub Release + `noxc publish` hattı eklendi | Workflow/YAML/shell doğrulaması ve iki backend regresyonu; ilk remote CI sonucu ayrıca kaydedilecek | `0.0.0` yayınlanmaz; ilk yayın seçilmiş lisans, `NOXPKG_TOKEN` ve ilgili faz kapısı sonrası |
 | 2026-11-05 | Uzak CI kanıtı | GitHub Actions run `41983292400`; macOS arm64, Linux x64 ve Linux arm64 matrisi | Her platformda format, LLVM/QBE testleri, 2 compile-fail fixture ve paket alias/import probu geçti | Phase 0 uzak platform kapısı geçti; Phase 2 sırada |
 | 2026-11-06 | `0.2.x` / Phase 2 | RFC3339 text/JSONL formatter, deterministic field ordering, scalar type preservation, size/count bounds, non-finite reject politikası ve doğru package self-importları eklendi | Doğrulanmış NOX 2.0.143 arşiviyle hermetik tüketicide LLVM/QBE: 6 test dosyası, 151 assertion, 0 skip; 3 exact örnek, transitive import/lock probu geçti | Uzak Phase 2 CI kanıtı push sonrası alınacak; Phase 3 sırada |
+| 2026-11-06 | Phase 2 uzak CI kanıtı | GitHub Actions run `42171234012`; commit `7722752`; macOS arm64, Linux x64 ve Linux arm64 | Üç işte de pinned toolchain, format, LLVM/QBE tüketici süiti, 2 compile-fail fixture ve transitive alias/import-lock probu geçti | Phase 2 kapısı desteklenen matriste geçti; Phase 3 console/file sink sırada |
