@@ -17,7 +17,7 @@ Do not publish a result when `dirty=true`. Keep LLVM and QBE separate. Record ha
 
 The regular CI matrix runs the harness on LLVM and QBE to detect compile/runtime regressions. Values printed by that step are explicitly non-baseline observations and are not copied into this report.
 
-No memory, fuzz or stress result has been published yet. Process-startup workloads are implemented but require a clean-commit observation before their values are added below. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
+No memory, fuzz or stress result has been published yet. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
 
 ## Initial macOS arm64 observation — 2026-11-07
 
@@ -92,3 +92,16 @@ This observation was measured from clean commit `394b6e3794a75a814c5113b3ed0e888
 | QBE | Forced size rotation | 374,285 | 360,000 | 390,000 | 81,632,653 | 2,671 |
 
 The append result includes logger dispatch, record cloning, redaction, JSONL formatting and an unbuffered operating-system write. The rotation result additionally includes close, rename, reopen, directory validation and zero-archive retention deletion. Neither result includes `fsync`; neither establishes disk-full, crash, cross-process or stable-storage behavior.
+
+## Prebuilt process-startup observation — 2026-11-07
+
+This observation was measured from clean commit `1bde748e0f5981c634fc05fd810558e387a5f727` on the same Apple M4 environment using Python 3.15.2. Each binary was compiled before timing, warmed with 10 launches, then measured in seven batches of 50 launches.
+
+| Backend | Workload | Mean ns/launch | Min | Max | Variance ns² | Derived launches/s |
+|---|---|---:|---:|---:|---:|---:|
+| LLVM | Empty NOX process | 1,991,553 | 1,956,740 | 2,047,361 | 921,308,835 | 502 |
+| LLVM | Logger construct/close process | 2,023,200 | 1,991,166 | 2,075,648 | 1,159,835,269 | 494 |
+| QBE | Empty NOX process | 2,009,690 | 1,977,195 | 2,089,265 | 1,271,657,939 | 497 |
+| QBE | Logger construct/close process | 2,095,360 | 2,069,418 | 2,138,836 | 482,081,099 | 477 |
+
+The result includes host `subprocess.run`, operating-system process creation, loader/runtime initialization and process exit. Every child returned zero and produced empty stdout/stderr. Empty and Logger values are not subtracted: their difference is not an exact Logger cost because launch and scheduling noise can dominate it. The in-process `logger_construct_close` workload remains the direct construction measurement.
