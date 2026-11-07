@@ -1,0 +1,119 @@
+import nox.os
+import nox.strings
+import nox.time
+import obsidian.fields
+import obsidian.format_json
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.rotation import RotationPolicy
+from obsidian.sink_format import FORMAT_JSON
+from obsidian.sinks.file import FileSink
+from obsidian.sinks.rotating_file import RotatingFileSink
+
+WARMUP_FILE_ITERATIONS: int = 200
+FILE_ITERATIONS: int = 2000
+WARMUP_ROTATION_ITERATIONS: int = 20
+ROTATION_ITERATIONS: int = 100
+SAMPLE_COUNT: int = 7
+NANOSECONDS_PER_MILLISECOND: int = 1000000
+NANOSECONDS_PER_SECOND: int = 1000000000
+
+class BenchmarkStats:
+    mean_ns: int
+    min_ns: int
+    max_ns: int
+    variance_ns2: int
+
+    def __init__(self, mean_ns: int, min_ns: int, max_ns: int, variance_ns2: int) -> None:
+        self.mean_ns = mean_ns
+        self.min_ns = min_ns
+        self.max_ns = max_ns
+        self.variance_ns2 = variance_ns2
+
+def summarize(samples: list[int]) -> BenchmarkStats:
+    if len(samples) == 0:
+        raise ValueError("benchmark samples must not be empty")
+    total: int = 0
+    minimum: int = samples[0]
+    maximum: int = samples[0]
+    for sample in samples:
+        if sample < 1:
+            raise ValueError("benchmark sample resolution is insufficient")
+        total += sample
+        if sample < minimum:
+            minimum = sample
+        if sample > maximum:
+            maximum = sample
+    mean: int = total // len(samples)
+    squared_delta_total: int = 0
+    for sample in samples:
+        delta: int = sample - mean
+        squared_delta_total += delta * delta
+    return BenchmarkStats(mean, minimum, maximum, squared_delta_total // len(samples))
+
+def time_info(logger: Logger, fields: list[LogField], message: str, iterations: int) -> int:
+    accepted: int = 0
+    start: nox.time.Instant = nox.time.instant_now()
+    index: int = 0
+    while index < iterations:
+        if logger.info(message, fields):
+            accepted += 1
+        index += 1
+    elapsed_ms: int = start.elapsed_ms()
+    if accepted != iterations:
+        raise ValueError("file benchmark lost an event")
+    if elapsed_ms < 1:
+        return 0
+    return elapsed_ms * NANOSECONDS_PER_MILLISECOND // iterations
+
+def print_stats(name: str, iterations: int, stats: BenchmarkStats) -> None:
+    events_per_second: int = NANOSECONDS_PER_SECOND // stats.mean_ns
+    print("benchmark=" + name + " iterations=" + str(iterations) + " samples=" + str(SAMPLE_COUNT) + " mean_ns=" + str(stats.mean_ns) + " min_ns=" + str(stats.min_ns) + " max_ns=" + str(stats.max_ns) + " variance_ns2=" + str(stats.variance_ns2) + " ops_per_second=" + str(events_per_second))
+
+root: str = nox.os.current_dir()
+clock: FakeClock = FakeClock(1700000000123)
+fields: list[LogField] = [LogField("status", obsidian.fields.int_value(200)), LogField("token", obsidian.fields.string_value("SYNTHETIC_FILE_BENCH_SECRET"))]
+message: str = "request completed Merhaba 世界"
+
+file_sink: FileSink = FileSink("benchmark-file", root, "benchmark-output/plain/events.jsonl", FORMAT_JSON, True)
+file_logger: Logger = Logger("benchmark.file", INFO, clock)
+file_logger.add_sink(file_sink)
+time_info(file_logger, fields, message, WARMUP_FILE_ITERATIONS)
+file_samples: list[int] = []
+sample_index: int = 0
+while sample_index < SAMPLE_COUNT:
+    file_samples.append(time_info(file_logger, fields, message, FILE_ITERATIONS))
+    sample_index += 1
+file_logger.close()
+expected_file_writes: int = WARMUP_FILE_ITERATIONS + SAMPLE_COUNT * FILE_ITERATIONS
+if file_sink.write_count() != expected_file_writes:
+    raise ValueError("file benchmark write count mismatch")
+
+fixture_record: LogRecord = LogRecord(1700000000123, INFO, "benchmark.rotation", message, fields, [])
+encoded_size: int = nox.strings.byte_len(obsidian.format_json.format_record(fixture_record))
+rotation_sink: RotatingFileSink = RotatingFileSink("benchmark-rotation", root, "benchmark-output/rotation/events.jsonl", FORMAT_JSON, True, RotationPolicy(encoded_size, 0))
+rotation_logger: Logger = Logger("benchmark.rotation", INFO, clock)
+rotation_logger.add_sink(rotation_sink)
+if not rotation_logger.info(message, fields):
+    raise ValueError("rotation benchmark priming write failed")
+time_info(rotation_logger, fields, message, WARMUP_ROTATION_ITERATIONS)
+rotation_samples: list[int] = []
+sample_index = 0
+while sample_index < SAMPLE_COUNT:
+    rotation_samples.append(time_info(rotation_logger, fields, message, ROTATION_ITERATIONS))
+    sample_index += 1
+rotation_logger.close()
+expected_rotations: int = WARMUP_ROTATION_ITERATIONS + SAMPLE_COUNT * ROTATION_ITERATIONS
+if rotation_sink.write_count() != expected_rotations + 1:
+    raise ValueError("rotation benchmark write count mismatch")
+if rotation_sink.rotation_count() != expected_rotations:
+    raise ValueError("rotation benchmark rotation count mismatch")
+if rotation_sink.archive_count() != 0:
+    raise ValueError("rotation benchmark retention mismatch")
+
+print("benchmark_schema=obsidian.file-benchmark.v1 warmup_file=" + str(WARMUP_FILE_ITERATIONS) + " warmup_rotation=" + str(WARMUP_ROTATION_ITERATIONS) + " rotation_bytes=" + str(encoded_size))
+print_stats("file_info_json", FILE_ITERATIONS, summarize(file_samples))
+print_stats("rotation_pause", ROTATION_ITERATIONS, summarize(rotation_samples))

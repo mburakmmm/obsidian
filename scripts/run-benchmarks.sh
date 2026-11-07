@@ -103,3 +103,53 @@ if [[ -z "$schema_line" || -z "$result_line" ]]; then
 fi
 printf '%s\n' "$schema_line"
 printf '%s redirected_lines=%s\n' "$result_line" "$actual_console_lines"
+
+cp "$project_root/benchmarks/file_bench.nox" main.nox
+if ! file_benchmark_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" run --backend "$backend" main.nox 2>&1)"; then
+  printf '%s\n' "$file_benchmark_output"
+  exit 1
+fi
+if [[ "$file_benchmark_output" == *SYNTHETIC_* ]]; then
+  echo "file benchmark report contained a security sentinel" >&2
+  exit 1
+fi
+file_output="$consumer_root/benchmark-output/plain/events.jsonl"
+rotation_output="$consumer_root/benchmark-output/rotation/events.jsonl"
+if [[ ! -f "$file_output" || ! -f "$rotation_output" ]]; then
+  echo "file benchmark output is missing" >&2
+  exit 1
+fi
+if grep -r -q 'SYNTHETIC_' "$consumer_root/benchmark-output"; then
+  echo "file benchmark output contained a security sentinel" >&2
+  exit 1
+fi
+if ! grep -F -q '"***"' "$file_output" || ! grep -F -q '"***"' "$rotation_output"; then
+  echo "file benchmark did not exercise field redaction" >&2
+  exit 1
+fi
+expected_file_lines=14200
+actual_file_lines="$(wc -l <"$file_output" | tr -d '[:space:]')"
+if [[ "$actual_file_lines" != "$expected_file_lines" ]]; then
+  echo "file benchmark line count mismatch: expected $expected_file_lines, got $actual_file_lines" >&2
+  exit 1
+fi
+actual_rotation_lines="$(wc -l <"$rotation_output" | tr -d '[:space:]')"
+if [[ "$actual_rotation_lines" != "1" ]]; then
+  echo "rotation benchmark active file line count mismatch" >&2
+  exit 1
+fi
+archive_count="$(find "$consumer_root/benchmark-output/rotation" -type f -name 'events.jsonl.*' | wc -l | tr -d '[:space:]')"
+if [[ "$archive_count" != "0" ]]; then
+  echo "rotation benchmark retained an unexpected archive" >&2
+  exit 1
+fi
+file_schema_line="$(printf '%s\n' "$file_benchmark_output" | grep '^benchmark_schema=obsidian.file-benchmark.v1 ')"
+file_result_line="$(printf '%s\n' "$file_benchmark_output" | grep '^benchmark=file_info_json ')"
+rotation_result_line="$(printf '%s\n' "$file_benchmark_output" | grep '^benchmark=rotation_pause ')"
+if [[ -z "$file_schema_line" || -z "$file_result_line" || -z "$rotation_result_line" ]]; then
+  echo "file benchmark report is missing" >&2
+  exit 1
+fi
+printf '%s\n' "$file_schema_line"
+printf '%s file_lines=%s\n' "$file_result_line" "$actual_file_lines"
+printf '%s active_lines=%s retained_archives=%s\n' "$rotation_result_line" "$actual_rotation_lines" "$archive_count"

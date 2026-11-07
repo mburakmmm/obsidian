@@ -46,6 +46,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Redirected stdout INFO benchmark with exact output accounting and synthetic-secret leak detection.
 - Maximum-length Unicode JSONL workload reporting encoded bytes per event.
 - Clean-commit macOS arm64 observations for redirected console and maximum-length Unicode JSONL workloads.
+- Temporary-root JSONL file throughput and forced size-rotation pause workloads with exact output, retention and sentinel checks.
 
 ### Changed
 

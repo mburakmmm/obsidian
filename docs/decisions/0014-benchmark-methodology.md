@@ -9,7 +9,7 @@ Phase 10 requires measurements without turning a single developer-machine result
 
 ## Decision
 
-`benchmarks/core_bench.nox` measures steady-state in-process operations. `benchmarks/console_bench.nox` separately measures the complete synchronous INFO path through redaction, text formatting and a stdout console sink while the runner redirects stdout to a regular file. The clock starts after the downstream package has compiled and the program has started. Every workload has a fixed warm-up, iteration count and seven samples. Reports include mean/min/max nanoseconds per operation and population variance in squared nanoseconds. Nanoseconds are derived from monotonic elapsed milliseconds over many operations; they are aggregate estimates, not per-call timer readings.
+`benchmarks/core_bench.nox` measures steady-state in-process operations. `benchmarks/console_bench.nox` separately measures the complete synchronous INFO path through redaction, text formatting and a stdout console sink while the runner redirects stdout to a regular file. `benchmarks/file_bench.nox` measures the corresponding JSONL append path and a forced size-rotation path inside the runner's temporary consumer directory. The clock starts after the downstream package has compiled and the program has started. Every workload has a fixed warm-up, iteration count and seven samples. Reports include mean/min/max nanoseconds per operation and population variance in squared nanoseconds. Nanoseconds are derived from monotonic elapsed milliseconds over many operations; they are aggregate estimates, not per-call timer readings.
 
 The benchmark runner always records OS, kernel, architecture, CPU description when available, `noxc --version`, exact pinned NOX source SHA, Obsidian commit, dirty state and backend. A publishable result must use `dirty=false`. LLVM and QBE results are separate and must not be averaged together.
 
@@ -21,12 +21,18 @@ The first workload set is:
 4. Logger construction plus idempotent close with no sinks, explicitly not process startup.
 5. Canonical JSONL encoding of a maximum-length Unicode message.
 6. INFO text logging through the synchronous logger and redirected stdout console sink.
+7. INFO JSONL logging through the synchronous logger and unbuffered append-only file sink.
+8. INFO JSONL logging where every measured write forces size rotation, reopen and zero-archive retention.
 
 The disabled DEBUG comparison uses the same fixed message and measures early-rejection calls only. It does not compare stdout, file or formatter work. JSON workloads consume the returned byte length to prevent unused-result benchmarks. The pathological Unicode fixture uses the supported maximum 65,536-code-point message and records its encoded bytes per event. Logger construction verifies close state on every iteration.
 
 The redirected console workload writes 200 warm-up events and seven samples of 2,000 events. Its fixture includes a denylisted synthetic secret. The runner requires exactly 14,202 output lines: 14,200 records plus the schema and result lines. It rejects a missing report, a line-count mismatch or any unmasked `SYNTHETIC_` sentinel. This measurement includes stdout writes to the redirected file but does not claim terminal, pipe, stderr or durability performance.
 
-File/rotation throughput, process startup, memory profiling and stress/fuzz workloads remain separate because they need different isolation and evidence. Async enqueue metrics remain not applicable while ADR-0011 keeps async disabled.
+The file workload writes 200 warm-up events and seven samples of 2,000 events, then requires exactly 14,200 newline-terminated outputs. The rotation workload primes one active record, performs 20 warm-up rotations and seven samples of 100 rotations. Its byte limit equals the encoded fixture size and `max_archives=0`, so every timed write must rotate and retention must leave one active line with no archive. Both paths use a denylisted synthetic secret; the runner requires the masked marker and rejects the original sentinel anywhere under the temporary benchmark output root.
+
+The file timing includes the complete logger/redaction/JSONL path and an unbuffered operating-system append. It does not include `fsync` because NOX exposes no such public API. The rotation timing includes formatting, close, rename, reopen, directory validation and deletion; it is not an isolated rename syscall measurement and does not establish crash, cross-process or durable-write guarantees.
+
+Process startup, memory profiling and stress/fuzz workloads remain separate because they need different isolation and evidence. Async enqueue metrics remain not applicable while ADR-0011 keeps async disabled.
 
 ## Consequences
 
