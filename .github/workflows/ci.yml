@@ -96,6 +96,12 @@ jobs:
         shell: bash
         run: bash scripts/run-ecosystem-suite.sh all
 
+      - name: Smoke benchmark harness (non-baseline)
+        shell: bash
+        run: |
+          bash scripts/run-benchmarks.sh llvm
+          bash scripts/run-benchmarks.sh qbe
+
       - name: Report test evidence
         shell: bash
         run: |
@@ -112,5 +118,6 @@ jobs:
             echo "- skips: 0"
             echo "- async capability probes: $capability_probes (no-go)"
             echo "- ecosystem probes: $ecosystem_probes ($ecosystem_checks explicit checks per backend)"
+            echo "- benchmark harness: LLVM/QBE smoke only (not baseline evidence)"
             echo "- backends: LLVM, QBE"
           } >>"$GITHUB_STEP_SUMMARY"

@@ -15,6 +15,8 @@ These measurements exclude compilation and process startup. `logger_construct_cl
 
 Do not publish a result when `dirty=true`. Keep LLVM and QBE separate. Record hardware/OS/compiler SHA, complete command output and any background-load caveat. Shared CI runner timing is useful for smoke detection only and is not a stable benchmark baseline.
 
+The regular CI matrix runs the harness on LLVM and QBE to detect compile/runtime regressions. Values printed by that step are explicitly non-baseline observations and are not copied into this report.
+
 No console, file, rotation, memory, process-startup, long-message, fuzz or stress result has been published yet. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
 
 ## Initial macOS arm64 observation — 2026-11-07
