@@ -1,0 +1,170 @@
+import nox.json
+import nox.test
+import obsidian.config
+import obsidian.fields
+import obsidian.format_json
+import obsidian.format_text
+import obsidian.level
+from obsidian.config import FormatterConfig, LoggerConfig, RedactionConfig, SinkConfig
+from obsidian.fields import FIELD_BOOL, FIELD_FLOAT, FIELD_INT, FIELD_NULL, FIELD_STRING, FieldValue, LogField, MAX_STRING_FIELD_LENGTH
+from obsidian.level import INFO
+from obsidian.record import LogRecord, MAX_MESSAGE_LENGTH
+from obsidian.sink_format import FORMAT_TEXT
+
+def object_value_by_key(source: JsonValue, key: str) -> JsonValue:
+    index: int = 0
+    while index < nox.json.object_len(source):
+        if nox.json.object_key(source, index) == key:
+            return nox.json.object_value(source, index)
+        index += 1
+    raise ValueError("JSON object key not found")
+
+def contains_raw_text_control(value: str) -> bool:
+    for character in value:
+        codepoint: int = ord(character)
+        if codepoint < 32 or codepoint == 127:
+            return True
+    return False
+
+def message_encoding_cases() -> int:
+    messages: list[str] = ["", "plain ASCII", "Merhaba Istanbul", "İstanbul", "世界", "🙂🚀", "é", "quote \" and slash \\"]
+    codepoint: int = 0
+    while codepoint < 32:
+        messages.append("left" + chr(codepoint) + "right")
+        codepoint += 1
+    messages.append("left" + chr(127) + "right")
+
+    empty: list[LogField] = []
+    checked: int = 0
+    for message in messages:
+        entry: LogRecord = LogRecord(1700000000123, INFO, "property.encoding", message, empty, empty)
+        json_line: str = obsidian.format_json.format_record(entry)
+        if not json_line.endswith("\n") or json_line.count("\n") != 1:
+            return -1
+        parsed: JsonValue = nox.json.parse(json_line)
+        if nox.json.as_string(object_value_by_key(parsed, "message")) != message:
+            return -1
+        text_line: str = obsidian.format_text.format_record(entry)
+        if contains_raw_text_control(text_line):
+            return -1
+        checked += 1
+    return checked
+
+def large_value_cases() -> int:
+    sizes: list[int] = [0, 1, 7, 128, 1024, 4096, MAX_STRING_FIELD_LENGTH]
+    empty: list[LogField] = []
+    checked: int = 0
+    for size in sizes:
+        value: str = "界" * size
+        event_fields: list[LogField] = [LogField("payload", obsidian.fields.string_value(value))]
+        entry: LogRecord = LogRecord(1700000000123, INFO, "property.large", "large field", event_fields, empty)
+        parsed: JsonValue = nox.json.parse(obsidian.format_json.format_record(entry))
+        parsed_fields: JsonValue = object_value_by_key(parsed, "fields")
+        if nox.json.as_string(object_value_by_key(parsed_fields, "payload")) != value:
+            return -1
+        checked += 1
+
+    try:
+        obsidian.fields.string_value("x" * (MAX_STRING_FIELD_LENGTH + 1))
+        return -1
+    except ValueError as e:
+        if e.message != "string field value is too long":
+            return -1
+    checked += 1
+
+    boundary: LogRecord = LogRecord(0, INFO, "property.large", "x" * MAX_MESSAGE_LENGTH, empty, empty)
+    if len(boundary.message) != MAX_MESSAGE_LENGTH:
+        return -1
+    checked += 1
+    try:
+        LogRecord(0, INFO, "property.large", "x" * (MAX_MESSAGE_LENGTH + 1), empty, empty)
+        return -1
+    except ValueError as e:
+        if e.message != "record message is too long":
+            return -1
+    return checked + 1
+
+def scalar_boundary_cases() -> int:
+    values: list[FieldValue] = [obsidian.fields.null_value(), obsidian.fields.string_value("value"), obsidian.fields.int_value(-42), obsidian.fields.float_value(1.25), obsidian.fields.bool_value(True)]
+    kinds: list[int] = [FIELD_NULL, FIELD_STRING, FIELD_INT, FIELD_FLOAT, FIELD_BOOL]
+    checked: int = 0
+    index: int = 0
+    while index < len(values):
+        if values[index].kind != kinds[index]:
+            return -1
+        clone: FieldValue = values[index].clone()
+        if clone.kind != kinds[index]:
+            return -1
+        checked += 1
+        index += 1
+
+    invalid_kinds: list[int] = [-100, -1, 5, 6, 99, 1000]
+    for invalid_kind in invalid_kinds:
+        try:
+            FieldValue(invalid_kind, "", 0, 0.0, False)
+            return -1
+        except ValueError as e:
+            if e.message != "unknown field value kind":
+                return -1
+        checked += 1
+    return checked
+
+def malformed_config_cases() -> int:
+    checked: int = 0
+    invalid_formats: list[int] = [-100, -1, 0, 3, 42, 99, 1000]
+    for format_kind in invalid_formats:
+        try:
+            FormatterConfig(format_kind)
+            return -1
+        except ValueError as e:
+            if e.message != "formatter kind is invalid":
+                return -1
+        checked += 1
+
+    invalid_levels: list[int] = [-100, -1, 0, 6, 15, 25, 35, 45, 51, 99, 101]
+    redaction: RedactionConfig = RedactionConfig([])
+    for threshold in invalid_levels:
+        try:
+            LoggerConfig("property.config", threshold, redaction)
+            return -1
+        except ValueError as e:
+            if e.message != "logger threshold is invalid":
+                return -1
+        checked += 1
+
+    invalid_level_names: list[str] = ["", "info", "WARN ", " TRACE", "UNKNOWN", "İNF0", "100", "INFO\n"]
+    for level_name in invalid_level_names:
+        try:
+            obsidian.level.from_name(level_name)
+            return -1
+        except ValueError as e:
+            if e.message != "unknown Obsidian level name":
+                return -1
+        checked += 1
+
+    invalid_environment_names: list[str] = ["", "lowercase", "HAS-DASH", "HAS SPACE", "ÜNICODE", "A\nB", "A" * 129]
+    for environment_name in invalid_environment_names:
+        try:
+            obsidian.config.validate_environment_name(environment_name)
+            return -1
+        except ValueError as e:
+            if e.message != "environment variable name is invalid":
+                return -1
+        checked += 1
+
+    invalid_sink_kinds: list[int] = [-100, -1, 0, 5, 99, 1000]
+    formatter: FormatterConfig = FormatterConfig(FORMAT_TEXT)
+    for sink_kind in invalid_sink_kinds:
+        try:
+            SinkConfig(sink_kind, "property", 1, 0, "", "", False, formatter)
+            return -1
+        except ValueError as e:
+            if e.message != "sink config kind is invalid":
+                return -1
+        checked += 1
+    return checked
+
+nox.test.assert_eq_int(message_encoding_cases(), 41, "UTF-8 and control corpus is safe")
+nox.test.assert_eq_int(large_value_cases(), 10, "large value boundaries are deterministic")
+nox.test.assert_eq_int(scalar_boundary_cases(), 11, "field model stays scalar and tagged")
+nox.test.assert_eq_int(malformed_config_cases(), 39, "malformed config corpus fails closed")

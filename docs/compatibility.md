@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–9 evidence is green on NOX 2.1.0. The Phase 10 benchmark harness also passes non-baseline smoke runs on the supported remote matrix. This document does not extend support beyond tested jobs.
+Status: Phase 0–9 evidence is green on NOX 2.1.0. The Phase 10 benchmark harness passes non-baseline smoke runs on the supported remote matrix, and the deterministic hardening property corpus passes locally on LLVM/QBE. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -36,7 +36,7 @@ CI run `42363929287` additionally passed the complete Phase 9 behavioral/integra
 | `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 scalar/lifetime probes pass locally and in supported CI on LLVM/QBE; LLVM overlap observation is reported separately |
 | scheduler | LLVM M:N work-stealing; QBE cooperative tasks; `Task.cancel` is cooperative, while `ThreadHandle` has join only and channels expose no close/timeout contract | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak 2 is proven but scheduling-sensitive; QBE scalar thread-channel probe passes locally and in supported CI |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 9 local and CI `42310679970`: 17 files/392 assertions/0 skips, seven async capability probes, plus three isolated ecosystem probes/36 explicit checks per backend on LLVM/QBE |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 10 local LLVM/QBE: 18 files/396 assertions/0 skips, including 101 deterministic property cases; three expected compile-fail fixtures include nested-value rejection |
 
 ## Known gaps and conservative decisions
 

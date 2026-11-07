@@ -17,7 +17,7 @@ Do not publish a result when `dirty=true`. Keep LLVM and QBE separate. Record ha
 
 The regular CI matrix runs the harness on LLVM and QBE to detect compile/runtime regressions. Values printed by that step are explicitly non-baseline observations and are not copied into this report.
 
-No fuzz or long-running stress result has been published yet. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
+A deterministic 101-case hardening property corpus now covers UTF-8/control encoding, large value boundaries, scalar field tags and malformed typed configuration. This is bounded regression evidence, not randomized fuzzing. No randomized fuzz or long-running stress result has been published yet. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for benchmark methodology and `todo.md` for the remaining Phase 10 work.
 
 ## Initial macOS arm64 observation — 2026-11-07
 

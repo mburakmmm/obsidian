@@ -46,6 +46,6 @@ These controls reduce accidental collection but do not make arbitrary route name
 
 ## Testing rules
 
-Only synthetic sentinel strings may appear in tests. Security tests cover mixed-case/default/custom keys, HTTP headers, bearer tokens, URL/query credentials, Unicode, multiline input, custom and memory sinks, file output, console output, failure injection and snapshot isolation. A failed assertion must use a sanitized label rather than placing the sentinel in its failure message.
+Only synthetic sentinel strings may appear in tests. Security tests cover mixed-case/default/custom keys, HTTP headers, bearer tokens, URL/query credentials, Unicode, multiline input, custom and memory sinks, file output, console output, failure injection and snapshot isolation. The Phase 10 deterministic property corpus additionally checks every C0 control plus DEL in messages, selected multi-byte Unicode, maximum-size scalar strings/messages and fixed-error malformed configuration. Nested values remain rejected at the static type boundary by `tests/compile_fail/nested_field_value.nox`; this is not a claim of recursive redaction support. A failed assertion must use a sanitized label rather than placing the sentinel in its failure message.
 
 Report real vulnerabilities through the private process described in [`../SECURITY.md`](../SECURITY.md); never open a public issue containing credentials or production logs.
