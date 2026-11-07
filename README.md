@@ -114,7 +114,7 @@ tests/unit/              Behavioral tests
 tests/concurrency/       Backend-aware context/concurrency evidence
 tests/capability/        Executable compiler/runtime capability probes
 tests/ecosystem/         Pinned downstream adapter probes
-benchmarks/              Reproducible in-process performance workloads
+benchmarks/              Reproducible in-process and redirected-console workloads
 tests/security/          Synthetic-sentinel and fail-closed acceptance tests
 tests/compile_fail/      Explicit negative compiler fixtures
 docs/                    Architecture, API, compatibility and ADRs

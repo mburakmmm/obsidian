@@ -9,7 +9,7 @@ Phase 10 requires measurements without turning a single developer-machine result
 
 ## Decision
 
-`benchmarks/core_bench.nox` measures only steady-state in-process operations. The clock starts after the downstream package has compiled and the program has started. Every workload has a fixed warm-up, iteration count and seven samples. Reports include mean/min/max nanoseconds per operation and population variance in squared nanoseconds. Nanoseconds are derived from monotonic elapsed milliseconds over many operations; they are aggregate estimates, not per-call timer readings.
+`benchmarks/core_bench.nox` measures steady-state in-process operations. `benchmarks/console_bench.nox` separately measures the complete synchronous INFO path through redaction, text formatting and a stdout console sink while the runner redirects stdout to a regular file. The clock starts after the downstream package has compiled and the program has started. Every workload has a fixed warm-up, iteration count and seven samples. Reports include mean/min/max nanoseconds per operation and population variance in squared nanoseconds. Nanoseconds are derived from monotonic elapsed milliseconds over many operations; they are aggregate estimates, not per-call timer readings.
 
 The benchmark runner always records OS, kernel, architecture, CPU description when available, `noxc --version`, exact pinned NOX source SHA, Obsidian commit, dirty state and backend. A publishable result must use `dirty=false`. LLVM and QBE results are separate and must not be averaged together.
 
@@ -19,10 +19,14 @@ The first workload set is:
 2. `nox.log.debug` disabled by the equivalent INFO threshold, as the only comparison baseline in this slice.
 3. Canonical JSONL encoding of one fixed typed Unicode record, including bytes per event.
 4. Logger construction plus idempotent close with no sinks, explicitly not process startup.
+5. Canonical JSONL encoding of a maximum-length Unicode message.
+6. INFO text logging through the synchronous logger and redirected stdout console sink.
 
-The disabled DEBUG comparison uses the same fixed message and measures early-rejection calls only. It does not compare stdout, file or formatter work. The JSON workload consumes the returned byte length to prevent an unused-result benchmark. Logger construction verifies close state on every iteration. Synthetic secret input is present in the JSON fixture, and the runner rejects any benchmark output containing the sentinel.
+The disabled DEBUG comparison uses the same fixed message and measures early-rejection calls only. It does not compare stdout, file or formatter work. JSON workloads consume the returned byte length to prevent unused-result benchmarks. The pathological Unicode fixture uses the supported maximum 65,536-code-point message and records its encoded bytes per event. Logger construction verifies close state on every iteration.
 
-Console/file/rotation throughput, process startup, long-message fixtures, memory profiling and stress/fuzz workloads remain separate because they need different isolation and evidence. Async enqueue metrics remain not applicable while ADR-0011 keeps async disabled.
+The redirected console workload writes 200 warm-up events and seven samples of 2,000 events. Its fixture includes a denylisted synthetic secret. The runner requires exactly 14,202 output lines: 14,200 records plus the schema and result lines. It rejects a missing report, a line-count mismatch or any unmasked `SYNTHETIC_` sentinel. This measurement includes stdout writes to the redirected file but does not claim terminal, pipe, stderr or durability performance.
+
+File/rotation throughput, process startup, memory profiling and stress/fuzz workloads remain separate because they need different isolation and evidence. Async enqueue metrics remain not applicable while ADR-0011 keeps async disabled.
 
 ## Consequences
 

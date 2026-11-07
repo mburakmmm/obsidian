@@ -71,3 +71,35 @@ if [[ "$output" == *SYNTHETIC_* ]]; then
   exit 1
 fi
 printf '%s\n' "$output"
+
+cp "$project_root/benchmarks/console_bench.nox" main.nox
+console_output="$probe_root/console-output.txt"
+console_error="$probe_root/console-error.txt"
+if ! NOX_HOME="$probe_nox_home" "$noxc_bin" run --backend "$backend" main.nox >"$console_output" 2>"$console_error"; then
+  cat "$console_error" >&2
+  cat "$console_output"
+  exit 1
+fi
+if [[ -s "$console_error" ]]; then
+  cat "$console_error" >&2
+  echo "console benchmark emitted unexpected stderr output" >&2
+  exit 1
+fi
+if grep -q 'SYNTHETIC_' "$console_output"; then
+  echo "console benchmark output contained a security sentinel" >&2
+  exit 1
+fi
+expected_console_lines=14202
+actual_console_lines="$(wc -l <"$console_output" | tr -d '[:space:]')"
+if [[ "$actual_console_lines" != "$expected_console_lines" ]]; then
+  echo "console benchmark line count mismatch: expected $expected_console_lines, got $actual_console_lines" >&2
+  exit 1
+fi
+schema_line="$(grep '^benchmark_schema=obsidian.console-benchmark.v1 ' "$console_output")"
+result_line="$(grep '^benchmark=console_info_text ' "$console_output")"
+if [[ -z "$schema_line" || -z "$result_line" ]]; then
+  echo "console benchmark report is missing" >&2
+  exit 1
+fi
+printf '%s\n' "$schema_line"
+printf '%s redirected_lines=%s\n' "$result_line" "$actual_console_lines"

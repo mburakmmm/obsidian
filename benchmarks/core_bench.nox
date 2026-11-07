@@ -7,12 +7,14 @@ from obsidian.clock import FakeClock
 from obsidian.fields import LogField
 from obsidian.level import INFO
 from obsidian.logger import Logger
-from obsidian.record import LogRecord
+from obsidian.record import MAX_MESSAGE_LENGTH, LogRecord
 
 WARMUP_DEBUG_ITERATIONS: int = 100000
 DEBUG_ITERATIONS: int = 2000000
 WARMUP_JSON_ITERATIONS: int = 200
 JSON_ITERATIONS: int = 2000
+WARMUP_LONG_JSON_ITERATIONS: int = 2
+LONG_JSON_ITERATIONS: int = 20
 WARMUP_CONSTRUCTION_ITERATIONS: int = 1000
 CONSTRUCTION_ITERATIONS: int = 20000
 SAMPLE_COUNT: int = 7
@@ -148,6 +150,16 @@ while sample_index < SAMPLE_COUNT:
     json_samples.append(time_json_encoding(json_record, JSON_ITERATIONS))
     sample_index += 1
 
+long_unicode_record: LogRecord = LogRecord(1700000000123, INFO, "benchmark.long-unicode", "界" * MAX_MESSAGE_LENGTH, [], [], "req-long")
+long_unicode_line: str = obsidian.format_json.format_record(long_unicode_record)
+long_unicode_bytes_per_event: int = nox.strings.byte_len(long_unicode_line)
+time_json_encoding(long_unicode_record, WARMUP_LONG_JSON_ITERATIONS)
+long_unicode_samples: list[int] = []
+sample_index = 0
+while sample_index < SAMPLE_COUNT:
+    long_unicode_samples.append(time_json_encoding(long_unicode_record, LONG_JSON_ITERATIONS))
+    sample_index += 1
+
 time_logger_construction(clock, WARMUP_CONSTRUCTION_ITERATIONS)
 construction_samples: list[int] = []
 sample_index = 0
@@ -155,8 +167,9 @@ while sample_index < SAMPLE_COUNT:
     construction_samples.append(time_logger_construction(clock, CONSTRUCTION_ITERATIONS))
     sample_index += 1
 
-print("benchmark_schema=obsidian.benchmark.v1 warmup_debug=" + str(WARMUP_DEBUG_ITERATIONS) + " warmup_json=" + str(WARMUP_JSON_ITERATIONS) + " warmup_construction=" + str(WARMUP_CONSTRUCTION_ITERATIONS))
+print("benchmark_schema=obsidian.benchmark.v1 warmup_debug=" + str(WARMUP_DEBUG_ITERATIONS) + " warmup_json=" + str(WARMUP_JSON_ITERATIONS) + " warmup_long_json=" + str(WARMUP_LONG_JSON_ITERATIONS) + " warmup_construction=" + str(WARMUP_CONSTRUCTION_ITERATIONS))
 print_stats("obsidian_disabled_debug", DEBUG_ITERATIONS, summarize(obsidian_debug_samples))
 print_stats("nox_log_disabled_debug", DEBUG_ITERATIONS, summarize(stdlib_debug_samples))
 print_stats("jsonl_encoding", JSON_ITERATIONS, summarize(json_samples), json_bytes_per_event)
+print_stats("jsonl_long_unicode", LONG_JSON_ITERATIONS, summarize(long_unicode_samples), long_unicode_bytes_per_event)
 print_stats("logger_construct_close", CONSTRUCTION_ITERATIONS, summarize(construction_samples))

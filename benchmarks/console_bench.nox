@@ -1,0 +1,85 @@
+import nox.time
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.sink_format import FORMAT_TEXT
+from obsidian.sinks.console import CONSOLE_STDOUT, ConsoleSink
+
+WARMUP_ITERATIONS: int = 200
+ITERATIONS: int = 2000
+SAMPLE_COUNT: int = 7
+NANOSECONDS_PER_MILLISECOND: int = 1000000
+NANOSECONDS_PER_SECOND: int = 1000000000
+
+class BenchmarkStats:
+    mean_ns: int
+    min_ns: int
+    max_ns: int
+    variance_ns2: int
+
+    def __init__(self, mean_ns: int, min_ns: int, max_ns: int, variance_ns2: int) -> None:
+        self.mean_ns = mean_ns
+        self.min_ns = min_ns
+        self.max_ns = max_ns
+        self.variance_ns2 = variance_ns2
+
+def summarize(samples: list[int]) -> BenchmarkStats:
+    if len(samples) == 0:
+        raise ValueError("benchmark samples must not be empty")
+    total: int = 0
+    minimum: int = samples[0]
+    maximum: int = samples[0]
+    for sample in samples:
+        if sample < 1:
+            raise ValueError("benchmark sample resolution is insufficient")
+        total += sample
+        if sample < minimum:
+            minimum = sample
+        if sample > maximum:
+            maximum = sample
+    mean: int = total // len(samples)
+    squared_delta_total: int = 0
+    for sample in samples:
+        delta: int = sample - mean
+        squared_delta_total += delta * delta
+    return BenchmarkStats(mean, minimum, maximum, squared_delta_total // len(samples))
+
+def time_console_info(logger: Logger, fields: list[LogField], iterations: int) -> int:
+    accepted: int = 0
+    start: nox.time.Instant = nox.time.instant_now()
+    index: int = 0
+    while index < iterations:
+        if logger.info("request completed Merhaba 世界", fields):
+            accepted += 1
+        index += 1
+    elapsed_ms: int = start.elapsed_ms()
+    if accepted != iterations:
+        raise ValueError("console benchmark lost an event")
+    if elapsed_ms < 1:
+        return 0
+    return elapsed_ms * NANOSECONDS_PER_MILLISECOND // iterations
+
+def print_stats(stats: BenchmarkStats) -> None:
+    events_per_second: int = NANOSECONDS_PER_SECOND // stats.mean_ns
+    print("benchmark_schema=obsidian.console-benchmark.v1 warmup=" + str(WARMUP_ITERATIONS))
+    print("benchmark=console_info_text iterations=" + str(ITERATIONS) + " samples=" + str(SAMPLE_COUNT) + " mean_ns=" + str(stats.mean_ns) + " min_ns=" + str(stats.min_ns) + " max_ns=" + str(stats.max_ns) + " variance_ns2=" + str(stats.variance_ns2) + " ops_per_second=" + str(events_per_second))
+
+clock: FakeClock = FakeClock(1700000000123)
+logger: Logger = Logger("benchmark.console", INFO, clock)
+console: ConsoleSink = ConsoleSink("benchmark-stdout", CONSOLE_STDOUT, FORMAT_TEXT)
+logger.add_sink(console)
+fields: list[LogField] = [LogField("status", obsidian.fields.int_value(200)), LogField("token", obsidian.fields.string_value("SYNTHETIC_CONSOLE_BENCH_SECRET"))]
+
+time_console_info(logger, fields, WARMUP_ITERATIONS)
+samples: list[int] = []
+sample_index: int = 0
+while sample_index < SAMPLE_COUNT:
+    samples.append(time_console_info(logger, fields, ITERATIONS))
+    sample_index += 1
+logger.close()
+
+if console.write_count() != WARMUP_ITERATIONS + SAMPLE_COUNT * ITERATIONS:
+    raise ValueError("console benchmark write count mismatch")
+print_stats(summarize(samples))
