@@ -51,6 +51,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Prebuilt empty-process and Logger-process startup workloads with silent-exit validation and host Python version reporting.
 - Clean-commit macOS arm64 observations for LLVM/QBE empty and Logger process startup.
 - Seven-process peak-RSS workloads for empty runtime, bounded MemorySink, repeated sink failures and deterministic slow callbacks.
+- Clean-commit macOS arm64 peak-RSS observations for LLVM/QBE bounded, failing and slow sink workloads.
 
 ### Changed
 

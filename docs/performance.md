@@ -17,7 +17,7 @@ Do not publish a result when `dirty=true`. Keep LLVM and QBE separate. Record ha
 
 The regular CI matrix runs the harness on LLVM and QBE to detect compile/runtime regressions. Values printed by that step are explicitly non-baseline observations and are not copied into this report.
 
-No fuzz or long-running stress result has been published yet. Peak-RSS workloads are implemented but require a clean-commit observation before their values are added below. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
+No fuzz or long-running stress result has been published yet. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
 
 ## Initial macOS arm64 observation — 2026-11-07
 
@@ -105,3 +105,22 @@ This observation was measured from clean commit `1bde748e0f5981c634fc05fd810558e
 | QBE | Logger construct/close process | 2,095,360 | 2,069,418 | 2,138,836 | 482,081,099 | 477 |
 
 The result includes host `subprocess.run`, operating-system process creation, loader/runtime initialization and process exit. Every child returned zero and produced empty stdout/stderr. Empty and Logger values are not subtracted: their difference is not an exact Logger cost because launch and scheduling noise can dominate it. The in-process `logger_construct_close` workload remains the direct construction measurement.
+
+## Bounded and failing sink peak RSS — 2026-11-07
+
+This observation was measured from clean commit `f66c6ad0ef0b18ef5edeba9903f59e048e2358ac` on the same Apple M4 environment using Python 3.15.2 and seven fresh processes per workload. Values are normalized peak resident bytes.
+
+| Backend | Workload | Mean RSS bytes | Min | Max | Variance bytes² |
+|---|---|---:|---:|---:|---:|
+| LLVM | Empty runtime | 1,785,856 | 1,785,856 | 1,785,856 | 0 |
+| LLVM | Bounded MemorySink | 2,389,723 | 2,375,680 | 2,392,064 | 32,869,647 |
+| LLVM | Repeated failing sink | 2,260,992 | 2,260,992 | 2,260,992 | 0 |
+| LLVM | Deterministic slow sink | 2,260,992 | 2,260,992 | 2,260,992 | 0 |
+| QBE | Empty runtime | 1,832,667 | 1,818,624 | 1,835,008 | 32,869,647 |
+| QBE | Bounded MemorySink | 3,080,192 | 3,080,192 | 3,080,192 | 0 |
+| QBE | Repeated failing sink | 2,881,243 | 2,867,200 | 2,883,584 | 32,869,647 |
+| QBE | Deterministic slow sink | 2,897,627 | 2,883,584 | 2,899,968 | 32,869,647 |
+
+The bounded probe processed 50,000 events, retained exactly 128 snapshots and counted 49,872 dropped-oldest events. The failing probe performed and counted 50,000 sanitized write failures without retaining records. The slow probe performed 10,000 sanitized synchronous callbacks with 200 deterministic CPU-delay iterations and retained no records. Every probe report was identical across samples and no synthetic sentinel appeared.
+
+Peak RSS includes the NOX runtime, allocator high-water behavior, probe code and bounded snapshot validation. The empty runtime is context, not a value to subtract into an exact Obsidian allocation. The slow fixture is not a disk/network latency model, and these short finite probes are not long-running leak evidence.
