@@ -40,6 +40,8 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Optional Aether v0.9.0 interceptor with request-scoped timing and explicit sanitized route names.
 - Optional Quartz v0.9.15 bounded capture/assertion adapter for test projects.
 - Isolated LLVM/QBE ecosystem probes, compiling integration examples and a core dependency-direction audit.
+- Reproducible Phase 10 benchmark harness for disabled DEBUG, equivalent `nox.log` baseline, JSONL encoding and logger construction/close.
+- Benchmark environment/schema documentation with fixed warm-up, sample, variance and dirty-tree reporting.
 
 ### Changed
 

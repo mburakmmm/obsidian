@@ -415,15 +415,15 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 ## 14. `0.9.x` — Phase 10: benchmark ve hardening
 
-- [ ] Benchmark ortam şablonu: hardware, OS, NOX SHA, backend, warm-up, sample count, variance.
-- [ ] Disabled DEBUG overhead.
+- [ ] Benchmark ortam şablonu: hardware, OS, NOX SHA, backend, warm-up, sample count, variance. (Harness/ADR hazır; clean-commit baseline raporu bekleniyor.)
+- [ ] Disabled DEBUG overhead. (Obsidian ve eşdeğer `nox.log` workload'u hazır; clean-commit sonuçları bekleniyor.)
 - [ ] Redirected INFO console formatting throughput.
-- [ ] JSONL throughput ve bytes/event.
+- [ ] JSONL throughput ve bytes/event. (Typed Unicode fixture ve byte accounting hazır; baseline raporu bekleniyor.)
 - [ ] File sink throughput ve rotation pause.
 - [ ] Async varsa enqueue p50/p95/p99 ve drop counts.
 - [ ] LLVM producer scaling; QBE cooperative davranışı ayrı.
 - [ ] Slow/failing sink altında memory footprint.
-- [ ] Startup/logger construction overhead.
+- [ ] Startup/logger construction overhead. (In-process logger construct+close hazır; process startup ayrı ve beklemede.)
 - [ ] Long message ve Unicode pathological fixtures.
 - [ ] Yalnız eşdeğer workload için `nox.log` baseline karşılaştırması.
 - [ ] UTF-8/control char/large field/malformed config/nested values fuzz/property testleri.
@@ -553,3 +553,4 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Ph
 | 2026-11-07 | `0.4.x` / Phase 8 | Exact logger filtresi, sink başına threshold, sanitize clone filtre sınırı, saturating diagnostics ve strict sabit hata kategorileri eklendi | Pinned NOX 2.0.143 yerel ve CI `42306338481`: macOS ARM64, Linux x64, Linux ARM64 üzerinde LLVM/QBE 16 dosya/358 assertion/0 skip; 7 capability probu; 9 exact ve sentinel-scanned örnek; import/lock doğrulaması geçti | Phase 8 desteklenen matriste kapandı; typed route config derleyici kanıtı yok diye kapalı, sampling/source/prefix bilinçli kapalı |
 | 2026-11-07 | Phase 9 araç zinciri önkoşulu | NOX pini kullanıcı yönlendirmesiyle `v2.1.0` / `fd107b92…` sürümüne yükseltildi; zorunlu stdlib/concurrency belgeleri kesin etikette yeniden doğrulandı | Resmi macOS ARM64 arşivi checksum geçti; LLVM/QBE 16 dosya/358 assertion, 9 örnek, 7 capability probu ve import/lock yerelde geçti; GitHub CI `42308138269` üç platformda yeşil; `Logger.trace` LLVM duplicate-symbol kısıtı sürüyor | NOX 2.1.0 yükseltme kapısı yerel ve uzak matriste geçti; adaptör dilimi başlatıldı |
 | 2026-11-07 | `0.5.x` / Phase 9 ilk adaptör dilimi | Framework-neutral safe request metadata, optional Nyx/Aether request adaptörleri, bounded Quartz capture, üç minimal örnek, dependency audit ve ADR-0013 eklendi | NOX 2.1.0 yerel ve CI `42310679970`: core 17 dosya/392 assertion/0 skip; Nyx `v0.24.0`, Aether `v0.9.0`, Quartz `v0.9.15` için backend başına 3 bağımsız prob/36 explicit check ve 3 örnek macOS ARM64/Linux x64/Linux ARM64 LLVM/QBE'de geçti; sentinel çıktı taraması temiz. İlk run `42310389221`, runner'larda `rg` bulunmadığını gösterdi; audit POSIX `find`/`grep` ile düzeltildi | Faz 9 yayımlanan ilk adaptör seti için kapandı. Diğer consumer adaptörleri public API denetimlerine kadar explicit DEFERRED; Phase 10 benchmark/hardening sırada |
+| 2026-11-07 | `0.9.x` / Phase 10 benchmark foundation | Environment schema, monotonic seven-sample stats, disabled DEBUG/eşdeğer `nox.log`, JSONL bytes/event ve in-process logger construct+close workload'ları ile ADR-0014 eklendi | Dirty-tree geliştirme smoke run'ı macOS ARM64 üzerinde LLVM/QBE'de compile/run geçti; sentinel benchmark çıktısında görünmedi. Bu sayılar baseline olarak yayımlanmadı | Harness commit edildikten sonra `dirty=false` LLVM/QBE baseline alınacak; console/file/rotation/memory/startup/stress/fuzz ayrı dilimlerde kalıyor |

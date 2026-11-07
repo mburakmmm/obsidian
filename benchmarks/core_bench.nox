@@ -1,0 +1,162 @@
+import nox.log
+import nox.strings
+import nox.time
+import obsidian.fields
+import obsidian.format_json
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+
+WARMUP_DEBUG_ITERATIONS: int = 100000
+DEBUG_ITERATIONS: int = 2000000
+WARMUP_JSON_ITERATIONS: int = 200
+JSON_ITERATIONS: int = 2000
+WARMUP_CONSTRUCTION_ITERATIONS: int = 1000
+CONSTRUCTION_ITERATIONS: int = 20000
+SAMPLE_COUNT: int = 7
+NANOSECONDS_PER_MILLISECOND: int = 1000000
+NANOSECONDS_PER_SECOND: int = 1000000000
+
+class BenchmarkStats:
+    mean_ns: int
+    min_ns: int
+    max_ns: int
+    variance_ns2: int
+
+    def __init__(self, mean_ns: int, min_ns: int, max_ns: int, variance_ns2: int) -> None:
+        self.mean_ns = mean_ns
+        self.min_ns = min_ns
+        self.max_ns = max_ns
+        self.variance_ns2 = variance_ns2
+
+def summarize(samples: list[int]) -> BenchmarkStats:
+    if len(samples) == 0:
+        raise ValueError("benchmark samples must not be empty")
+    total: int = 0
+    minimum: int = samples[0]
+    maximum: int = samples[0]
+    for sample in samples:
+        if sample < 1:
+            raise ValueError("benchmark sample resolution is insufficient")
+        total += sample
+        if sample < minimum:
+            minimum = sample
+        if sample > maximum:
+            maximum = sample
+    mean: int = total // len(samples)
+    squared_delta_total: int = 0
+    for sample in samples:
+        delta: int = sample - mean
+        squared_delta_total += delta * delta
+    return BenchmarkStats(mean, minimum, maximum, squared_delta_total // len(samples))
+
+def ns_per_operation(elapsed_ms: int, iterations: int) -> int:
+    if elapsed_ms < 1:
+        return 0
+    return elapsed_ms * NANOSECONDS_PER_MILLISECOND // iterations
+
+def time_obsidian_disabled_debug(logger: Logger, empty_fields: list[LogField], iterations: int) -> int:
+    accepted: int = 0
+    start: nox.time.Instant = nox.time.instant_now()
+    index: int = 0
+    while index < iterations:
+        if logger.debug("disabled", empty_fields):
+            accepted += 1
+        index += 1
+    elapsed_ms: int = start.elapsed_ms()
+    if accepted != 0:
+        raise ValueError("disabled Obsidian DEBUG was emitted")
+    return ns_per_operation(elapsed_ms, iterations)
+
+def time_stdlib_disabled_debug(iterations: int) -> int:
+    start: nox.time.Instant = nox.time.instant_now()
+    index: int = 0
+    while index < iterations:
+        nox.log.debug("disabled")
+        index += 1
+    return ns_per_operation(start.elapsed_ms(), iterations)
+
+def time_json_encoding(entry: LogRecord, iterations: int) -> int:
+    total_bytes: int = 0
+    start: nox.time.Instant = nox.time.instant_now()
+    index: int = 0
+    while index < iterations:
+        line: str = obsidian.format_json.format_record(entry)
+        total_bytes += nox.strings.byte_len(line)
+        index += 1
+    elapsed_ms: int = start.elapsed_ms()
+    if total_bytes < iterations:
+        raise ValueError("JSON benchmark produced no output")
+    return ns_per_operation(elapsed_ms, iterations)
+
+def time_logger_construction(clock: FakeClock, iterations: int) -> int:
+    start: nox.time.Instant = nox.time.instant_now()
+    index: int = 0
+    while index < iterations:
+        logger: Logger = Logger("benchmark.construct", INFO, clock)
+        logger.close()
+        index += 1
+    elapsed_ms: int = start.elapsed_ms()
+    return ns_per_operation(elapsed_ms, iterations)
+
+def print_stats(name: str, iterations: int, stats: BenchmarkStats, bytes_per_event: int = 0) -> None:
+    events_per_second: int = 0
+    if stats.mean_ns > 0:
+        events_per_second = NANOSECONDS_PER_SECOND // stats.mean_ns
+    line: str = "benchmark=" + name
+    line += " iterations=" + str(iterations)
+    line += " samples=" + str(SAMPLE_COUNT)
+    line += " mean_ns=" + str(stats.mean_ns)
+    line += " min_ns=" + str(stats.min_ns)
+    line += " max_ns=" + str(stats.max_ns)
+    line += " variance_ns2=" + str(stats.variance_ns2)
+    line += " ops_per_second=" + str(events_per_second)
+    if bytes_per_event > 0:
+        line += " bytes_per_event=" + str(bytes_per_event)
+    print(line)
+
+empty_fields: list[LogField] = []
+clock: FakeClock = FakeClock(1700000000123)
+disabled_logger: Logger = Logger("benchmark.disabled", INFO, clock)
+
+prior_stdlib_level: str = nox.log.level()
+nox.log.set_level("INFO")
+time_obsidian_disabled_debug(disabled_logger, empty_fields, WARMUP_DEBUG_ITERATIONS)
+time_stdlib_disabled_debug(WARMUP_DEBUG_ITERATIONS)
+
+obsidian_debug_samples: list[int] = []
+stdlib_debug_samples: list[int] = []
+sample_index: int = 0
+while sample_index < SAMPLE_COUNT:
+    obsidian_debug_samples.append(time_obsidian_disabled_debug(disabled_logger, empty_fields, DEBUG_ITERATIONS))
+    stdlib_debug_samples.append(time_stdlib_disabled_debug(DEBUG_ITERATIONS))
+    sample_index += 1
+nox.log.set_level(prior_stdlib_level)
+disabled_logger.close()
+
+record_fields: list[LogField] = [LogField("active", obsidian.fields.bool_value(True)), LogField("status", obsidian.fields.int_value(200)), LogField("token", obsidian.fields.string_value("SYNTHETIC_BENCH_SECRET")), LogField("user_id", obsidian.fields.string_value("u-123"))]
+record_context: list[LogField] = [LogField("route", obsidian.fields.string_value("orders.show"))]
+json_record: LogRecord = LogRecord(1700000000123, INFO, "benchmark.json", "completed Merhaba 世界", record_fields, record_context, "req-42")
+json_line: str = obsidian.format_json.format_record(json_record)
+json_bytes_per_event: int = nox.strings.byte_len(json_line)
+time_json_encoding(json_record, WARMUP_JSON_ITERATIONS)
+json_samples: list[int] = []
+sample_index = 0
+while sample_index < SAMPLE_COUNT:
+    json_samples.append(time_json_encoding(json_record, JSON_ITERATIONS))
+    sample_index += 1
+
+time_logger_construction(clock, WARMUP_CONSTRUCTION_ITERATIONS)
+construction_samples: list[int] = []
+sample_index = 0
+while sample_index < SAMPLE_COUNT:
+    construction_samples.append(time_logger_construction(clock, CONSTRUCTION_ITERATIONS))
+    sample_index += 1
+
+print("benchmark_schema=obsidian.benchmark.v1 warmup_debug=" + str(WARMUP_DEBUG_ITERATIONS) + " warmup_json=" + str(WARMUP_JSON_ITERATIONS) + " warmup_construction=" + str(WARMUP_CONSTRUCTION_ITERATIONS))
+print_stats("obsidian_disabled_debug", DEBUG_ITERATIONS, summarize(obsidian_debug_samples))
+print_stats("nox_log_disabled_debug", DEBUG_ITERATIONS, summarize(stdlib_debug_samples))
+print_stats("jsonl_encoding", JSON_ITERATIONS, summarize(json_samples), json_bytes_per_event)
+print_stats("logger_construct_close", CONSTRUCTION_ITERATIONS, summarize(construction_samples))

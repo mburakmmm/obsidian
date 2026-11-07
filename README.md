@@ -97,6 +97,8 @@ bash scripts/run-async-capability-audit.sh
 bash scripts/verify-package-import.sh
 bash scripts/audit-dependencies.sh
 bash scripts/run-ecosystem-suite.sh all
+bash scripts/run-benchmarks.sh llvm
+bash scripts/run-benchmarks.sh qbe
 ```
 
 Compile-fail fixtures under `tests/compile_fail` must exit non-zero. Test files, assertions and skips are reported separately in CI.
@@ -112,6 +114,7 @@ tests/unit/              Behavioral tests
 tests/concurrency/       Backend-aware context/concurrency evidence
 tests/capability/        Executable compiler/runtime capability probes
 tests/ecosystem/         Pinned downstream adapter probes
+benchmarks/              Reproducible in-process performance workloads
 tests/security/          Synthetic-sentinel and fail-closed acceptance tests
 tests/compile_fail/      Explicit negative compiler fixtures
 docs/                    Architecture, API, compatibility and ADRs
