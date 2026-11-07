@@ -199,3 +199,63 @@ fi
 printf '%s\n' "$startup_schema_line"
 printf '%s\n' "$empty_startup_line"
 printf '%s\n' "$logger_startup_line"
+
+bounded_memory_binary="$probe_root/memory-bounded"
+failing_memory_binary="$probe_root/memory-failing"
+slow_memory_binary="$probe_root/memory-slow"
+cp "$project_root/benchmarks/memory_bounded.nox" main.nox
+if ! bounded_build_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" build --backend "$backend" -o "$bounded_memory_binary" main.nox 2>&1)"; then
+  printf '%s\n' "$bounded_build_output"
+  exit 1
+fi
+cp "$project_root/benchmarks/memory_failing.nox" main.nox
+if ! failing_build_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" build --backend "$backend" -o "$failing_memory_binary" main.nox 2>&1)"; then
+  printf '%s\n' "$failing_build_output"
+  exit 1
+fi
+cp "$project_root/benchmarks/memory_slow.nox" main.nox
+if ! slow_build_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" build --backend "$backend" -o "$slow_memory_binary" main.nox 2>&1)"; then
+  printf '%s\n' "$slow_build_output"
+  exit 1
+fi
+
+empty_memory_output="$(python3 "$project_root/scripts/measure-process-memory.py" memory_empty_peak_rss "$empty_binary" -)"
+bounded_memory_output="$(python3 "$project_root/scripts/measure-process-memory.py" memory_bounded_peak_rss "$bounded_memory_binary" 'probe=bounded_memory ')"
+failing_memory_output="$(python3 "$project_root/scripts/measure-process-memory.py" memory_failing_peak_rss "$failing_memory_binary" 'probe=failing_sink ')"
+slow_memory_output="$(python3 "$project_root/scripts/measure-process-memory.py" memory_slow_peak_rss "$slow_memory_binary" 'probe=slow_sink ')"
+empty_memory_lines="$(printf '%s\n' "$empty_memory_output" | wc -l | tr -d '[:space:]')"
+bounded_memory_lines="$(printf '%s\n' "$bounded_memory_output" | wc -l | tr -d '[:space:]')"
+failing_memory_lines="$(printf '%s\n' "$failing_memory_output" | wc -l | tr -d '[:space:]')"
+slow_memory_lines="$(printf '%s\n' "$slow_memory_output" | wc -l | tr -d '[:space:]')"
+if [[ "$empty_memory_lines" != "2" || "$bounded_memory_lines" != "3" || "$failing_memory_lines" != "3" || "$slow_memory_lines" != "3" ]]; then
+  echo "memory benchmark emitted unexpected output" >&2
+  exit 1
+fi
+memory_schema_line="$(printf '%s\n' "$empty_memory_output" | grep '^benchmark_schema=obsidian.process-memory-benchmark.v1 ')"
+bounded_memory_schema="$(printf '%s\n' "$bounded_memory_output" | grep '^benchmark_schema=obsidian.process-memory-benchmark.v1 ')"
+failing_memory_schema="$(printf '%s\n' "$failing_memory_output" | grep '^benchmark_schema=obsidian.process-memory-benchmark.v1 ')"
+slow_memory_schema="$(printf '%s\n' "$slow_memory_output" | grep '^benchmark_schema=obsidian.process-memory-benchmark.v1 ')"
+empty_memory_line="$(printf '%s\n' "$empty_memory_output" | grep '^benchmark=memory_empty_peak_rss ')"
+bounded_memory_line="$(printf '%s\n' "$bounded_memory_output" | grep '^benchmark=memory_bounded_peak_rss ')"
+failing_memory_line="$(printf '%s\n' "$failing_memory_output" | grep '^benchmark=memory_failing_peak_rss ')"
+slow_memory_line="$(printf '%s\n' "$slow_memory_output" | grep '^benchmark=memory_slow_peak_rss ')"
+bounded_probe_line="$(printf '%s\n' "$bounded_memory_output" | grep '^probe=bounded_memory ')"
+failing_probe_line="$(printf '%s\n' "$failing_memory_output" | grep '^probe=failing_sink ')"
+slow_probe_line="$(printf '%s\n' "$slow_memory_output" | grep '^probe=slow_sink ')"
+if [[ -z "$memory_schema_line" || -z "$empty_memory_line" || -z "$bounded_memory_line" || -z "$failing_memory_line" || -z "$slow_memory_line" || -z "$bounded_probe_line" || -z "$failing_probe_line" || -z "$slow_probe_line" ]]; then
+  echo "memory benchmark report is missing" >&2
+  exit 1
+fi
+if [[ "$bounded_memory_schema" != "$memory_schema_line" || "$failing_memory_schema" != "$memory_schema_line" || "$slow_memory_schema" != "$memory_schema_line" ]]; then
+  echo "memory benchmark environment changed between probes" >&2
+  exit 1
+fi
+if [[ "$empty_memory_output$bounded_memory_output$failing_memory_output$slow_memory_output" == *SYNTHETIC_* ]]; then
+  echo "memory benchmark report contained a security sentinel" >&2
+  exit 1
+fi
+printf '%s\n' "$memory_schema_line"
+printf '%s\n' "$empty_memory_line"
+printf '%s %s\n' "$bounded_memory_line" "$bounded_probe_line"
+printf '%s %s\n' "$failing_memory_line" "$failing_probe_line"
+printf '%s %s\n' "$slow_memory_line" "$slow_probe_line"

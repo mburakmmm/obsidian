@@ -1,0 +1,34 @@
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.sinks.memory import MemorySink
+
+EVENT_COUNT: int = 50000
+CAPACITY: int = 128
+
+clock: FakeClock = FakeClock(1700000000123)
+logger: Logger = Logger("benchmark.memory", INFO, clock)
+sink: MemorySink = MemorySink("bounded-memory", CAPACITY)
+logger.add_sink(sink)
+fields: list[LogField] = [LogField("status", obsidian.fields.int_value(200)), LogField("token", obsidian.fields.string_value("SYNTHETIC_MEMORY_BENCH_SECRET"))]
+
+index: int = 0
+while index < EVENT_COUNT:
+    if not logger.info("bounded memory event", fields):
+        raise ValueError("bounded memory probe lost an event")
+    index += 1
+
+snapshot: list[LogRecord] = sink.snapshot()
+if len(snapshot) != CAPACITY or sink.count() != CAPACITY:
+    raise ValueError("bounded memory probe capacity mismatch")
+if sink.dropped_count() != EVENT_COUNT - CAPACITY:
+    raise ValueError("bounded memory probe drop count mismatch")
+for entry in snapshot:
+    if entry.field_count() != 2 or entry.field_at(1).value.text_value != "***":
+        raise ValueError("bounded memory probe redaction mismatch")
+logger.close()
+
+print("probe=bounded_memory events=" + str(EVENT_COUNT) + " capacity=" + str(CAPACITY) + " retained=" + str(len(snapshot)) + " dropped=" + str(sink.dropped_count()))

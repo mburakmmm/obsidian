@@ -1,0 +1,71 @@
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+
+EVENT_COUNT: int = 10000
+DELAY_ITERATIONS: int = 200
+
+class SlowSink:
+    writes: int
+    checksum: int
+    _closed: bool
+
+    def __init__(self) -> None:
+        self.writes = 0
+        self.checksum = 1
+        self._closed = False
+
+    def sink_name(self) -> str:
+
+        return "slow-memory-probe"
+
+    def write(self, entry: LogRecord) -> None:
+
+        if entry.field_count() != 1 or entry.field_at(0).value.text_value != "***":
+            raise ValueError("slow memory probe redaction mismatch")
+        accumulator: int = self.checksum + entry.timestamp_ms + len(entry.message)
+        index: int = 0
+        while index < DELAY_ITERATIONS:
+            accumulator = (accumulator * 31 + index) % 1000003
+            index += 1
+        self.checksum = accumulator
+        self.writes += 1
+
+    def flush(self) -> None:
+
+        pass
+
+    def close(self) -> None:
+
+        self._closed = True
+
+    def is_closed(self) -> bool:
+
+        return self._closed
+
+    def is_bounded(self) -> bool:
+
+        return True
+
+clock: FakeClock = FakeClock(1700000000123)
+logger: Logger = Logger("benchmark.slow", INFO, clock)
+sink: SlowSink = SlowSink()
+logger.add_sink(sink)
+fields: list[LogField] = [LogField("token", obsidian.fields.string_value("SYNTHETIC_SLOW_BENCH_SECRET"))]
+
+index: int = 0
+while index < EVENT_COUNT:
+    if not logger.info("slow sink event", fields):
+        raise ValueError("slow memory probe lost an event")
+    index += 1
+
+if sink.writes != EVENT_COUNT or sink.checksum < 1:
+    raise ValueError("slow memory probe count mismatch")
+logger.close()
+if not sink.is_closed():
+    raise ValueError("slow memory probe did not close")
+
+print("probe=slow_sink events=" + str(EVENT_COUNT) + " delay_iterations=" + str(DELAY_ITERATIONS) + " writes=" + str(sink.writes) + " retained=0")

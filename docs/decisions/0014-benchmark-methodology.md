@@ -13,6 +13,8 @@ Phase 10 requires measurements without turning a single developer-machine result
 
 Process startup is a separate host-driven workload. The runner first builds `process_empty.nox` and `process_logger.nox` for the selected backend, then a long-lived Python 3 standard-library harness uses `time.monotonic_ns()` around `subprocess.run()` calls. Compilation is therefore excluded and a timer process is not launched inside each measurement. Python is a development benchmark prerequisite only; it is not an Obsidian package or runtime dependency.
 
+Peak resident memory is also host-driven. Three prebuilt NOX probes exercise bounded memory retention, repeated sink failure and deterministic slow synchronous callbacks. A Python worker runs each probe in seven fresh processes and reads `RUSAGE_CHILDREN.ru_maxrss`; macOS bytes and Linux KiB are normalized to bytes. Fresh measurement workers prevent one child's high-water mark from contaminating the next sample or workload.
+
 The benchmark runner always records OS, kernel, architecture, CPU description when available, `noxc --version`, exact pinned NOX source SHA, Obsidian commit, dirty state and backend. A publishable result must use `dirty=false`. LLVM and QBE results are separate and must not be averaged together.
 
 The first workload set is:
@@ -27,6 +29,7 @@ The first workload set is:
 8. INFO JSONL logging where every measured write forces size rotation, reopen and zero-archive retention.
 9. Prebuilt empty NOX process startup and exit.
 10. Prebuilt NOX process startup, one explicit Logger construction and idempotent close, then exit.
+11. Empty-process, bounded-memory, failing-sink and slow-sink peak resident memory.
 
 The disabled DEBUG comparison uses the same fixed message and measures early-rejection calls only. It does not compare stdout, file or formatter work. JSON workloads consume the returned byte length to prevent unused-result benchmarks. The pathological Unicode fixture uses the supported maximum 65,536-code-point message and records its encoded bytes per event. Logger construction verifies close state on every iteration.
 
@@ -38,7 +41,9 @@ The file timing includes the complete logger/redaction/JSONL path and an unbuffe
 
 Each startup workload has 10 warm-up launches and seven samples of 50 launches. The harness requires zero exit status and empty stdout/stderr for every child. It records the Python version because host process-launch behavior is part of the observation. Empty and Logger startup results remain separate; subtracting them is not presented as an exact Logger construction cost because scheduler, dynamic-loader and process-launch noise can dominate the difference. The in-process construction workload remains the direct Logger construction measurement.
 
-Memory profiling and stress/fuzz workloads remain separate because they need different isolation and evidence. Async enqueue metrics remain not applicable while ADR-0011 keeps async disabled.
+The bounded probe emits 50,000 events into capacity 128 and verifies the snapshot, retained count, redaction and exact 49,872 drop count. The failing probe performs 50,000 synchronous writes that all raise and verifies exact diagnostics without retaining records. The slow probe performs 10,000 writes with 200 deterministic CPU-delay iterations per callback and retains nothing. This is a repeatable slow-callback fixture, not a disk or network latency model. Each probe report must be identical across seven process samples and contain no security sentinel.
+
+Peak RSS includes the NOX runtime, allocator high-water behavior, validation snapshot and probe code. The empty process remains a separate baseline; values are not subtracted into an exact Obsidian allocation claim. This does not measure an async queue because ADR-0011 keeps async unsupported. Longer stress/fuzz workloads remain separate.
 
 ## Consequences
 

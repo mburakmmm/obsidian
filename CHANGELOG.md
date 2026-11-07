@@ -50,6 +50,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Clean-commit macOS arm64 observations for JSONL file append and forced size rotation.
 - Prebuilt empty-process and Logger-process startup workloads with silent-exit validation and host Python version reporting.
 - Clean-commit macOS arm64 observations for LLVM/QBE empty and Logger process startup.
+- Seven-process peak-RSS workloads for empty runtime, bounded MemorySink, repeated sink failures and deterministic slow callbacks.
 
 ### Changed
 

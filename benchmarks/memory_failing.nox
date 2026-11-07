@@ -1,0 +1,65 @@
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.diagnostics import DiagnosticsSnapshot
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+
+EVENT_COUNT: int = 50000
+
+class FailingSink:
+    writes: int
+    _closed: bool
+
+    def __init__(self) -> None:
+        self.writes = 0
+        self._closed = False
+
+    def sink_name(self) -> str:
+
+        return "failing-memory-probe"
+
+    def write(self, entry: LogRecord) -> None:
+
+        if entry.field_count() != 1 or entry.field_at(0).value.text_value != "***":
+            raise ValueError("failing memory probe redaction mismatch")
+        self.writes += 1
+        raise ValueError("synthetic benchmark sink failure")
+
+    def flush(self) -> None:
+
+        pass
+
+    def close(self) -> None:
+
+        self._closed = True
+
+    def is_closed(self) -> bool:
+
+        return self._closed
+
+    def is_bounded(self) -> bool:
+
+        return True
+
+clock: FakeClock = FakeClock(1700000000123)
+logger: Logger = Logger("benchmark.failing", INFO, clock)
+sink: FailingSink = FailingSink()
+logger.add_sink(sink)
+fields: list[LogField] = [LogField("token", obsidian.fields.string_value("SYNTHETIC_FAILING_BENCH_SECRET"))]
+
+index: int = 0
+while index < EVENT_COUNT:
+    if logger.info("failing sink event", fields):
+        raise ValueError("failing memory probe accepted an event")
+    index += 1
+
+diagnostics: DiagnosticsSnapshot = logger.diagnostics_snapshot()
+if sink.writes != EVENT_COUNT or diagnostics.sink_write_failures() != EVENT_COUNT:
+    raise ValueError("failing memory probe count mismatch")
+logger.close()
+if not sink.is_closed():
+    raise ValueError("failing memory probe did not close")
+
+print("probe=failing_sink events=" + str(EVENT_COUNT) + " writes=" + str(sink.writes) + " failures=" + str(diagnostics.sink_write_failures()))
