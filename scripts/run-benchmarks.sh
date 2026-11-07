@@ -133,6 +133,12 @@ if [[ "$actual_file_lines" != "$expected_file_lines" ]]; then
   echo "file benchmark line count mismatch: expected $expected_file_lines, got $actual_file_lines" >&2
   exit 1
 fi
+actual_file_bytes="$(wc -c <"$file_output" | tr -d '[:space:]')"
+file_bytes_per_event="$((actual_file_bytes / actual_file_lines))"
+if [[ "$((file_bytes_per_event * actual_file_lines))" != "$actual_file_bytes" ]]; then
+  echo "file benchmark output size is not uniform" >&2
+  exit 1
+fi
 actual_rotation_lines="$(wc -l <"$rotation_output" | tr -d '[:space:]')"
 if [[ "$actual_rotation_lines" != "1" ]]; then
   echo "rotation benchmark active file line count mismatch" >&2
@@ -151,5 +157,5 @@ if [[ -z "$file_schema_line" || -z "$file_result_line" || -z "$rotation_result_l
   exit 1
 fi
 printf '%s\n' "$file_schema_line"
-printf '%s file_lines=%s\n' "$file_result_line" "$actual_file_lines"
+printf '%s file_lines=%s bytes_per_event=%s\n' "$file_result_line" "$actual_file_lines" "$file_bytes_per_event"
 printf '%s active_lines=%s retained_archives=%s\n' "$rotation_result_line" "$actual_rotation_lines" "$archive_count"
