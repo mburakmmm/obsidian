@@ -17,7 +17,7 @@ Do not publish a result when `dirty=true`. Keep LLVM and QBE separate. Record ha
 
 The regular CI matrix runs the harness on LLVM and QBE to detect compile/runtime regressions. Values printed by that step are explicitly non-baseline observations and are not copied into this report.
 
-No memory, process-startup, fuzz or stress result has been published yet. File and rotation workloads are implemented but require a clean-commit observation before their values are added below. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
+No memory, process-startup, fuzz or stress result has been published yet. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
 
 ## Initial macOS arm64 observation — 2026-11-07
 
@@ -74,3 +74,21 @@ This extends the same machine-specific baseline policy. It was measured from cle
 | QBE | Redirected INFO text console | 9,428 | 8,500 | 12,000 | 1,316,326 | 106,067 | — |
 
 The console result includes the synchronous logger, record cloning, redaction, text formatting and writes to a redirected regular file. It is not a terminal, pipe, stderr or durability measurement. The Unicode workload uses `MAX_MESSAGE_LENGTH` code points and canonical JSONL encoding; it is not a claim about arbitrary message sizes.
+
+## File and forced-rotation observation — 2026-11-07
+
+This observation was measured from clean commit `394b6e3794a75a814c5113b3ed0e8886912d49e8` on the same Apple M4 environment. Output lived only in the runner's temporary consumer directory.
+
+| Workload | Warm-up operations | Operations per sample | Output validation |
+|---|---:|---:|---|
+| INFO JSONL file append | 200 | 2,000 | 14,200 uniform records; 242 bytes/event; no sentinel |
+| Forced size rotation | 20 | 100 | 720 rotations after one priming write; 246-byte limit; one active line; zero archives |
+
+| Backend | Workload | Mean ns/op | Min | Max | Variance ns² | Derived ops/s |
+|---|---|---:|---:|---:|---:|---:|
+| LLVM | INFO JSONL file append | 9,285 | 8,500 | 12,000 | 1,346,939 | 107,700 |
+| LLVM | Forced size rotation | 365,714 | 350,000 | 380,000 | 81,632,653 | 2,734 |
+| QBE | INFO JSONL file append | 9,857 | 9,000 | 12,500 | 1,408,163 | 101,450 |
+| QBE | Forced size rotation | 374,285 | 360,000 | 390,000 | 81,632,653 | 2,671 |
+
+The append result includes logger dispatch, record cloning, redaction, JSONL formatting and an unbuffered operating-system write. The rotation result additionally includes close, rename, reopen, directory validation and zero-archive retention deletion. Neither result includes `fsync`; neither establishes disk-full, crash, cross-process or stable-storage behavior.
