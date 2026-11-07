@@ -17,7 +17,7 @@ Do not publish a result when `dirty=true`. Keep LLVM and QBE separate. Record ha
 
 The regular CI matrix runs the harness on LLVM and QBE to detect compile/runtime regressions. Values printed by that step are explicitly non-baseline observations and are not copied into this report.
 
-A deterministic 101-case hardening property corpus now covers UTF-8/control encoding, large value boundaries, scalar field tags and malformed typed configuration. This is bounded regression evidence, not randomized fuzzing. No randomized fuzz or long-running stress result has been published yet. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for benchmark methodology and `todo.md` for the remaining Phase 10 work.
+Deterministic hardening property corpora now cover 207 bounded cases: 101 UTF-8/control, large-value, scalar-tag and malformed-configuration cases plus 106 rotation filename/path-confinement cases. This is bounded regression evidence, not randomized fuzzing. No randomized fuzz or long-running stress result has been published yet. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for benchmark methodology and `todo.md` for the remaining Phase 10 work.
 
 ## Initial macOS arm64 observation — 2026-11-07
 

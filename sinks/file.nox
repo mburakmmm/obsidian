@@ -14,6 +14,12 @@ def is_inside_root(root: str, candidate: str) -> bool:
         return False
     root_components: list[str] = nox.path.components(root)
     candidate_components: list[str] = nox.path.components(candidate)
+    for component in root_components:
+        if component == "." or component == "..":
+            return False
+    for component in candidate_components:
+        if component == "." or component == "..":
+            return False
     if len(candidate_components) < len(root_components):
         return False
     index: int = 0
@@ -28,22 +34,22 @@ def validate_relative_log_path(relative_path: str) -> None:
         raise ValueError("file sink path must not be empty")
     if len(relative_path) > MAX_RELATIVE_LOG_PATH_LENGTH:
         raise ValueError("file sink path is too long")
-    if nox.path.is_absolute(relative_path):
-        raise ValueError("file sink path must be relative")
-    if obsidian.redact.path_may_contain_secret(relative_path):
-        raise ValueError("file sink path contains a sensitive key")
-    if relative_path.endswith("/") or "\\" in relative_path or ":" in relative_path:
-        raise ValueError("file sink path is not portable")
     for character in relative_path:
         codepoint: int = ord(character)
         if codepoint < 32 or codepoint == 127:
             raise ValueError("file sink path contains a control character")
+    if nox.path.is_absolute(relative_path):
+        raise ValueError("file sink path must be relative")
+    if relative_path.endswith("/") or "\\" in relative_path or ":" in relative_path:
+        raise ValueError("file sink path is not portable")
     components: list[str] = nox.path.components(relative_path)
     if len(components) == 0:
         raise ValueError("file sink path must name a file")
     for component in components:
         if component == "." or component == "..":
             raise ValueError("file sink path contains traversal")
+    if obsidian.redact.path_may_contain_secret(relative_path):
+        raise ValueError("file sink path contains a sensitive key")
 
 def canonical_root(allowed_root: str) -> str:
     try:

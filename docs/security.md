@@ -28,7 +28,7 @@ If redaction throws or returns a failed result, `Logger` drops the event, increm
 
 Diagnostics contain only saturating counts by fixed category. They never store record text, fields, exception values, paths or configuration. Strict mode raises fixed categories only. There is no automatic emergency console/file output and no diagnostics callback that could form a second logging path.
 
-Sink/path errors use fixed categories and do not echo paths or record contents. Recognized credential-key components are rejected in file names. The allowed file root must still be trusted because the pinned NOX API cannot provide race-free no-follow open semantics.
+Sink/path errors use fixed categories and do not echo paths or record contents. Control characters are rejected before native path and secret-pattern helpers run; recognized credential-key components are then rejected in file names. The allowed file root must still be trusted because the pinned NOX API cannot provide race-free no-follow open semantics.
 
 ## Deliberate limits
 
@@ -46,6 +46,6 @@ These controls reduce accidental collection but do not make arbitrary route name
 
 ## Testing rules
 
-Only synthetic sentinel strings may appear in tests. Security tests cover mixed-case/default/custom keys, HTTP headers, bearer tokens, URL/query credentials, Unicode, multiline input, custom and memory sinks, file output, console output, failure injection and snapshot isolation. The Phase 10 deterministic property corpus additionally checks every C0 control plus DEL in messages, selected multi-byte Unicode, maximum-size scalar strings/messages and fixed-error malformed configuration. Nested values remain rejected at the static type boundary by `tests/compile_fail/nested_field_value.nox`; this is not a claim of recursive redaction support. A failed assertion must use a sanitized label rather than placing the sentinel in its failure message.
+Only synthetic sentinel strings may appear in tests. Security tests cover mixed-case/default/custom keys, HTTP headers, bearer tokens, URL/query credentials, Unicode, multiline input, custom and memory sinks, file output, console output, failure injection and snapshot isolation. The Phase 10 deterministic property corpora additionally check every C0 control plus DEL in messages and file paths, selected multi-byte Unicode, maximum-size scalar strings/messages, fixed-error malformed configuration, exact archive ownership and component-boundary confinement. Nested values remain rejected at the static type boundary by `tests/compile_fail/nested_field_value.nox`; this is not a claim of recursive redaction support. A failed assertion must use a sanitized label rather than placing the sentinel in its failure message.
 
 Report real vulnerabilities through the private process described in [`../SECURITY.md`](../SECURITY.md); never open a public issue containing credentials or production logs.

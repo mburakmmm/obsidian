@@ -1,0 +1,108 @@
+import nox.path
+import nox.test
+import obsidian.rotation
+from obsidian.sink_error import SinkError
+from obsidian.sinks.file import MAX_RELATIVE_LOG_PATH_LENGTH, is_inside_root, validate_relative_log_path
+
+def is_fixed_path_error(message: str) -> bool:
+    return message == "file sink path must not be empty" or message == "file sink path is too long" or message == "file sink path must be relative" or message == "file sink path contains a sensitive key" or message == "file sink path is not portable" or message == "file sink path contains a control character" or message == "file sink path must name a file" or message == "file sink path contains traversal"
+
+def valid_relative_path_cases() -> int:
+    boundary: str = "a" * 200 + "/" + "b" * 200 + "/" + "c" * 110
+    paths: list[str] = ["events.log", "logs/events.jsonl", "logs/2026/events-01.log", ".events", "logs/世界.log", "logs/İstanbul.log", "logs/a_b-c.d", "passwords.log", "tokenized.log", boundary]
+    checked: int = 0
+    for relative_path in paths:
+        validate_relative_log_path(relative_path)
+        archive: str = obsidian.rotation.archive_name(relative_path, 1)
+        prefix: str = nox.path.basename(relative_path) + "."
+        if archive != prefix + "00000001":
+            return -1
+        if obsidian.rotation.archive_sequence(archive, prefix) != 1:
+            return -1
+        if "/" in archive or "\\" in archive:
+            return -1
+        checked += 1
+    if len(boundary) != MAX_RELATIVE_LOG_PATH_LENGTH:
+        return -1
+    return checked
+
+def all_paths_rejected(paths: list[str]) -> bool:
+    for relative_path in paths:
+        try:
+            validate_relative_log_path(relative_path)
+            return False
+        except ValueError as e:
+            if not is_fixed_path_error(e.message):
+                return False
+    return True
+
+def archive_round_trip_cases() -> int:
+    relative_path: str = "logs/events.log"
+    prefix: str = "events.log."
+    sequences: list[int] = [1, 2, 9, 10, 42, 1000000, 99999999]
+    checked: int = 0
+    for sequence in sequences:
+        name: str = obsidian.rotation.archive_name(relative_path, sequence)
+        if obsidian.rotation.archive_sequence(name, prefix) != sequence:
+            return -1
+        if len(name) != len(prefix) + 8:
+            return -1
+        checked += 1
+    return checked
+
+def all_archive_names_ignored(names: list[str], prefix: str) -> bool:
+    for name in names:
+        if obsidian.rotation.archive_sequence(name, prefix) != 0:
+            return False
+    return True
+
+def all_archive_sequences_rejected(relative_path: str, sequences: list[int]) -> bool:
+    for sequence in sequences:
+        try:
+            obsidian.rotation.archive_name(relative_path, sequence)
+            return False
+        except SinkError as e:
+            if e.message != "rotation archive sequence is exhausted":
+                return False
+    return True
+
+def path_confinement_cases() -> int:
+    root: str = nox.path.canonicalize(".")
+    inside: list[str] = [root, nox.path.join(root, "child"), nox.path.join(root, "child/nested")]
+    checked: int = 0
+    for candidate in inside:
+        if not is_inside_root(root, candidate):
+            return -1
+        checked += 1
+
+    outside: list[str] = [root + "-sibling", nox.path.dirname(root), "relative/path", nox.path.join(root, "../escape"), nox.path.join(root, "child/../../escape"), nox.path.join(root, "./child"), ""]
+    for candidate in outside:
+        if is_inside_root(root, candidate):
+            return -1
+        checked += 1
+    return checked
+
+valid_result: int = valid_relative_path_cases()
+nox.test.assert_eq_int(valid_result, 10, "portable relative path corpus accepted")
+invalid_paths: list[str] = ["", "/absolute.log", "logs/", "bad\\name.log", "bad:name.log", ".", "..", "../events.log", "logs/../events.log", "./events.log", "logs/./events.log", "events.log/..", "events.log/.", "x" * (MAX_RELATIVE_LOG_PATH_LENGTH + 1), "password.log", "passwd.log", "logs/ToKeN.log", "access_token.log", "refresh_token.log", "authorization.log", "api_key.log", "secret.log", "cookie.log", "set-cookie.log", "private_key.log"]
+nox.test.assert_eq_int(len(invalid_paths), 25, "unsafe relative path corpus size")
+nox.test.assert_true(all_paths_rejected(invalid_paths), "unsafe relative path corpus rejected")
+
+control_paths: list[str] = []
+control_codepoint: int = 0
+while control_codepoint < 32:
+    control_paths.append("logs/bad" + chr(control_codepoint) + ".log")
+    control_codepoint += 1
+control_paths.append("logs/bad" + chr(127) + ".log")
+nox.test.assert_eq_int(len(control_paths), 33, "control path corpus size")
+nox.test.assert_true(all_paths_rejected(control_paths), "control path corpus rejected")
+
+nox.test.assert_eq_int(archive_round_trip_cases(), 7, "archive sequence round trips")
+invalid_archive_names: list[str] = ["other.log.00000001", "events.log.", "events.log.0000001", "events.log.000000001", "events.log.00000000", "events.log.-0000001", "events.log.+0000001", "events.log.0000000x", "events.log.x0000001", "events.log.０００００００１", "events.log.0000 001", "events.log.0000\n001", "events.log.000000/1", "events.log.000000.1", "events.log.00000001.extra", "events.log00000001"]
+nox.test.assert_eq_int(len(invalid_archive_names), 16, "unowned archive corpus size")
+nox.test.assert_true(all_archive_names_ignored(invalid_archive_names, "events.log."), "unowned archive names ignored")
+invalid_archive_sequences: list[int] = [-100, -1, 0, 100000000, 100000001]
+nox.test.assert_eq_int(len(invalid_archive_sequences), 5, "invalid archive sequence corpus size")
+nox.test.assert_true(all_archive_sequences_rejected("logs/events.log", invalid_archive_sequences), "invalid archive sequences rejected")
+confinement_result: int = path_confinement_cases()
+nox.test.assert_eq_int(confinement_result, 10, "path confinement uses canonical components")

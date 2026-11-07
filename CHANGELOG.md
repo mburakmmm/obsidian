@@ -53,6 +53,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Seven-process peak-RSS workloads for empty runtime, bounded MemorySink, repeated sink failures and deterministic slow callbacks.
 - Clean-commit macOS arm64 peak-RSS observations for LLVM/QBE bounded, failing and slow sink workloads.
 - Deterministic Phase 10 property corpus covering UTF-8/control encoding, maximum-size values, scalar field boundaries and malformed typed configuration on LLVM/QBE.
+- Deterministic rotation/path property corpus covering portable and hostile paths, every C0 control plus DEL, archive ownership and component-boundary confinement.
 
 ### Changed
 
@@ -67,6 +68,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Sink/filter failures now default to non-raising observable diagnostics while explicit strict mode raises fixed sanitized categories.
 - The pinned compiler baseline is now NOX 2.1.0 so Phase 9 can test current ecosystem releases; the complete existing suite remains green locally on LLVM and QBE.
 - Request adapters collect only allowlisted method/status/duration and optional explicit route metadata; raw targets, queries, headers and bodies remain excluded.
+- File path validation rejects control characters before invoking native path or regex helpers, and component confinement rejects non-canonical `.`/`..` inputs directly.
 
 ### Security
 

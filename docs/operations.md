@@ -1,6 +1,6 @@
 # Operations
 
-Status: synchronous operation through Phase 8 local filtering/diagnostics; no durability, time rotation, shared-logger thread-safety or stderr claim.
+Status: synchronous operation through Phase 10 path hardening; no durability, time rotation, shared-logger thread-safety or stderr claim.
 
 ## Dispatch mode
 
@@ -26,7 +26,7 @@ Each write is synchronous and adds exactly one newline through the selected form
 
 `FileSink(name, allowed_root, relative_path, format_kind, create_parent)` opens one append-only handle. The allowed root must already exist and be a directory. `relative_path` must be portable and relative; `create_parent=True` creates missing directories one component at a time inside the canonical root.
 
-The sink rejects lexical traversal, absolute paths, existing symlink escapes, non-file targets and missing parents without opt-in creation. Use an application-owned root that untrusted users cannot modify. The pinned filesystem API cannot safely identify a dangling final symlink or prevent concurrent path replacement.
+The sink rejects control characters before calling path or secret-pattern helpers, then rejects lexical traversal, absolute paths, existing symlink escapes, non-file targets and missing parents without opt-in creation. Component confinement also fails closed for direct non-canonical `.`/`..` candidates. Use an application-owned root that untrusted users cannot modify. The pinned filesystem API cannot safely identify a dangling final symlink or prevent concurrent path replacement.
 
 Every `write` is an unbuffered operating-system write according to `nox.fs`. `flush()` is therefore a logical no-op and is not `fsync`; neither it nor `close()` claims stable-storage durability. Plain `FileSink` storage remains unbounded; select `RotatingFileSink` for an explicit storage budget.
 
