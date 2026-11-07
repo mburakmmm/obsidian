@@ -45,6 +45,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Initial clean-commit macOS arm64 LLVM/QBE observation with explicit timer-quantization and non-guarantee caveats.
 - Redirected stdout INFO benchmark with exact output accounting and synthetic-secret leak detection.
 - Maximum-length Unicode JSONL workload reporting encoded bytes per event.
+- Clean-commit macOS arm64 observations for redirected console and maximum-length Unicode JSONL workloads.
 
 ### Changed
 

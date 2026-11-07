@@ -17,7 +17,7 @@ Do not publish a result when `dirty=true`. Keep LLVM and QBE separate. Record ha
 
 The regular CI matrix runs the harness on LLVM and QBE to detect compile/runtime regressions. Values printed by that step are explicitly non-baseline observations and are not copied into this report.
 
-No file, rotation, memory, process-startup, fuzz or stress result has been published yet. The redirected console and maximum-length Unicode workloads are implemented but require a clean-commit observation before their values are added below. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
+No file, rotation, memory, process-startup, fuzz or stress result has been published yet. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
 
 ## Initial macOS arm64 observation — 2026-11-07
 
@@ -56,3 +56,21 @@ Observed aggregate estimates:
 | QBE | Logger construct + close | 135 | 100 | 150 | 510 | 7,407,407 | — |
 
 The monotonic clock is read once per complete sample and has millisecond resolution. The `nox.log` mean reaches the integer nanosecond floor; its zero/near-zero variance and reciprocal throughput are quantized artifacts, not evidence of exact one-nanosecond calls. No ratio claim is made. Re-run the command on the target system before making capacity decisions.
+
+## Redirected console and long Unicode observation — 2026-11-07
+
+This extends the same machine-specific baseline policy. It was measured from clean commit `31abb7b9ce5bb7865fb3f7a4adabcf6e1bc6179a` with the hardware, OS, compiler and NOX source listed above.
+
+| Workload | Warm-up operations | Operations per sample | Output validation |
+|---|---:|---:|---|
+| Maximum-length Unicode JSONL | 2 | 20 | 196,824 bytes/event |
+| Redirected INFO text console | 200 | 2,000 | 14,200 records plus 2 report lines; no synthetic sentinel |
+
+| Backend | Workload | Mean ns/op | Min | Max | Variance ns² | Derived ops/s | Bytes/event |
+|---|---|---:|---:|---:|---:|---:|---:|
+| LLVM | Maximum-length Unicode JSONL | 3,157,142 | 3,150,000 | 3,200,000 | 306,122,449 | 316 | 196,824 |
+| LLVM | Redirected INFO text console | 9,000 | 8,000 | 11,000 | 857,142 | 111,111 | — |
+| QBE | Maximum-length Unicode JSONL | 3,207,142 | 3,150,000 | 3,250,000 | 1,020,408,164 | 311 | 196,824 |
+| QBE | Redirected INFO text console | 9,428 | 8,500 | 12,000 | 1,316,326 | 106,067 | — |
+
+The console result includes the synchronous logger, record cloning, redaction, text formatting and writes to a redirected regular file. It is not a terminal, pipe, stderr or durability measurement. The Unicode workload uses `MAX_MESSAGE_LENGTH` code points and canonical JSONL encoding; it is not a claim about arbitrary message sizes.

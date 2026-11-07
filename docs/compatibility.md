@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–8 evidence is green on the previous supported CI matrix. NOX 2.1.0 passes the complete local LLVM/QBE suite; the upgraded remote matrix is pending. This document does not extend support beyond tested jobs.
+Status: Phase 0–9 evidence is green on NOX 2.1.0. The Phase 10 benchmark harness also passes non-baseline smoke runs on the supported remote matrix. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -17,6 +17,8 @@ Status: Phase 0–8 evidence is green on the previous supported CI matrix. NOX 2
 | Profile under test | `hosted` | filesystem, process and clock APIs are required |
 
 The compiler reports a version but not its source SHA. The annotated `v2.1.0` tag resolves to the selected commit and contains no signature. Release assets include per-platform SHA-256 files; local verification and CI run `42308138269` checked the platform archives against their matching checksums on macOS arm64 and Linux x64/arm64. This is integrity evidence, not signed provenance. The ambient installation matches the pin, but the isolated checksum-verified archive remains the evidence source.
+
+CI run `42363929287` additionally passed the complete Phase 9 behavioral/integration matrix and the Phase 10 LLVM/QBE benchmark smoke step on macOS arm64, Linux x64 and Linux arm64. Shared-runner timings are deliberately not treated as performance baselines.
 
 ## Audited public APIs at the pinned revision
 
