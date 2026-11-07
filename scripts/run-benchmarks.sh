@@ -45,8 +45,11 @@ fi
 if [[ -z "$cpu" || "$cpu" == "unknown" ]] && command -v system_profiler >/dev/null 2>&1; then
   cpu="$(system_profiler SPHardwareDataType 2>/dev/null | awk -F ': ' '/Chip:/{print $2; exit}')"
 fi
+if [[ -z "$cpu" || "$cpu" == "unknown" ]] && command -v lscpu >/dev/null 2>&1; then
+  cpu="$(lscpu 2>/dev/null | awk -F ':' '/^Model name:/{sub(/^[[:space:]]+/, "", $2); print $2; exit}' || true)"
+fi
 if [[ -z "$cpu" || "$cpu" == "unknown" ]] && [[ -r /proc/cpuinfo ]]; then
-  cpu="$(grep -m 1 -E '^(model name|Hardware|Processor)' /proc/cpuinfo | awk -F ': ' '{print $2}')"
+  cpu="$(grep -m 1 -E '^(model name|Hardware|Processor)' /proc/cpuinfo | awk -F ': ' '{print $2}' || true)"
 fi
 if [[ -z "$cpu" || "$cpu" == "unknown" ]]; then
   cpu="$(uname -p 2>/dev/null || true)"
