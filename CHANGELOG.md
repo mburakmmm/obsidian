@@ -42,6 +42,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Isolated LLVM/QBE ecosystem probes, compiling integration examples and a core dependency-direction audit.
 - Reproducible Phase 10 benchmark harness for disabled DEBUG, equivalent `nox.log` baseline, JSONL encoding and logger construction/close.
 - Benchmark environment/schema documentation with fixed warm-up, sample, variance and dirty-tree reporting.
+- Initial clean-commit macOS arm64 LLVM/QBE observation with explicit timer-quantization and non-guarantee caveats.
 
 ### Changed
 
