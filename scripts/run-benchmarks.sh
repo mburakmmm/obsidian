@@ -159,3 +159,43 @@ fi
 printf '%s\n' "$file_schema_line"
 printf '%s file_lines=%s bytes_per_event=%s\n' "$file_result_line" "$actual_file_lines" "$file_bytes_per_event"
 printf '%s active_lines=%s retained_archives=%s\n' "$rotation_result_line" "$actual_rotation_lines" "$archive_count"
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "python3 is required for the process-startup benchmark" >&2
+  exit 1
+fi
+empty_binary="$probe_root/process-empty"
+logger_binary="$probe_root/process-logger"
+cp "$project_root/benchmarks/process_empty.nox" main.nox
+if ! empty_build_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" build --backend "$backend" -o "$empty_binary" main.nox 2>&1)"; then
+  printf '%s\n' "$empty_build_output"
+  exit 1
+fi
+cp "$project_root/benchmarks/process_logger.nox" main.nox
+if ! logger_build_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" build --backend "$backend" -o "$logger_binary" main.nox 2>&1)"; then
+  printf '%s\n' "$logger_build_output"
+  exit 1
+fi
+if ! startup_output="$(python3 "$project_root/scripts/measure-process-startup.py" "$empty_binary" "$logger_binary" 2>&1)"; then
+  printf '%s\n' "$startup_output"
+  exit 1
+fi
+if [[ "$startup_output" == *SYNTHETIC_* ]]; then
+  echo "startup benchmark report contained a security sentinel" >&2
+  exit 1
+fi
+startup_line_count="$(printf '%s\n' "$startup_output" | wc -l | tr -d '[:space:]')"
+if [[ "$startup_line_count" != "3" ]]; then
+  echo "startup benchmark emitted unexpected output" >&2
+  exit 1
+fi
+startup_schema_line="$(printf '%s\n' "$startup_output" | grep '^benchmark_schema=obsidian.process-startup-benchmark.v1 ')"
+empty_startup_line="$(printf '%s\n' "$startup_output" | grep '^benchmark=process_startup_empty ')"
+logger_startup_line="$(printf '%s\n' "$startup_output" | grep '^benchmark=process_startup_logger ')"
+if [[ -z "$startup_schema_line" || -z "$empty_startup_line" || -z "$logger_startup_line" ]]; then
+  echo "startup benchmark report is missing" >&2
+  exit 1
+fi
+printf '%s\n' "$startup_schema_line"
+printf '%s\n' "$empty_startup_line"
+printf '%s\n' "$logger_startup_line"

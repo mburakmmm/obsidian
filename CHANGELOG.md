@@ -48,6 +48,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Clean-commit macOS arm64 observations for redirected console and maximum-length Unicode JSONL workloads.
 - Temporary-root JSONL file throughput and forced size-rotation pause workloads with exact output, retention and sentinel checks.
 - Clean-commit macOS arm64 observations for JSONL file append and forced size rotation.
+- Prebuilt empty-process and Logger-process startup workloads with silent-exit validation and host Python version reporting.
 
 ### Changed
 

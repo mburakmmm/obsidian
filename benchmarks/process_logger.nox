@@ -1,0 +1,9 @@
+from obsidian.clock import FakeClock
+from obsidian.level import INFO
+from obsidian.logger import Logger
+
+clock: FakeClock = FakeClock(1700000000123)
+logger: Logger = Logger("benchmark.startup", INFO, clock)
+logger.close()
+if not logger.is_closed():
+    raise ValueError("logger startup probe did not close")

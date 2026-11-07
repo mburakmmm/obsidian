@@ -102,6 +102,7 @@ bash scripts/run-benchmarks.sh qbe
 ```
 
 Compile-fail fixtures under `tests/compile_fail` must exit non-zero. Test files, assertions and skips are reported separately in CI.
+The process-startup portion of the benchmark harness additionally requires Python 3 standard library support; Obsidian itself does not depend on Python.
 
 ## Repository map
 

@@ -9,15 +9,15 @@ bash scripts/run-benchmarks.sh llvm
 bash scripts/run-benchmarks.sh qbe
 ```
 
-The first output line identifies the OS, kernel, architecture, CPU, compiler, pinned NOX source, Obsidian commit, dirty state and backend. Following lines report fixed warm-up counts, seven-sample mean/min/max, population variance and operations per second. JSONL also reports encoded bytes per event. The same command then runs the INFO text console workload with stdout redirected to a temporary regular file and the JSONL file/rotation workloads in a temporary owned directory. It verifies exact record/rotation counts, bounded retention and secret-sentinel absence before printing summaries.
+The first output line identifies the OS, kernel, architecture, CPU, compiler, pinned NOX source, Obsidian commit, dirty state and backend. Following lines report fixed warm-up counts, seven-sample mean/min/max, population variance and operations per second. JSONL also reports encoded bytes per event. The same command then runs the INFO text console workload with stdout redirected to a temporary regular file, JSONL file/rotation workloads in a temporary owned directory, and prebuilt empty/Logger process-startup probes. It verifies exact record/rotation counts, bounded retention, silent successful child exits and secret-sentinel absence before printing summaries.
 
-These measurements exclude compilation and process startup. `logger_construct_close` is only in-process logger construction plus close with no sinks. The disabled `nox.log` workload is comparable only to Obsidian's disabled DEBUG early-rejection workload; it is not a general library speed comparison.
+Compilation is excluded from every measurement. `logger_construct_close` is only in-process logger construction plus close with no sinks; the separately named process-startup workloads include child launch and exit. The disabled `nox.log` workload is comparable only to Obsidian's disabled DEBUG early-rejection workload; it is not a general library speed comparison.
 
 Do not publish a result when `dirty=true`. Keep LLVM and QBE separate. Record hardware/OS/compiler SHA, complete command output and any background-load caveat. Shared CI runner timing is useful for smoke detection only and is not a stable benchmark baseline.
 
 The regular CI matrix runs the harness on LLVM and QBE to detect compile/runtime regressions. Values printed by that step are explicitly non-baseline observations and are not copied into this report.
 
-No memory, process-startup, fuzz or stress result has been published yet. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
+No memory, fuzz or stress result has been published yet. Process-startup workloads are implemented but require a clean-commit observation before their values are added below. Async queue metrics are not applicable because async dispatch is unsupported on the pinned toolchain. See ADR-0014 for methodology and `todo.md` for the remaining Phase 10 work.
 
 ## Initial macOS arm64 observation — 2026-11-07
 

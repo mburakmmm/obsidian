@@ -11,6 +11,8 @@ Phase 10 requires measurements without turning a single developer-machine result
 
 `benchmarks/core_bench.nox` measures steady-state in-process operations. `benchmarks/console_bench.nox` separately measures the complete synchronous INFO path through redaction, text formatting and a stdout console sink while the runner redirects stdout to a regular file. `benchmarks/file_bench.nox` measures the corresponding JSONL append path and a forced size-rotation path inside the runner's temporary consumer directory. The clock starts after the downstream package has compiled and the program has started. Every workload has a fixed warm-up, iteration count and seven samples. Reports include mean/min/max nanoseconds per operation and population variance in squared nanoseconds. Nanoseconds are derived from monotonic elapsed milliseconds over many operations; they are aggregate estimates, not per-call timer readings.
 
+Process startup is a separate host-driven workload. The runner first builds `process_empty.nox` and `process_logger.nox` for the selected backend, then a long-lived Python 3 standard-library harness uses `time.monotonic_ns()` around `subprocess.run()` calls. Compilation is therefore excluded and a timer process is not launched inside each measurement. Python is a development benchmark prerequisite only; it is not an Obsidian package or runtime dependency.
+
 The benchmark runner always records OS, kernel, architecture, CPU description when available, `noxc --version`, exact pinned NOX source SHA, Obsidian commit, dirty state and backend. A publishable result must use `dirty=false`. LLVM and QBE results are separate and must not be averaged together.
 
 The first workload set is:
@@ -23,6 +25,8 @@ The first workload set is:
 6. INFO text logging through the synchronous logger and redirected stdout console sink.
 7. INFO JSONL logging through the synchronous logger and unbuffered append-only file sink.
 8. INFO JSONL logging where every measured write forces size rotation, reopen and zero-archive retention.
+9. Prebuilt empty NOX process startup and exit.
+10. Prebuilt NOX process startup, one explicit Logger construction and idempotent close, then exit.
 
 The disabled DEBUG comparison uses the same fixed message and measures early-rejection calls only. It does not compare stdout, file or formatter work. JSON workloads consume the returned byte length to prevent unused-result benchmarks. The pathological Unicode fixture uses the supported maximum 65,536-code-point message and records its encoded bytes per event. Logger construction verifies close state on every iteration.
 
@@ -32,7 +36,9 @@ The file workload writes 200 warm-up events and seven samples of 2,000 events, t
 
 The file timing includes the complete logger/redaction/JSONL path and an unbuffered operating-system append. It does not include `fsync` because NOX exposes no such public API. The rotation timing includes formatting, close, rename, reopen, directory validation and deletion; it is not an isolated rename syscall measurement and does not establish crash, cross-process or durable-write guarantees.
 
-Process startup, memory profiling and stress/fuzz workloads remain separate because they need different isolation and evidence. Async enqueue metrics remain not applicable while ADR-0011 keeps async disabled.
+Each startup workload has 10 warm-up launches and seven samples of 50 launches. The harness requires zero exit status and empty stdout/stderr for every child. It records the Python version because host process-launch behavior is part of the observation. Empty and Logger startup results remain separate; subtracting them is not presented as an exact Logger construction cost because scheduler, dynamic-loader and process-launch noise can dominate the difference. The in-process construction workload remains the direct Logger construction measurement.
+
+Memory profiling and stress/fuzz workloads remain separate because they need different isolation and evidence. Async enqueue metrics remain not applicable while ADR-0011 keeps async disabled.
 
 ## Consequences
 
