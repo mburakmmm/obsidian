@@ -57,6 +57,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 
 ### Changed
 
+- Pinned NOX toolchain installation in CI and release preflight now uses the GitHub Release API with bounded retries while retaining SHA-256 verification.
 - Baseline message masking now avoids calling the stdlib assignment masker when no sensitive key candidate is present, preserving arbitrary control characters for safe formatter escaping.
 - Package-internal, test and example imports now use the manifest package name so installed dependency graphs resolve transitively.
 - Stderr selection now fails explicitly instead of falling back silently because the pinned NOX API exposes stdout only.

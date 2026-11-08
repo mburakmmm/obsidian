@@ -32,12 +32,28 @@ jobs:
 
       - name: Install pinned NOX release
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           stage="nox-lang-${NOX_VERSION}-${{ matrix.asset }}"
-          base="https://github.com/${NOX_REPOSITORY}/releases/download/${NOX_VERSION}"
-          curl -fsSLO "${base}/${stage}.tar.gz"
-          curl -fsSLO "${base}/${stage}.tar.gz.sha256"
+          archive="${stage}.tar.gz"
+          checksum="${archive}.sha256"
+          downloaded=false
+          for attempt in 1 2 3; do
+            rm -f "$archive" "$checksum"
+            if gh release download "$NOX_VERSION" \
+              --repo "$NOX_REPOSITORY" \
+              --pattern "$archive" \
+              --pattern "$checksum"; then
+              downloaded=true
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep "$((attempt * 2))"
+            fi
+          done
+          test "$downloaded" = true
           shasum -a 256 -c "${stage}.tar.gz.sha256"
           tar xzf "${stage}.tar.gz"
           echo "$PWD/${stage}/bin" >>"$GITHUB_PATH"
