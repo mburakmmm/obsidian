@@ -124,3 +124,18 @@ This observation was measured from clean commit `f66c6ad0ef0b18ef5edeba9903f59e0
 The bounded probe processed 50,000 events, retained exactly 128 snapshots and counted 49,872 dropped-oldest events. The failing probe performed and counted 50,000 sanitized write failures without retaining records. The slow probe performed 10,000 sanitized synchronous callbacks with 200 deterministic CPU-delay iterations and retained no records. Every probe report was identical across samples and no synthetic sentinel appeared.
 
 Peak RSS includes the NOX runtime, allocator high-water behavior, probe code and bounded snapshot validation. The empty runtime is context, not a value to subtract into an exact Obsidian allocation. The slow fixture is not a disk/network latency model, and these short finite probes are not long-running leak evidence.
+
+## Bounded file lifecycle stress observation — 2026-11-08
+
+This observation was measured from clean commit `15fed48e7184b38c7bb3dcdef46ad16c1e784dee` on the same Apple M4 environment using Python 3.15.2. It is bounded repeated-process evidence, not a leak, durability or throughput guarantee.
+
+Each backend ran three fresh processes. Per process, the append path wrote 40,000 records and the rotation path wrote another 40,000 records. Both sinks were flushed, closed idempotently and reconstructed every 1,000 writes. The host watchdog allowed 120 seconds per process and streamed validation over the resulting files.
+
+| Backend | Completed rounds | Events/path total | Mean elapsed ms/round | Min | Max | Mean peak RSS bytes | Min | Max |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| LLVM | 3 | 120,000 | 2,057 | 1,999 | 2,160 | 3,304,106 | 3,293,184 | 3,325,952 |
+| QBE | 3 | 120,000 | 2,073 | 2,042 | 2,132 | 3,522,560 | 3,522,560 | 3,522,560 |
+
+Every round produced exactly 9,680,000 append bytes from 40,000 masked 242-byte JSONL records. The rotation path used 245-byte records and a 3,920-byte active/archive limit, completed exactly 2,499 rotations, retained four archives plus the active file, and remained at exactly 19,600 retained bytes. Archive sequences were contiguous across 40 reopen cycles per path and process. The first record of every retained file parsed with schema `obsidian.log.v1`; every remaining line was byte-identical, every denylisted field was `***`, no synthetic sentinel appeared, and no round timed out or exited unsuccessfully.
+
+CI run `42471701337` separately passed one 8,000-event smoke round per path and backend on macOS arm64, Linux x64 and Linux arm64. Shared-runner timings and RSS are not copied into this observation.

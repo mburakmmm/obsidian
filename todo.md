@@ -420,20 +420,20 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] Redirected INFO console formatting throughput; clean commit `31abb7b` üzerinde exact 14.202 satır ve sentinel taramasıyla LLVM/QBE ölçüldü.
 - [x] JSONL throughput ve bytes/event; typed Unicode fixture iki backend'de ölçüldü ve 309 bytes/event raporlandı.
 - [x] File sink throughput ve rotation pause; clean commit `394b6e3` üzerinde 242-byte file fixture ve her yazıda zorlanan 246-byte rotation fixture LLVM/QBE ölçüldü.
-- [ ] Async varsa enqueue p50/p95/p99 ve drop counts.
-- [ ] LLVM producer scaling; QBE cooperative davranışı ayrı.
+- [x] Async enqueue p50/p95/p99 ve drop counts uygulanamaz: ADR-0011/Phase 7 no-go nedeniyle async dispatcher yayımlanmadı; sahte metrik üretilmedi.
+- [x] Async producer scaling uygulanamaz: LLVM overlap capability probu ve QBE cooperative davranışı Phase 7'de ayrı kanıtlandı, desteklenmeyen queue için scaling iddiası yapılmadı.
 - [x] Slow/failing sink altında memory footprint; clean commit `f66c6ad` üzerinde empty/bounded/failing/slow peak RSS yedi fresh process ile LLVM/QBE ölçüldü.
 - [x] Startup/logger construction overhead; in-process construct+close ve clean commit `1bde748` üzerinde prebuilt empty/Logger process launch LLVM/QBE ayrı ölçüldü.
 - [x] Long message ve Unicode pathological fixture; `MAX_MESSAGE_LENGTH` sınırında 196.824 bytes/event JSONL iki backend'de ölçüldü.
 - [x] Yalnız eşdeğer workload için `nox.log` baseline karşılaştırması; yalnız disabled DEBUG early-rejection karşılaştırıldı, oran iddiası yapılmadı.
 - [x] UTF-8/control char/large field/malformed config/nested values property testleri; 101 deterministik vaka yerel ve CI `42395481106` LLVM/QBE'de geçti, nested values mevcut compile-fail sınırında reddedildi.
 - [x] Rotation filenames ve path confinement property testleri; 106 deterministik vaka yerel ve CI `42398683809` LLVM/QBE'de geçti, raw control doğrulama sırası ve non-canonical component reddi sertleştirildi.
-- [ ] Uzun süreli file/queue stress ve tekrarlı deadlock/leak kontrolleri.
+- [x] Bounded file/rotation stress: clean commit `15fed48` üzerinde LLVM/QBE için üç fresh process, yol başına toplam 120.000 olay, timeout/RSS/reopen/retention/sentinel kanıtı geçti; queue stress async no-go nedeniyle uygulanamaz. Bu bounded regresyon kanıtıdır, leak garantisi değildir.
 - [ ] Tüm P0/P1 bulguları kapalı; açık riskler belgeli.
 
 ### Phase 10 kapısı
 
-- [ ] Reproducible benchmark raporu yayımlandı; kanıtsız performans iddiası yok.
+- [x] Reproducible benchmark ve bounded stress raporu yayımlandı; sonuçlar clean commit/ortam/backend ile kayıtlı ve kanıtsız performans iddiası yok.
 - [ ] Bilinen P0/P1 safety bug yok.
 
 ---
@@ -562,3 +562,4 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Ph
 | 2026-11-07 | Phase 10 deterministic property dilimi | UTF-8/control encoding, büyük scalar/message sınırları, tagged scalar alan modeli ve bozuk typed config için bounded corpus eklendi; nested değerler statik compile-fail sınırında kaldı | NOX 2.1.0 yerel ve CI `42395481106`: macOS ARM64/Linux x64/Linux ARM64 LLVM/QBE'de 18 dosya/396 assertion/0 skip; 101 deterministik corpus vakası; 3 expected compile-fail fixture; örnekler, adaptörler, capability audit ve benchmark smoke geçti | Randomized fuzz veya uzun stress iddiası yok; rotation/path property matrisi sırada |
 | 2026-11-07 | Phase 10 rotation/path property dilimi | 10 valid path, 58 unsafe/control path, 28 archive name/sequence ve 10 component-confinement vakası eklendi; raw control'ler path/regex yardımcısından önce, `.`/`..` adayları confinement helper içinde reddediliyor | NOX 2.1.0 yerel ve CI `42398683809`: macOS ARM64/Linux x64/Linux ARM64 LLVM/QBE'de 19 dosya/407 assertion/0 skip; toplam 207 property vakası; 3 expected compile-fail fixture; örnekler, adaptörler, capability audit ve benchmark smoke geçti | Randomized fuzz veya hostile-directory race iddiası yok; uzun süreli file stress sırada |
 | 2026-11-08 | CI/release toolchain indirme sertleştirmesi | Doğrudan release URL'leri iki koşuda üç platformda HTTP 504 verdiği için pinned NOX indirmesi GitHub Release API ve üç bounded retry ile değiştirildi; checksum zorunluluğu korundu | Gerçek macOS ARM64 arşivi yerelde API üzerinden indirilip SHA-256 ile doğrulandı; CI `42470080183` macOS ARM64/Linux x64/Linux ARM64 üzerinde kurulum, LLVM/QBE core, capability, adaptör ve benchmark smoke adımlarının tamamını geçti | Derleyici pini/provenance iddiası değişmedi; Phase 10 uzun süreli file stress sırada |
+| 2026-11-08 | Phase 10 bounded file/rotation stress | Repeated flush/idempotent close/reopen, host timeout, fresh-process peak RSS, streamed JSONL/masking doğrulaması, exact rotation sequence ve storage budget harness'ı eklendi | Clean `15fed48`: backend başına 3 süreç, yol başına 120.000 olay; LLVM RSS 3.293.184–3.325.952 byte, QBE 3.522.560 byte; süreç başına 2.499 rotation/4 arşiv/19.600 retained byte. CI `42471701337` üç platformda LLVM/QBE smoke ile tamamen yeşil | Queue stress async no-go nedeniyle N/A; bounded sonuç leak/durability garantisi değil. Random fuzz ve P0/P1 kapanış denetimi sırada |

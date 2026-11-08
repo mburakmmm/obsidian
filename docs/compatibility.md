@@ -26,6 +26,8 @@ CI run `42398683809` passed the rotation/path hardening addition on macOS arm64,
 
 CI run `42470080183` revalidated the same matrix after direct GitHub release URLs repeatedly returned HTTP 504 before tests could start. Pinned toolchain acquisition now uses the authenticated GitHub Release API with three bounded attempts, removes partial named assets before retrying, and still verifies the release-provided SHA-256 before extraction. This improves CI transport reliability without changing the compiler pin or provenance claim.
 
+CI run `42471701337` added bounded file/rotation lifecycle smoke coverage on macOS arm64, Linux x64 and Linux arm64. Each job passed LLVM and QBE 8,000-event append and 8,000-event rotation rounds with timeout, exact JSONL/byte/retention checks and sentinel scanning, in addition to the existing 19 behavioral files/407 assertions/0 skips, capability probes, adapters and benchmark smoke.
+
 ## Audited public APIs at the pinned revision
 
 | Area | Observed public contract | Obsidian consequence | Status |
