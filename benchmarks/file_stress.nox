@@ -1,0 +1,121 @@
+import nox.fs
+import nox.os
+import nox.path
+import nox.strings
+import obsidian.fields
+import obsidian.format_json
+import obsidian.rotation
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.rotation import RotationPolicy
+from obsidian.sink_format import FORMAT_JSON
+from obsidian.sinks.file import FileSink
+from obsidian.sinks.rotating_file import RotatingFileSink
+
+SEGMENT_WRITES: int = 1000
+RECORDS_PER_ROTATION: int = 16
+RETAINED_ARCHIVES: int = 4
+MINIMUM_ITERATIONS: int = 8000
+MAXIMUM_ITERATIONS: int = 1000000
+
+def stress_iterations() -> int:
+    if nox.os.arg_count() != 2:
+        raise ValueError("file stress requires one iteration argument")
+    iterations: int = int(nox.os.arg(1))
+    if iterations < MINIMUM_ITERATIONS or iterations > MAXIMUM_ITERATIONS:
+        raise ValueError("file stress iteration count is out of range")
+    if iterations % SEGMENT_WRITES != 0 or iterations % RECORDS_PER_ROTATION != 0:
+        raise ValueError("file stress iteration count is not aligned")
+    return iterations
+
+def write_plain(root: str, iterations: int, message: str, fields: list[LogField]) -> int:
+    completed: int = 0
+    while completed < iterations:
+        sink: FileSink = FileSink("stress-plain", root, "stress-output/plain/events.jsonl", FORMAT_JSON, completed == 0)
+        logger: Logger = Logger("stress.plain", INFO, FakeClock(1700000000123))
+        logger.add_sink(sink)
+        segment_index: int = 0
+        while segment_index < SEGMENT_WRITES:
+            if not logger.info(message, fields):
+                raise ValueError("plain file stress lost an event")
+            segment_index += 1
+        logger.flush()
+        logger.close()
+        logger.close()
+        if not sink.is_closed() or sink.write_count() != SEGMENT_WRITES:
+            raise ValueError("plain file stress lifecycle mismatch")
+        completed += SEGMENT_WRITES
+    return completed
+
+def write_rotating(root: str, iterations: int, message: str, fields: list[LogField], max_bytes: int) -> int:
+    completed: int = 0
+    total_rotations: int = 0
+    policy: RotationPolicy = RotationPolicy(max_bytes, RETAINED_ARCHIVES)
+    while completed < iterations:
+        sink: RotatingFileSink = RotatingFileSink("stress-rotation", root, "stress-output/rotation/events.jsonl", FORMAT_JSON, completed == 0, policy)
+        logger: Logger = Logger("stress.rotation", INFO, FakeClock(1700000000123))
+        logger.add_sink(sink)
+        segment_index: int = 0
+        while segment_index < SEGMENT_WRITES:
+            if not logger.info(message, fields):
+                raise ValueError("rotating file stress lost an event")
+            segment_index += 1
+        logger.flush()
+        logger.close()
+        logger.close()
+        if not sink.is_closed() or sink.write_count() != SEGMENT_WRITES:
+            raise ValueError("rotating file stress lifecycle mismatch")
+        total_rotations += sink.rotation_count()
+        completed += SEGMENT_WRITES
+    return total_rotations
+
+iterations: int = stress_iterations()
+root: str = nox.os.current_dir()
+message: str = "bounded file stress Merhaba 世界"
+fields: list[LogField] = [LogField("status", obsidian.fields.int_value(200)), LogField("token", obsidian.fields.string_value("SYNTHETIC_FILE_STRESS_SECRET"))]
+
+plain_fixture: LogRecord = LogRecord(1700000000123, INFO, "stress.plain", message, fields, [])
+rotation_fixture: LogRecord = LogRecord(1700000000123, INFO, "stress.rotation", message, fields, [])
+plain_record_bytes: int = nox.strings.byte_len(obsidian.format_json.format_record(plain_fixture))
+rotation_record_bytes: int = nox.strings.byte_len(obsidian.format_json.format_record(rotation_fixture))
+max_rotation_bytes: int = rotation_record_bytes * RECORDS_PER_ROTATION
+
+plain_writes: int = write_plain(root, iterations, message, fields)
+plain_target: str = nox.path.join(root, "stress-output/plain/events.jsonl")
+plain_bytes: int = nox.fs.metadata(plain_target).size
+if plain_bytes != plain_record_bytes * iterations:
+    raise ValueError("plain file stress byte count mismatch")
+
+rotations: int = write_rotating(root, iterations, message, fields, max_rotation_bytes)
+expected_rotations: int = (iterations - 1) // RECORDS_PER_ROTATION
+if rotations != expected_rotations:
+    raise ValueError("rotating file stress rotation count mismatch")
+
+rotation_relative: str = "stress-output/rotation/events.jsonl"
+rotation_target: str = nox.path.join(root, rotation_relative)
+archives: list[str] = obsidian.rotation.archive_names(root, rotation_relative, max_rotation_bytes)
+if len(archives) != RETAINED_ARCHIVES:
+    raise ValueError("rotating file stress archive count mismatch")
+expected_first_sequence: int = expected_rotations - RETAINED_ARCHIVES + 1
+if archives[0] != obsidian.rotation.archive_name(rotation_relative, expected_first_sequence):
+    raise ValueError("rotating file stress first archive mismatch")
+if archives[len(archives) - 1] != obsidian.rotation.archive_name(rotation_relative, expected_rotations):
+    raise ValueError("rotating file stress last archive mismatch")
+
+active_bytes: int = nox.fs.metadata(rotation_target).size
+if active_bytes != max_rotation_bytes:
+    raise ValueError("rotating file stress active size mismatch")
+retained_bytes: int = active_bytes
+rotation_parent: str = nox.path.dirname(rotation_target)
+for archive in archives:
+    archive_bytes: int = nox.fs.metadata(nox.path.join(rotation_parent, archive)).size
+    if archive_bytes != max_rotation_bytes:
+        raise ValueError("rotating file stress archive size mismatch")
+    retained_bytes += archive_bytes
+if retained_bytes != max_rotation_bytes * (RETAINED_ARCHIVES + 1):
+    raise ValueError("rotating file stress storage budget mismatch")
+
+print("stress_schema=obsidian.file-stress.v1 iterations=" + str(iterations) + " segment_writes=" + str(SEGMENT_WRITES) + " plain_writes=" + str(plain_writes) + " plain_record_bytes=" + str(plain_record_bytes) + " plain_bytes=" + str(plain_bytes) + " rotation_record_bytes=" + str(rotation_record_bytes) + " rotation_max_bytes=" + str(max_rotation_bytes) + " rotations=" + str(rotations) + " archives=" + str(len(archives)) + " active_bytes=" + str(active_bytes) + " retained_bytes=" + str(retained_bytes))

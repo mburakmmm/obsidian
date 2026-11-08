@@ -54,6 +54,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Clean-commit macOS arm64 peak-RSS observations for LLVM/QBE bounded, failing and slow sink workloads.
 - Deterministic Phase 10 property corpus covering UTF-8/control encoding, maximum-size values, scalar field boundaries and malformed typed configuration on LLVM/QBE.
 - Deterministic rotation/path property corpus covering portable and hostile paths, every C0 control plus DEL, archive ownership and component-boundary confinement.
+- Bounded multi-process file/rotation stress harness with repeated reopen/close cycles, timeout, peak-RSS observation, exact JSONL/retention accounting and sentinel scans.
 
 ### Changed
 

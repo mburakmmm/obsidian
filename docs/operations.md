@@ -42,6 +42,8 @@ Only one process may own an active rotating path. Use a trusted, application-own
 
 Use a dedicated log directory. The pinned `read_dir` API materializes all names at once; Obsidian refuses directories above 10,000 entries but cannot prevent the stdlib's initial list allocation.
 
+For bounded lifecycle validation, run `bash scripts/run-file-stress.sh <llvm|qbe> full`. Each full run uses three fresh processes; each process appends 40,000 records and sends another 40,000 records through size rotation while reopening both sinks every 1,000 writes. The host watchdog fails a round after 120 seconds and checks exact JSONL, masking, archive order, storage budget and unexpected files. This is a development/release test, not an application runtime dependency or durability proof.
+
 ## Unsupported evidence
 
 - stderr output: no public NOX API.

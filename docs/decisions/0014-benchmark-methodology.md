@@ -45,9 +45,12 @@ The bounded probe emits 50,000 events into capacity 128 and verifies the snapsho
 
 Peak RSS includes the NOX runtime, allocator high-water behavior, validation snapshot and probe code. The empty process remains a separate baseline; values are not subtracted into an exact Obsidian allocation claim. This does not measure an async queue because ADR-0011 keeps async unsupported. Longer stress/fuzz workloads remain separate.
 
+File lifecycle stress is a separate, non-throughput harness. `file_stress.nox` repeatedly closes and reconstructs append and rotating sinks while writing fixed, redacted JSONL records. The host runner executes each round in a fresh process with a hard timeout, validates every retained file without loading the complete append log into memory, and records peak RSS as an observation. Smoke mode uses one 8,000-event round per path; full mode uses three 40,000-event rounds per path. Exact completion, byte budgets, archive sequences, JSON schema, masking and sentinel absence are gates. Elapsed time and RSS are not performance or leak guarantees; successful repeated bounded rounds are deadlock/resource-regression evidence only.
+
 ## Consequences
 
 - Results are reproducible from `scripts/run-benchmarks.sh <llvm|qbe>` but remain machine-specific observations.
 - A result from a dirty tree, different compiler SHA or different workload parameters cannot be compared as the same baseline.
 - Millisecond aggregate timing limits fine-grained precision; the runner fails when a workload is too short for even one millisecond.
 - CI may compile or smoke-run benchmarks, but noisy shared-runner numbers are not release performance evidence.
+- CI runs only bounded file-stress smoke mode; publishable full-stress evidence must come from a clean commit and report backend/environment separately.

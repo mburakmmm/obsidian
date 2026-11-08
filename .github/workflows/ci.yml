@@ -118,6 +118,12 @@ jobs:
           bash scripts/run-benchmarks.sh llvm
           bash scripts/run-benchmarks.sh qbe
 
+      - name: Smoke file and rotation stress
+        shell: bash
+        run: |
+          bash scripts/run-file-stress.sh llvm smoke
+          bash scripts/run-file-stress.sh qbe smoke
+
       - name: Report test evidence
         shell: bash
         run: |
@@ -135,5 +141,6 @@ jobs:
             echo "- async capability probes: $capability_probes (no-go)"
             echo "- ecosystem probes: $ecosystem_probes ($ecosystem_checks explicit checks per backend)"
             echo "- benchmark harness: LLVM/QBE smoke only (not baseline evidence)"
+            echo "- file/rotation stress: LLVM/QBE smoke, 8,000 events per path/backend"
             echo "- backends: LLVM, QBE"
           } >>"$GITHUB_STEP_SUMMARY"
