@@ -1,6 +1,6 @@
 # Phase 10 safety closeout
 
-Status: local P0/P1 closeout candidate on NOX 2.1.0; supported remote matrix evidence pending.
+Status: Phase 10 P0/P1 closeout completed on NOX 2.1.0 for the supported matrix.
 
 This audit covers the advertised synchronous Obsidian core, its built-in sinks, size rotation and the pinned Nyx/Aether/Quartz adapters. It does not promote disabled or explicitly unsupported capabilities into the support contract.
 
@@ -37,6 +37,6 @@ The following remain unsupported capability limits, not claims of completed beha
 
 These limits remain release-visible in `docs/compatibility.md`, `docs/security.md` and `docs/operations.md`. A future feature entering one of these boundaries requires a new ADR and matching negative/security/lifecycle tests.
 
-## Verification gate
+## Verification evidence
 
-The closeout becomes final only after the complete package suite, three expected compile-fail fixtures, capability audit, dependency/import checks, optional adapters, benchmark smoke and file/rotation stress smoke pass on macOS arm64, Linux x64 and Linux arm64 with LLVM and QBE. Until that run is recorded here and in `todo.md`, the Phase 10 P0/P1 gate remains open.
+Commit `f71bbba` passed CI `42640500312` on macOS arm64, Linux x64 and Linux arm64. Every job passed LLVM and QBE package suites with 20 behavioral files/423 assertions/0 skips, three expected compile-fail fixtures, the async capability audit, dependency/import checks, pinned Nyx/Aether/Quartz probes, benchmark smoke and 8,000-event file/rotation stress smoke. This closes the Phase 10 P0/P1 gate for the supported synchronous scope; the unsupported boundaries above remain explicit rather than being treated as fixed behavior.
