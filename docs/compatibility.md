@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–9 evidence is green on NOX 2.1.0. The Phase 10 benchmark harness and deterministic hardening property corpora pass on the supported remote matrix. The seeded fuzz corpus passes locally on LLVM/QBE; its remote matrix is pending. This document does not extend support beyond tested jobs.
+Status: Phase 0–9 evidence is green on NOX 2.1.0. The Phase 10 benchmark, stress and hardening corpora pass on the supported remote matrix. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -28,7 +28,7 @@ CI run `42470080183` revalidated the same matrix after direct GitHub release URL
 
 CI run `42471701337` added bounded file/rotation lifecycle smoke coverage on macOS arm64, Linux x64 and Linux arm64. Each job passed LLVM and QBE 8,000-event append and 8,000-event rotation rounds with timeout, exact JSONL/byte/retention checks and sentinel scanning, in addition to the existing 19 behavioral files/407 assertions/0 skips, capability probes, adapters and benchmark smoke.
 
-Local NOX 2.1.0 LLVM/QBE verification on 2026-11-09 added 2,048 fixed-seed fuzz cases and a sensitive-directory regression, for 20 behavioral files/414 assertions/0 skips and 208 fixed property cases. Remote platform evidence is pending and is not inferred from the local run.
+CI run `42635939949` passed the fixed-seed fuzz addition on macOS arm64, Linux x64 and Linux arm64 with LLVM/QBE: 20 behavioral files/414 assertions/0 skips, 208 fixed property cases, 2,048 seeded fuzz cases and three expected compile-fail fixtures. The same jobs also passed capability probes, adapters, package import, benchmark smoke and 8,000-event file/rotation stress smoke. The corpus found and now guards a mixed-case sensitive-directory component followed by a path separator.
 
 ## Audited public APIs at the pinned revision
 
@@ -38,7 +38,7 @@ Local NOX 2.1.0 LLVM/QBE verification on 2026-11-09 added 2,048 fixed-seed fuzz 
 | `nox.regex` / strings | bounded regex search/replace, escaping, Unicode string methods | Use fixed/escaped patterns; bypass matcher when no sensitive marker so arbitrary controls retain formatter semantics | Phase 4 header/Bearer/URL/query/control probes pass locally and in supported CI jobs |
 | `nox.json` | `JsonValue`, typed accessors, `dump_string`, `JsonWriter` | Use writer/escaping; test writer nesting because it does not validate structure | Phase 2 JSONL/golden/typed round-trip probes pass on LLVM/QBE |
 | `nox.fs` | synchronous `open_append`; unbuffered `write`; explicit/idempotent `close`; metadata size; rename/create/read/remove operations | File sinks close explicitly; size rotation uses byte metadata; `flush` is not `fsync` | Phase 6 size/rename/retention/restart probes pass locally and in supported CI on LLVM/QBE |
-| `nox.path` | `canonicalize`, `join`, `strip_prefix`, components | Constrain file/retention paths against a canonical allowed root; reject raw controls before native path calls | Phase 10 CI `42398683809`: 106 deterministic rotation/path cases; local seeded-fuzz verification adds the sensitive-directory boundary regression |
+| `nox.path` | `canonicalize`, `join`, `strip_prefix`, components | Constrain file/retention paths against a canonical allowed root; reject raw controls before native path calls | Phase 10 CI `42635939949`: 107 deterministic rotation/path cases plus 512 seeded valid/hostile path cases and existing traversal/symlink probes |
 | built-in `print` / `nox.console` | stdout only; no `file=` target, stdio flush or recoverable write-error channel | Support explicit stdout; reject stderr; document logical flush | Stdout exact-capture probe passes on supported CI jobs and locally; stderr blocked |
 | `nox.os` | `getenv` raises `OsError` when absent; `current_dir`, `set_var` | Environment overrides require explicit `try/except OsError` | Phase 5 missing/valid/invalid env probes pass locally and in supported CI on LLVM/QBE |
 | `nox.time` | UTC `DateTime`; wall `now_ms`; monotonic `Instant`; `boot_ms` | Inject wall clock for records and monotonic clock for timeouts/durations | Fake clock and epoch-to-RFC3339 probes pass on LLVM/QBE |
@@ -46,7 +46,7 @@ Local NOX 2.1.0 LLVM/QBE verification on 2026-11-09 added 2,048 fixed-seed fuzz 
 | `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 scalar/lifetime probes pass locally and in supported CI on LLVM/QBE; LLVM overlap observation is reported separately |
 | scheduler | LLVM M:N work-stealing; QBE cooperative tasks; `Task.cancel` is cooperative, while `ThreadHandle` has join only and channels expose no close/timeout contract | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak 2 is proven but scheduling-sensitive; QBE scalar thread-channel probe passes locally and in supported CI |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Local Phase 10: 20 files/414 assertions/0 skips, 208 fixed property cases and 2,048 seeded fuzz cases; remote evidence remains at CI `42398683809` until the new commit runs |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 10 local and CI `42635939949`: 20 files/414 assertions/0 skips, 208 fixed property cases and 2,048 seeded fuzz cases; three expected compile-fail fixtures include nested-value rejection |
 
 ## Known gaps and conservative decisions
 
@@ -79,12 +79,12 @@ Local NOX 2.1.0 LLVM/QBE verification on 2026-11-09 added 2,048 fixed-seed fuzz 
 
 | Platform/backend | Check | Build/run | Tests | Concurrency claim |
 |---|---:|---:|---:|---|
-| macOS arm64 / LLVM | Pass | Pass | Phase 10: 19 files/407 assertions/0 skips, 207 property cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42398683809` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
-| macOS arm64 / QBE | Pass | Pass | Phase 10: 19 files/407 assertions/0 skips, 207 property cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42398683809` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
-| Linux x64 / LLVM | Pass | Pass | Phase 10: 19 files/407 assertions/0 skips, 207 property cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42398683809` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
-| Linux x64 / QBE | Pass | Pass | Phase 10: 19 files/407 assertions/0 skips, 207 property cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42398683809` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
-| Linux arm64 / LLVM | Pass | Pass | Phase 10: 19 files/407 assertions/0 skips, 207 property cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42398683809` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
-| Linux arm64 / QBE | Pass | Pass | Phase 10: 19 files/407 assertions/0 skips, 207 property cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42398683809` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
+| macOS arm64 / LLVM | Pass | Pass | Phase 10: 20 files/414 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42635939949` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| macOS arm64 / QBE | Pass | Pass | Phase 10: 20 files/414 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42635939949` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
+| Linux x64 / LLVM | Pass | Pass | Phase 10: 20 files/414 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42635939949` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| Linux x64 / QBE | Pass | Pass | Phase 10: 20 files/414 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42635939949` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
+| Linux arm64 / LLVM | Pass | Pass | Phase 10: 20 files/414 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42635939949` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| Linux arm64 / QBE | Pass | Pass | Phase 10: 20 files/414 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42635939949` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
 | Windows x64 | Not run | Not run | Not run | Unsupported until evidence exists |
 
 ## Upgrade policy
