@@ -141,4 +141,4 @@ def sanitize_record(entry: LogRecord) -> LogRecord:
 
 def path_may_contain_secret(relative_path: str) -> bool:
     keys: str = "password|passwd|token|access_token|refresh_token|authorization|api_key|secret|cookie|set-cookie|private_key"
-    return nox.regex.is_match("(?i)(^|[/._-])(?:" + keys + ")(?:[=._:-]|$)", relative_path)
+    return nox.regex.is_match("(?i)(^|[/._-])(?:" + keys + ")(?:/|[=._:-]|$)", relative_path)

@@ -84,8 +84,8 @@ def path_confinement_cases() -> int:
 
 valid_result: int = valid_relative_path_cases()
 nox.test.assert_eq_int(valid_result, 10, "portable relative path corpus accepted")
-invalid_paths: list[str] = ["", "/absolute.log", "logs/", "bad\\name.log", "bad:name.log", ".", "..", "../events.log", "logs/../events.log", "./events.log", "logs/./events.log", "events.log/..", "events.log/.", "x" * (MAX_RELATIVE_LOG_PATH_LENGTH + 1), "password.log", "passwd.log", "logs/ToKeN.log", "access_token.log", "refresh_token.log", "authorization.log", "api_key.log", "secret.log", "cookie.log", "set-cookie.log", "private_key.log"]
-nox.test.assert_eq_int(len(invalid_paths), 25, "unsafe relative path corpus size")
+invalid_paths: list[str] = ["", "/absolute.log", "logs/", "bad\\name.log", "bad:name.log", ".", "..", "../events.log", "logs/../events.log", "./events.log", "logs/./events.log", "events.log/..", "events.log/.", "x" * (MAX_RELATIVE_LOG_PATH_LENGTH + 1), "password.log", "passwd.log", "logs/ToKeN.log", "logs/ToKeN/events.log", "access_token.log", "refresh_token.log", "authorization.log", "api_key.log", "secret.log", "cookie.log", "set-cookie.log", "private_key.log"]
+nox.test.assert_eq_int(len(invalid_paths), 26, "unsafe relative path corpus size")
 nox.test.assert_true(all_paths_rejected(invalid_paths), "unsafe relative path corpus rejected")
 
 control_paths: list[str] = []

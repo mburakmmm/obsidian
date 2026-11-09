@@ -1,0 +1,245 @@
+import nox.json
+import nox.path
+import nox.test
+import obsidian.config
+import obsidian.fields
+import obsidian.format_json
+import obsidian.format_text
+import obsidian.level
+import obsidian.redact
+import obsidian.rotation
+from obsidian.config import LoggerConfig, RedactionConfig
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.record import LogRecord
+from obsidian.sinks.file import validate_relative_log_path
+
+FUZZ_SEED: int = 20261109
+PRNG_MODULUS: int = 2147483647
+PRNG_MULTIPLIER: int = 48271
+MESSAGE_CASES: int = 512
+FIELD_CASES: int = 256
+REDACTION_CASES: int = 256
+VALID_PATH_CASES: int = 256
+INVALID_PATH_CASES: int = 256
+ARCHIVE_CASES: int = 256
+CONFIG_CASES: int = 256
+
+class SeededGenerator:
+    _state: int
+
+    def __init__(self, seed: int) -> None:
+        if seed < 1 or seed >= PRNG_MODULUS:
+            raise ValueError("seeded generator seed is invalid")
+        self._state = seed
+
+    def next_int(self, upper_exclusive: int) -> int:
+
+        if upper_exclusive < 1:
+            raise ValueError("seeded generator bound is invalid")
+        self._state = self._state * PRNG_MULTIPLIER % PRNG_MODULUS
+        return self._state % upper_exclusive
+
+def fail_case(category: str, index: int) -> None:
+    diagnostic: str = "seeded fuzz failure category=" + category + " seed=" + str(FUZZ_SEED) + " case=" + str(index)
+    print(diagnostic)
+    raise ValueError(diagnostic)
+
+def object_value_by_key(source: JsonValue, key: str) -> JsonValue:
+    index: int = 0
+    while index < nox.json.object_len(source):
+        if nox.json.object_key(source, index) == key:
+            return nox.json.object_value(source, index)
+        index += 1
+    raise ValueError("JSON object key not found")
+
+def contains_raw_text_control(value: str) -> bool:
+    for character in value:
+        codepoint: int = ord(character)
+        if codepoint < 32 or codepoint == 127:
+            return True
+    return False
+
+def text_alphabet() -> list[str]:
+    result: list[str] = ["a", "Z", "0", " ", "=", ":", "/", "?", "&", "\\", "\"", "'", "İ", "界", "🙂"]
+    codepoint: int = 0
+    while codepoint < 32:
+        result.append(chr(codepoint))
+        codepoint += 1
+    result.append(chr(127))
+    return result
+
+def generated_text(generator: SeededGenerator, maximum_length: int) -> str:
+    alphabet: list[str] = text_alphabet()
+    length: int = generator.next_int(maximum_length + 1)
+    result: str = ""
+    index: int = 0
+    while index < length:
+        result += alphabet[generator.next_int(len(alphabet))]
+        index += 1
+    return result
+
+def random_ascii_case(value: str, generator: SeededGenerator) -> str:
+    result: str = ""
+    for character in value:
+        codepoint: int = ord(character)
+        if codepoint >= 97 and codepoint <= 122 and generator.next_int(2) == 1:
+            result += chr(codepoint - 32)
+        else:
+            result += character
+    return result
+
+def message_cases() -> int:
+    generator: SeededGenerator = SeededGenerator(FUZZ_SEED + 1)
+    empty: list[LogField] = []
+    index: int = 0
+    while index < MESSAGE_CASES:
+        message: str = generated_text(generator, 128)
+        entry: LogRecord = LogRecord(1700000000123, INFO, "fuzz.message", message, empty, empty)
+        json_line: str = obsidian.format_json.format_record(entry)
+        if not json_line.endswith("\n") or json_line.count("\n") != 1:
+            fail_case("message-jsonl-framing", index)
+        parsed: JsonValue = nox.json.parse(json_line)
+        if nox.json.as_string(object_value_by_key(parsed, "message")) != message:
+            fail_case("message-json-round-trip", index)
+        if contains_raw_text_control(obsidian.format_text.format_record(entry)):
+            fail_case("message-text-control", index)
+        index += 1
+    return index
+
+def field_cases() -> int:
+    generator: SeededGenerator = SeededGenerator(FUZZ_SEED + 2)
+    empty: list[LogField] = []
+    index: int = 0
+    while index < FIELD_CASES:
+        value: str = generated_text(generator, 256)
+        event_fields: list[LogField] = [LogField("payload", obsidian.fields.string_value(value))]
+        entry: LogRecord = LogRecord(1700000000123, INFO, "fuzz.field", "field round trip", event_fields, empty)
+        parsed: JsonValue = nox.json.parse(obsidian.format_json.format_record(entry))
+        parsed_fields: JsonValue = object_value_by_key(parsed, "fields")
+        if nox.json.as_string(object_value_by_key(parsed_fields, "payload")) != value:
+            fail_case("field-json-round-trip", index)
+        index += 1
+    return index
+
+def redaction_cases() -> int:
+    generator: SeededGenerator = SeededGenerator(FUZZ_SEED + 3)
+    sensitive_roots: list[str] = obsidian.redact.default_sensitive_keys()
+    empty: list[LogField] = []
+    sentinel: str = "SYNTHETIC_SEEDED_FUZZ_SECRET"
+    index: int = 0
+    while index < REDACTION_CASES:
+        key: str = random_ascii_case(sensitive_roots[generator.next_int(len(sensitive_roots))], generator)
+        event_fields: list[LogField] = [LogField(key, obsidian.fields.string_value(sentinel))]
+        entry: LogRecord = LogRecord(1700000000123, INFO, "fuzz.redaction", "redaction case", event_fields, empty)
+        json_line: str = obsidian.format_json.format_record(entry)
+        if "SYNTHETIC_" in json_line:
+            fail_case("redaction-sentinel", index)
+        parsed: JsonValue = nox.json.parse(json_line)
+        parsed_fields: JsonValue = object_value_by_key(parsed, "fields")
+        if nox.json.as_string(object_value_by_key(parsed_fields, key)) != "***":
+            fail_case("redaction-mask", index)
+        index += 1
+    return index
+
+def numeric_suffix(generator: SeededGenerator, digits: int) -> str:
+    result: str = ""
+    index: int = 0
+    while index < digits:
+        result += chr(48 + generator.next_int(10))
+        index += 1
+    return result
+
+def safe_relative_path(generator: SeededGenerator) -> str:
+    return "logs/segment" + numeric_suffix(generator, 6) + "/event" + numeric_suffix(generator, 6) + ".log"
+
+def valid_path_cases() -> int:
+    generator: SeededGenerator = SeededGenerator(FUZZ_SEED + 4)
+    index: int = 0
+    while index < VALID_PATH_CASES:
+        relative_path: str = safe_relative_path(generator)
+        validate_relative_log_path(relative_path)
+        sequence: int = generator.next_int(99999999) + 1
+        archive: str = obsidian.rotation.archive_name(relative_path, sequence)
+        prefix: str = nox.path.basename(relative_path) + "."
+        if obsidian.rotation.archive_sequence(archive, prefix) != sequence:
+            fail_case("valid-path-archive-round-trip", index)
+        index += 1
+    return index
+
+def is_fixed_path_error(message: str) -> bool:
+    return message == "file sink path must not be empty" or message == "file sink path is too long" or message == "file sink path must be relative" or message == "file sink path contains a sensitive key" or message == "file sink path is not portable" or message == "file sink path contains a control character" or message == "file sink path must name a file" or message == "file sink path contains traversal"
+
+def invalid_path(generator: SeededGenerator) -> str:
+    mode: int = generator.next_int(8)
+    suffix: str = numeric_suffix(generator, 8)
+    if mode == 0:
+        return "/absolute" + suffix + ".log"
+    if mode == 1:
+        return "../event" + suffix + ".log"
+    if mode == 2:
+        return "logs/../event" + suffix + ".log"
+    if mode == 3:
+        return "logs/bad\\event" + suffix + ".log"
+    if mode == 4:
+        return "logs/bad:event" + suffix + ".log"
+    if mode == 5:
+        return "logs/bad" + chr(generator.next_int(32)) + suffix + ".log"
+    if mode == 6:
+        return "logs/ToKeN/event" + suffix + ".log"
+    return "logs/event" + suffix + "/"
+
+def invalid_path_cases() -> int:
+    generator: SeededGenerator = SeededGenerator(FUZZ_SEED + 5)
+    index: int = 0
+    while index < INVALID_PATH_CASES:
+        accepted: bool = True
+        try:
+            validate_relative_log_path(invalid_path(generator))
+        except ValueError as error:
+            accepted = False
+            if not is_fixed_path_error(error.message):
+                fail_case("invalid-path-category", index)
+        if accepted:
+            fail_case("invalid-path-accepted", index)
+        index += 1
+    return index
+
+def malformed_archive_cases() -> int:
+    generator: SeededGenerator = SeededGenerator(FUZZ_SEED + 6)
+    index: int = 0
+    while index < ARCHIVE_CASES:
+        suffix: str = numeric_suffix(generator, 8)
+        corrupt_index: int = generator.next_int(8)
+        malformed: str = suffix[:corrupt_index] + "x" + suffix[corrupt_index + 1:]
+        if obsidian.rotation.archive_sequence("events.log." + malformed, "events.log.") != 0:
+            fail_case("malformed-archive-accepted", index)
+        index += 1
+    return index
+
+def malformed_config_cases() -> int:
+    generator: SeededGenerator = SeededGenerator(FUZZ_SEED + 7)
+    redaction: RedactionConfig = RedactionConfig([])
+    checked: int = 0
+    while checked < CONFIG_CASES:
+        threshold: int = generator.next_int(2001) - 1000
+        if not obsidian.level.is_valid(threshold):
+            accepted: bool = True
+            try:
+                LoggerConfig("fuzz.config", threshold, redaction)
+            except ValueError as error:
+                accepted = False
+                if error.message != "logger threshold is invalid":
+                    fail_case("invalid-config-category", checked)
+            if accepted:
+                fail_case("invalid-config-accepted", checked)
+            checked += 1
+    return checked
+
+nox.test.assert_eq_int(message_cases(), MESSAGE_CASES, "seeded message corpus is safe")
+nox.test.assert_eq_int(field_cases(), FIELD_CASES, "seeded field corpus round trips")
+nox.test.assert_eq_int(redaction_cases(), REDACTION_CASES, "seeded sensitive keys are masked")
+nox.test.assert_eq_int(valid_path_cases(), VALID_PATH_CASES, "seeded valid paths round trip")
+nox.test.assert_eq_int(invalid_path_cases(), INVALID_PATH_CASES, "seeded unsafe paths fail closed")
+nox.test.assert_eq_int(malformed_archive_cases(), ARCHIVE_CASES, "seeded malformed archives are ignored")
+nox.test.assert_eq_int(malformed_config_cases(), CONFIG_CASES, "seeded malformed config fails closed")

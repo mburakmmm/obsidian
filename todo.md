@@ -429,6 +429,7 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] UTF-8/control char/large field/malformed config/nested values property testleri; 101 deterministik vaka yerel ve CI `42395481106` LLVM/QBE'de geçti, nested values mevcut compile-fail sınırında reddedildi.
 - [x] Rotation filenames ve path confinement property testleri; 106 deterministik vaka yerel ve CI `42398683809` LLVM/QBE'de geçti, raw control doğrulama sırası ve non-canonical component reddi sertleştirildi.
 - [x] Bounded file/rotation stress: clean commit `15fed48` üzerinde LLVM/QBE için üç fresh process, yol başına toplam 120.000 olay, timeout/RSS/reopen/retention/sentinel kanıtı geçti; queue stress async no-go nedeniyle uygulanamaz. Bu bounded regresyon kanıtıdır, leak garantisi değildir.
+- [x] Fixed-seed NOX fuzz korpusu: `20261109` tohumu ile 2.048 encoding/field/redaction/path/archive/config vakası yerel LLVM/QBE'de geçti; sensitive dizin bileşeni sınırı bulundu ve sabit regresyonla kapatıldı. Bu coverage-guided fuzzing iddiası değildir; uzak CI kanıtı bekleniyor.
 - [ ] Tüm P0/P1 bulguları kapalı; açık riskler belgeli.
 
 ### Phase 10 kapısı

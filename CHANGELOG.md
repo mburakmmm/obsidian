@@ -55,6 +55,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Deterministic Phase 10 property corpus covering UTF-8/control encoding, maximum-size values, scalar field boundaries and malformed typed configuration on LLVM/QBE.
 - Deterministic rotation/path property corpus covering portable and hostile paths, every C0 control plus DEL, archive ownership and component-boundary confinement.
 - Bounded multi-process file/rotation stress harness with repeated reopen/close cycles, timeout, peak-RSS observation, exact JSONL/retention accounting and sentinel scans.
+- Reproducible seeded NOX fuzz corpus covering 2,048 JSON/text encoding, scalar field, mixed-case redaction, path/archive and configuration cases.
 
 ### Changed
 
@@ -63,6 +64,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Package-internal, test and example imports now use the manifest package name so installed dependency graphs resolve transitively.
 - Stderr selection now fails explicitly instead of falling back silently because the pinned NOX API exposes stdout only.
 - File names containing recognized credential-key components are rejected before opening a handle.
+- Recognized credential-key directory components are rejected before opening a file, including mixed-case names followed by a path separator.
 - JSONL records include optional top-level correlation identifiers; text records render them in fixed request/trace/span order.
 - Rotating output rejects oversized records/preexisting files rather than exceeding the configured storage budget.
 - Async dispatch remains disabled after the Phase 7 audit, revalidated on NOX 2.1.0, found no portable non-blocking overflow or timeout-aware worker shutdown contract.
