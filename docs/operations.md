@@ -6,13 +6,13 @@ Status: synchronous operation through Phase 10 path hardening; no durability, ti
 
 Only synchronous dispatch is supported. A `True` logger result means every selected route completed; `False` can mean global threshold rejection, redaction failure, filter failure or sink write failure. Per-sink threshold/filter rejection alone is not an infrastructure failure. Success does not imply stable-storage durability. There is no background queue, overflow policy or timeout-based async flush/close. Do not wrap logger calls in unjoined fire-and-forget tasks: their failures would be unobserved and logger shutdown could not prove completion. See ADR-0011.
 
-Inspect `logger.diagnostics_snapshot()` for bounded sanitized failure counts. The default policy continues after a filter or sink failure. Flush and close also continue across sinks; close remains idempotent. Enable `raise_on_error` only when a caller explicitly wants a fixed `SinkError` category. Callback exception messages and record data are never copied into diagnostics.
+Inspect `logger.diagnostics_snapshot()` for bounded sanitized failure counts. The default policy continues after a filter or sink failure. Flush and close also continue across sinks; close remains idempotent. Recursive log/flush/close calls from callbacks terminate and are counted. Route mutation or reconfiguration from a callback is rejected so the active traversal cannot grow or change underneath itself. Enable `raise_on_error` only when a caller explicitly wants a fixed `SinkError` category. Callback exception messages and record data are never copied into diagnostics.
 
 ## Logger construction and context lifecycle
 
 Prefer `factory.build_logger` when constructing a logger from typed configs. It does not return a partially configured logger; a sink construction failure closes resources opened by that attempt and raises a sanitized category. Runtime `Logger.reconfigure` changes only name, threshold and redaction policy and never mutates the installed sink set.
 
-Direct construction can call `add_sink_with_filter` for per-sink thresholds and exact logger filters. Typed factory routing is deferred on the pinned compiler. Exact names are case-sensitive; prefix/wildcard matching and sampling are not supported. Filters run after redaction on clones and are never called under an internal logging lock.
+Direct construction can call `add_sink_with_filter` for per-sink thresholds and exact logger filters. A logger accepts at most 64 active routes. Removing a route transfers lifecycle responsibility back to the caller; the logger no longer flushes or closes that sink. Typed factory routing is deferred on the pinned compiler. Exact names are case-sensitive; prefix/wildcard matching and sampling are not supported. Filters run after redaction on clones and are never called under an internal logging lock.
 
 `Logger.bind` returns a context view that does not own sinks and therefore has no close operation. Close the parent logger exactly once. Pass a bound view explicitly to request-handling code; Obsidian does not read or install global/task-local request context.
 

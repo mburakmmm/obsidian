@@ -1,4 +1,5 @@
 import obsidian.sink_format
+from obsidian.diagnostics import saturating_increment
 from obsidian.record import LogRecord
 from obsidian.sink_error import SinkError
 
@@ -40,7 +41,7 @@ class ConsoleSink:
             print(encoded, end="")
         except ValueError:
             raise SinkError("console sink formatting failed")
-        self._writes += 1
+        self._writes = saturating_increment(self._writes)
 
     def flush(self) -> None:
 

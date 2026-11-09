@@ -46,7 +46,9 @@ There is no `__init__.nox` facade convention in the audited module contract. Pub
 
 ## Lifecycle model
 
-Logger ownership is explicit. Sinks have documented write/flush/close behavior and idempotent close. The default policy records saturating sanitized counters and continues to later routes; `raise_on_error` is explicit and emits only fixed categories. User filters and sinks do not execute while holding a logging lock. Re-entry is rejected and counted rather than recursively routed.
+Logger ownership is explicit. Sinks have documented write/flush/close behavior and idempotent close. The default policy records saturating sanitized counters and continues to later routes; `raise_on_error` is explicit and emits only fixed categories. User filters and sinks do not execute while holding a logging lock. Log, flush and close re-entry is rejected and counted rather than recursively routed. Callback-time route mutation or scalar reconfiguration is rejected so a callback cannot grow or invalidate the list currently dispatching it.
+
+A logger owns at most 64 active routes. Registration identifiers are monotonic, never reused and fail closed at their explicit ceiling. Initial and nested context snapshots are limited to 256 fields. Built-in observable sink counters saturate at the same fixed ceiling as diagnostics. See ADR-0015 and `hardening.md`.
 
 `BoundLogger` does not expose `close`; it delegates writes and flush to its parent and cannot duplicate sink ownership. Runtime reconfiguration changes only validated scalar logger state and leaves the installed sink set intact. New sink sets are built through an all-or-nothing factory rather than mutating a live logger incrementally.
 

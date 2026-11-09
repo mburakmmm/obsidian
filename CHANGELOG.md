@@ -56,6 +56,7 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Deterministic rotation/path property corpus covering portable and hostile paths, every C0 control plus DEL, archive ownership and component-boundary confinement.
 - Bounded multi-process file/rotation stress harness with repeated reopen/close cycles, timeout, peak-RSS observation, exact JSONL/retention accounting and sentinel scans.
 - Reproducible seeded NOX fuzz corpus covering 2,048 JSON/text encoding, scalar field, mixed-case redaction, path/archive and configuration cases.
+- Phase 10 safety closeout audit and ADR for bounded callback lifecycle, route registration and context snapshots.
 
 ### Changed
 
@@ -65,6 +66,8 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Stderr selection now fails explicitly instead of falling back silently because the pinned NOX API exposes stdout only.
 - File names containing recognized credential-key components are rejected before opening a handle.
 - Recognized credential-key directory components are rejected before opening a file, including mixed-case names followed by a path separator.
+- Logger route mutation and recursive lifecycle calls from callbacks now fail closed; active routes are capped at 64 and registration identifiers cannot wrap.
+- Context views are capped at 256 fields and observable sink counters saturate instead of overflowing.
 - JSONL records include optional top-level correlation identifiers; text records render them in fixed request/trace/span order.
 - Rotating output rejects oversized records/preexisting files rather than exceeding the configured storage budget.
 - Async dispatch remains disabled after the Phase 7 audit, revalidated on NOX 2.1.0, found no portable non-blocking overflow or timeout-aware worker shutdown contract.

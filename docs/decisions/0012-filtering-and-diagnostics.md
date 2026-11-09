@@ -21,6 +21,8 @@ Typed factory routing is deferred. Compile/runtime probes found that widening `S
 
 No internal logging lock exists in the synchronous dispatcher, so filters and sinks are not called under one. The re-entry guard remains active for redactors, filters and sinks. No emergency console/file callback is added; the sanitized counter snapshot is the supported diagnostic channel.
 
+ADR-0015 extends this decision with explicit route-count/identifier bounds, callback-time mutation rejection and guarded flush/close lifecycle. Those rules close the Phase 10 non-termination and resource-growth findings without changing the lock-free synchronous model.
+
 ## Deferred
 
 - Seeded sampling is absent because the pinned public docs do not provide a selected stable hash contract and Phase 8 does not need sampling to satisfy its gate.

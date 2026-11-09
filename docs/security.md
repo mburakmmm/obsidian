@@ -28,6 +28,8 @@ If redaction throws or returns a failed result, `Logger` drops the event, increm
 
 Diagnostics contain only saturating counts by fixed category. They never store record text, fields, exception values, paths or configuration. Strict mode raises fixed categories only. There is no automatic emergency console/file output and no diagnostics callback that could form a second logging path.
 
+Callback-time logger mutation and recursive log/flush/close operations fail closed. They cannot extend the active route traversal, replace its redaction policy or recursively re-enter sink lifecycle. The outer operation records bounded fixed diagnostics and continues to later routes when possible.
+
 Sink/path errors use fixed categories and do not echo paths or record contents. Control characters are rejected before native path and secret-pattern helpers run; recognized credential-key components are then rejected in file names. The allowed file root must still be trusted because the pinned NOX API cannot provide race-free no-follow open semantics.
 
 ## Deliberate limits

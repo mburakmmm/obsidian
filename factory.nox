@@ -1,6 +1,6 @@
 from obsidian.clock import Clock
 from obsidian.config import LoggerConfig, SINK_CONSOLE, SINK_FILE, SINK_MEMORY, SINK_ROTATING_FILE, SinkConfig
-from obsidian.logger import Logger
+from obsidian.logger import Logger, MAX_SINKS
 from obsidian.sink import Sink
 from obsidian.sink_error import SinkError
 from obsidian.sinks.console import ConsoleSink
@@ -31,6 +31,8 @@ def close_built_sinks(sinks: list[Sink]) -> bool:
     return closed_all
 
 def build_logger(config: LoggerConfig, sink_configs: list[SinkConfig], clock: Clock) -> Logger:
+    if len(sink_configs) > MAX_SINKS:
+        raise ValueError("logger has too many sinks")
     built: list[Sink] = []
     try:
         for sink_config in sink_configs:

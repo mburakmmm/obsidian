@@ -1,3 +1,4 @@
+from obsidian.diagnostics import saturating_increment
 from obsidian.record import LogRecord
 
 class MemorySink:
@@ -30,14 +31,14 @@ class MemorySink:
             raise ValueError("memory sink is closed")
         if len(self._records) == self._capacity:
             del self._records[0]
-            self._dropped += 1
+            self._dropped = saturating_increment(self._dropped)
         self._records.append(entry.clone())
 
     def flush(self) -> None:
 
         if self._closed:
             raise ValueError("memory sink is closed")
-        self._flushes += 1
+        self._flushes = saturating_increment(self._flushes)
 
     def close(self) -> None:
 

@@ -3,7 +3,7 @@ import obsidian.fields
 import obsidian.format_json
 import obsidian.format_text
 from obsidian.clock import FakeClock
-from obsidian.context import BoundLogger, LogContext
+from obsidian.context import BoundLogger, LogContext, MAX_CONTEXT_FIELDS
 from obsidian.fields import LogField
 from obsidian.level import INFO
 from obsidian.logger import Logger
@@ -17,6 +17,31 @@ def invalid_id_raises(value: str) -> bool:
         return False
     except ValueError as e:
         return e.message == "correlation id contains an unsupported character" or e.message == "correlation id is too long"
+
+def oversized_context_raises() -> bool:
+    fields: list[LogField] = []
+    index: int = 0
+    while index <= MAX_CONTEXT_FIELDS:
+        fields.append(LogField("context_" + str(index), obsidian.fields.int_value(index)))
+        index += 1
+    try:
+        LogContext(fields)
+        return False
+    except ValueError as e:
+        return e.message == "context has too many fields"
+
+def nested_context_overflow_raises() -> bool:
+    fields: list[LogField] = []
+    index: int = 0
+    while index < MAX_CONTEXT_FIELDS:
+        fields.append(LogField("bound_" + str(index), obsidian.fields.int_value(index)))
+        index += 1
+    full: LogContext = LogContext(fields)
+    try:
+        full.with_binding([LogField("overflow", obsidian.fields.int_value(1))])
+        return False
+    except ValueError as e:
+        return e.message == "context has too many fields"
 
 clock: FakeClock = FakeClock(1700000000123)
 logger: Logger = Logger("service.context", INFO, clock)
@@ -68,6 +93,8 @@ nox.test.assert_true("\"span_id\":\"span-1\"" in json, "json span id present")
 nox.test.assert_true(invalid_id_raises("bad\nforged"), "control correlation id rejected")
 nox.test.assert_true(invalid_id_raises("ç"), "nonportable correlation id rejected")
 nox.test.assert_true(invalid_id_raises("x" * 129), "oversized correlation id rejected")
+nox.test.assert_true(oversized_context_raises(), "oversized initial context rejected")
+nox.test.assert_true(nested_context_overflow_raises(), "nested context remains bounded")
 nox.test.assert_true(not alpha.is_closed(), "bound view observes lifecycle")
 alpha.flush()
 nox.test.assert_eq_int(memory.flush_count(), 1, "bound flush delegates without owning sink")

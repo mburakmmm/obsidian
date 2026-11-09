@@ -5,6 +5,7 @@ import obsidian.rotation
 import obsidian.sink_format
 from nox.fs import FileWriter, FsError
 from nox.path import PathError
+from obsidian.diagnostics import saturating_increment
 from obsidian.record import LogRecord
 from obsidian.rotation import RotationPolicy
 from obsidian.sink_error import SinkError
@@ -117,7 +118,7 @@ class RotatingFileSink:
                 raise SinkError("rotating file size recovery failed")
             raise SinkError("rotating file sink write failed")
         self._current_size += encoded_size
-        self._writes += 1
+        self._writes = saturating_increment(self._writes)
 
     def _rotate(self) -> None:
 
@@ -147,7 +148,7 @@ class RotatingFileSink:
         self._writer = next_writer
         self._current_size = 0
         self._next_sequence += 1
-        self._rotations += 1
+        self._rotations = saturating_increment(self._rotations)
         try:
             obsidian.rotation.apply_retention_in_root(self._root, self._relative_path, self._policy)
         except SinkError:

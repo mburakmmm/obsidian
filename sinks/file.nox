@@ -4,6 +4,7 @@ import obsidian.redact
 import obsidian.sink_format
 from nox.fs import FileWriter, FsError
 from nox.path import PathError
+from obsidian.diagnostics import saturating_increment
 from obsidian.record import LogRecord
 from obsidian.sink_error import SinkError
 
@@ -150,7 +151,7 @@ class FileSink:
             self._writer.write(encoded)
         except FsError:
             raise SinkError("file sink write failed")
-        self._writes += 1
+        self._writes = saturating_increment(self._writes)
 
     def flush(self) -> None:
 

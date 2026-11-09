@@ -11,11 +11,13 @@ from obsidian.fields import LogField
 from obsidian.filter import AllowAllFilter, LogFilter
 from obsidian.level import CRITICAL, DEBUG, ERROR, INFO, TRACE, WARNING
 from obsidian.redact import RedactionResult, Redactor
-from obsidian.record import LogRecord
+from obsidian.record import LogRecord, MAX_FIELDS_PER_SECTION
 from obsidian.sink import Sink
 from obsidian.sink_error import SinkError
 
 MAX_REDACTION_FAILURE_COUNT: int = MAX_DIAGNOSTIC_COUNT
+MAX_SINKS: int = 64
+MAX_SINK_REGISTRATION_ID: int = 2147483647
 
 class Logger:
     logger_name: str
@@ -77,8 +79,13 @@ class Logger:
 
         if self._closed:
             raise ValueError("logger is closed")
+        self._ensure_mutation_allowed()
         if not obsidian.level.is_valid(minimum_level):
             raise ValueError("sink threshold is invalid")
+        if len(self._sinks) >= MAX_SINKS:
+            raise ValueError("logger has too many sinks")
+        if self._next_sink_id > MAX_SINK_REGISTRATION_ID:
+            raise ValueError("sink registration identifiers are exhausted")
         registration_id: int = self._next_sink_id
         self._next_sink_id += 1
         self._sinks.append(target)
@@ -89,6 +96,7 @@ class Logger:
 
     def remove_sink(self, registration_id: int) -> bool:
 
+        self._ensure_mutation_allowed()
         index: int = 0
         while index < len(self._sink_ids):
             if self._sink_ids[index] == registration_id:
@@ -113,12 +121,10 @@ class Logger:
 
         if not self.is_enabled(event_level):
             return False
-        if self._dispatching:
-            self._recursion_failures = saturating_increment(self._recursion_failures)
-            self._reentry_detected = True
-            if self._raise_on_error:
-                raise ValueError("recursive logging is not allowed")
+        if self._reject_reentrant_operation():
             return False
+        if len(event_fields) > MAX_FIELDS_PER_SECTION:
+            raise ValueError("record has too many fields")
         self._dispatching = True
         self._reentry_detected = False
         try:
@@ -141,24 +147,31 @@ class Logger:
             while index < len(self._sinks):
                 if obsidian.level.is_enabled(safe_record.event_level, self._sink_thresholds[index]):
                     allowed: bool = False
+                    filter_failed: bool = False
                     self._reentry_detected = False
                     try:
                         allowed = self._sink_filters[index].allows(safe_record.clone())
                     except Exception:
                         self._filter_failures = saturating_increment(self._filter_failures)
                         had_failure = True
+                        filter_failed = True
                     if self._reentry_detected:
-                        self._filter_failures = saturating_increment(self._filter_failures)
+                        if not filter_failed:
+                            self._filter_failures = saturating_increment(self._filter_failures)
                         had_failure = True
                         allowed = False
                     if allowed:
+                        write_failed: bool = False
                         self._reentry_detected = False
                         try:
                             self._sinks[index].write(safe_record.clone())
                         except Exception:
                             self._sink_write_failures = saturating_increment(self._sink_write_failures)
                             had_failure = True
+                            write_failed = True
                         if self._reentry_detected:
+                            if not write_failed:
+                                self._sink_write_failures = saturating_increment(self._sink_write_failures)
                             had_failure = True
                 index += 1
             if had_failure and self._raise_on_error:
@@ -196,13 +209,28 @@ class Logger:
 
         if self._closed:
             return
+        if self._reject_reentrant_operation():
+            return
         failed: bool = False
-        for target in self._sinks:
-            try:
-                target.flush()
-            except Exception:
-                self._sink_flush_failures = saturating_increment(self._sink_flush_failures)
-                failed = True
+        self._dispatching = True
+        self._reentry_detected = False
+        try:
+            for target in self._sinks:
+                callback_failed: bool = False
+                self._reentry_detected = False
+                try:
+                    target.flush()
+                except Exception:
+                    self._sink_flush_failures = saturating_increment(self._sink_flush_failures)
+                    failed = True
+                    callback_failed = True
+                if self._reentry_detected:
+                    if not callback_failed:
+                        self._sink_flush_failures = saturating_increment(self._sink_flush_failures)
+                    failed = True
+        finally:
+            self._reentry_detected = False
+            self._dispatching = False
         if failed and self._raise_on_error:
             raise SinkError("logger flush failed")
 
@@ -210,14 +238,29 @@ class Logger:
 
         if self._closed:
             return
+        if self._reject_reentrant_operation():
+            return
         failed: bool = False
-        for target in self._sinks:
-            try:
-                target.close()
-            except Exception:
-                self._sink_close_failures = saturating_increment(self._sink_close_failures)
-                failed = True
-        self._closed = True
+        self._dispatching = True
+        self._reentry_detected = False
+        try:
+            for target in self._sinks:
+                callback_failed: bool = False
+                self._reentry_detected = False
+                try:
+                    target.close()
+                except Exception:
+                    self._sink_close_failures = saturating_increment(self._sink_close_failures)
+                    failed = True
+                    callback_failed = True
+                if self._reentry_detected:
+                    if not callback_failed:
+                        self._sink_close_failures = saturating_increment(self._sink_close_failures)
+                    failed = True
+        finally:
+            self._closed = True
+            self._reentry_detected = False
+            self._dispatching = False
         if failed and self._raise_on_error:
             raise SinkError("logger close failed")
 
@@ -237,6 +280,7 @@ class Logger:
 
         if self._closed:
             raise ValueError("logger is closed")
+        self._ensure_mutation_allowed()
         validated: LoggerConfig = LoggerConfig(config.logger_name(), config.threshold(), config.redaction(), config.raise_on_error())
         next_name: str = validated.logger_name()
         next_threshold: int = validated.threshold()
@@ -250,3 +294,20 @@ class Logger:
     def _record_redaction_failure(self) -> None:
 
         self._redaction_failures = saturating_increment(self._redaction_failures)
+
+    def _reject_reentrant_operation(self) -> bool:
+
+        if not self._dispatching:
+            return False
+        self._recursion_failures = saturating_increment(self._recursion_failures)
+        self._reentry_detected = True
+        if self._raise_on_error:
+            raise ValueError("recursive logger operation is not allowed")
+        return True
+
+    def _ensure_mutation_allowed(self) -> None:
+
+        if self._dispatching:
+            self._recursion_failures = saturating_increment(self._recursion_failures)
+            self._reentry_detected = True
+            raise ValueError("logger mutation during dispatch is not allowed")

@@ -31,7 +31,7 @@ Obsidian wraps and extends `nox.log`; it does not replace or fork the standard l
 - Explicit logger, clock and sink instances.
 - Caller-isolated structured record snapshots.
 - Bounded drop-oldest memory sink with drop accounting.
-- Stable sink registration and idempotent lifecycle.
+- Stable sink registration with a 64-route ceiling and idempotent, re-entry-guarded lifecycle.
 - Pre-sink, case-insensitive scalar redaction with default and application-specific keys.
 - Header, bearer-token, URL-userinfo and credential-query masking with fail-closed drop accounting.
 - Deterministic single-line text formatting with control-character escaping.
@@ -44,6 +44,7 @@ Obsidian wraps and extends `nox.log`; it does not replace or fork the standard l
 - An executable Phase 7 capability audit that keeps unsupported async dispatch disabled.
 - Exact logger routing, per-sink thresholds and sanitized fail-closed custom filters.
 - Saturating diagnostics for redaction, filter, sink lifecycle and recursion failures.
+- Saturating built-in sink counters and 256-field context snapshots.
 - Optional Nyx, Aether and Quartz adapters with isolated dependency graphs and safe request metadata defaults.
 - Deterministic LLVM and QBE tests.
 
@@ -85,6 +86,7 @@ log_instance.info("login succeeded", event_fields)
 See [`examples/request_context.nox`](examples/request_context.nox) for explicit request context and correlation IDs, [`examples/filtering.nox`](examples/filtering.nox) for safe sink routing, and [`docs/configuration.md`](docs/configuration.md) for the validated factory and environment override.
 See [`examples/file_rotation.nox`](examples/file_rotation.nox), [`docs/operations.md`](docs/operations.md) and [`docs/recovery.md`](docs/recovery.md) before enabling file rotation.
 See [`docs/ecosystem.md`](docs/ecosystem.md) and [`examples/integrations`](examples/integrations) for optional Nyx, Aether and Quartz integrations. Core use does not require those packages.
+See [`docs/hardening.md`](docs/hardening.md) and ADR-0015 for the Phase 10 safety scope, closed findings and unsupported boundaries.
 
 Library, test and example imports use the package name `obsidian`. The pinned compiler resolves those self-imports correctly when Obsidian is loaded as a dependency, but not while compiling the package as the root project. Development therefore runs a hermetic downstream-consumer fixture; see ADR-0006.
 

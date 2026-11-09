@@ -1,10 +1,10 @@
 import obsidian.fields
 import nox.test
 from obsidian.clock import FakeClock
-from obsidian.diagnostics import DiagnosticsSnapshot
+from obsidian.diagnostics import DiagnosticsSnapshot, MAX_DIAGNOSTIC_COUNT
 from obsidian.fields import LogField
 from obsidian.level import DEBUG, INFO
-from obsidian.logger import Logger
+from obsidian.logger import Logger, MAX_SINK_REGISTRATION_ID, MAX_SINKS
 from obsidian.record import LogRecord
 from obsidian.sink_error import SinkError
 from obsidian.sinks.memory import MemorySink
@@ -70,6 +70,73 @@ class FailingSink:
 
         return False
 
+class RouteMutationSink:
+    _logger: Logger
+    _candidate: MemorySink
+    _closed: bool
+
+    def __init__(self, target_logger: Logger, candidate: MemorySink) -> None:
+        self._logger = target_logger
+        self._candidate = candidate
+        self._closed = False
+
+    def sink_name(self) -> str:
+
+        return "route-mutation"
+
+    def write(self, entry: LogRecord) -> None:
+
+        self._logger.add_sink(self._candidate)
+
+    def flush(self) -> None:
+
+        pass
+
+    def close(self) -> None:
+
+        self._closed = True
+
+    def is_closed(self) -> bool:
+
+        return self._closed
+
+    def is_bounded(self) -> bool:
+
+        return True
+
+class ReentrantLifecycleSink:
+    _logger: Logger
+    _closed: bool
+
+    def __init__(self, target_logger: Logger) -> None:
+        self._logger = target_logger
+        self._closed = False
+
+    def sink_name(self) -> str:
+
+        return "reentrant-lifecycle"
+
+    def write(self, entry: LogRecord) -> None:
+
+        pass
+
+    def flush(self) -> None:
+
+        self._logger.flush()
+
+    def close(self) -> None:
+
+        self._logger.close()
+        self._closed = True
+
+    def is_closed(self) -> bool:
+
+        return self._closed
+
+    def is_bounded(self) -> bool:
+
+        return True
+
 def recursion_is_bounded() -> bool:
     test_clock: FakeClock = FakeClock(1)
     test_logger: Logger = Logger("recursion", INFO, test_clock)
@@ -109,6 +176,81 @@ def strict_sink_failure_is_sanitized() -> bool:
         return False
     except SinkError as e:
         return e.message == "logger dispatch failed" and "SYNTHETIC" not in e.message
+
+def route_limit_is_enforced() -> bool:
+    test_logger: Logger = Logger("route-limit", INFO, FakeClock(1))
+    shared: MemorySink = MemorySink("shared", 1)
+    index: int = 0
+    while index < MAX_SINKS:
+        test_logger.add_sink(shared)
+        index += 1
+    try:
+        test_logger.add_sink(shared)
+        return False
+    except ValueError as e:
+        test_logger.close()
+        return e.message == "logger has too many sinks" and shared.is_closed()
+
+def registration_exhaustion_is_enforced() -> bool:
+    test_logger: Logger = Logger("registration-limit", INFO, FakeClock(1))
+    test_logger._next_sink_id = MAX_SINK_REGISTRATION_ID + 1
+    try:
+        test_logger.add_sink(MemorySink("never-added", 1))
+        return False
+    except ValueError as e:
+        test_logger.close()
+        return e.message == "sink registration identifiers are exhausted"
+
+def callback_mutation_is_bounded() -> bool:
+    test_logger: Logger = Logger("mutation", INFO, FakeClock(1))
+    candidate: MemorySink = MemorySink("candidate", 1)
+    mutation: RouteMutationSink = RouteMutationSink(test_logger, candidate)
+    healthy: MemorySink = MemorySink("healthy", 1)
+    test_logger.add_sink(mutation)
+    test_logger.add_sink(healthy)
+    emitted: bool = test_logger.info("event", [])
+    snapshot: DiagnosticsSnapshot = test_logger.diagnostics_snapshot()
+    test_logger.close()
+    candidate.close()
+    return not emitted and healthy.count() == 1 and candidate.count() == 0 and snapshot.sink_write_failures() == 1 and snapshot.recursion_failures() == 1
+
+def recursive_lifecycle_is_bounded() -> bool:
+    test_logger: Logger = Logger("lifecycle-recursion", INFO, FakeClock(1))
+    lifecycle: ReentrantLifecycleSink = ReentrantLifecycleSink(test_logger)
+    healthy: MemorySink = MemorySink("lifecycle-healthy", 1)
+    test_logger.add_sink(lifecycle)
+    test_logger.add_sink(healthy)
+    test_logger.flush()
+    after_flush: DiagnosticsSnapshot = test_logger.diagnostics_snapshot()
+    flush_ok: bool = after_flush.recursion_failures() == 1 and after_flush.sink_flush_failures() == 1 and healthy.flush_count() == 1
+    test_logger.close()
+    after_close: DiagnosticsSnapshot = test_logger.diagnostics_snapshot()
+    return flush_ok and test_logger.is_closed() and lifecycle.is_closed() and healthy.is_closed() and after_close.recursion_failures() == 2 and after_close.sink_close_failures() == 1
+
+def oversized_event_is_rejected_before_capture() -> bool:
+    test_clock: FakeClock = FakeClock(1)
+    test_logger: Logger = Logger("field-limit", INFO, test_clock)
+    fields: list[LogField] = []
+    index: int = 0
+    while index < 257:
+        fields.append(LogField("field_" + str(index), obsidian.fields.int_value(index)))
+        index += 1
+    try:
+        test_logger.info("event", fields)
+        return False
+    except ValueError as e:
+        test_logger.close()
+        return e.message == "record has too many fields" and test_clock.reads == 0
+
+def memory_counters_saturate() -> bool:
+    sink: MemorySink = MemorySink("counter", 1)
+    sink.write(LogRecord(1, INFO, "counter", "first", [], []))
+    sink._dropped = MAX_DIAGNOSTIC_COUNT
+    sink.write(LogRecord(2, INFO, "counter", "second", [], []))
+    sink._flushes = MAX_DIAGNOSTIC_COUNT
+    sink.flush()
+    sink.close()
+    return sink.dropped_count() == MAX_DIAGNOSTIC_COUNT and sink.flush_count() == MAX_DIAGNOSTIC_COUNT
 
 fake_clock: FakeClock = FakeClock(1000)
 log_instance: Logger = Logger("service.auth", INFO, fake_clock)
@@ -174,3 +316,9 @@ nox.test.assert_true(closed_write_raises(), "closed logger does not emit")
 nox.test.assert_true(recursion_is_bounded(), "recursive sink logging rejected and counted")
 nox.test.assert_true(sink_failure_is_observable(), "sink lifecycle failures are counted")
 nox.test.assert_true(strict_sink_failure_is_sanitized(), "strict sink failure category is sanitized")
+nox.test.assert_true(route_limit_is_enforced(), "sink registration count is bounded")
+nox.test.assert_true(registration_exhaustion_is_enforced(), "sink registration identifiers do not wrap")
+nox.test.assert_true(callback_mutation_is_bounded(), "callback route mutation fails closed")
+nox.test.assert_true(recursive_lifecycle_is_bounded(), "recursive flush and close are bounded")
+nox.test.assert_true(oversized_event_is_rejected_before_capture(), "oversized events fail before capture")
+nox.test.assert_true(memory_counters_saturate(), "memory lifecycle counters saturate")

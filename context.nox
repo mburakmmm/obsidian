@@ -4,6 +4,7 @@ from obsidian.fields import LogField
 from obsidian.level import CRITICAL, DEBUG, ERROR, INFO, TRACE, WARNING
 
 MAX_CORRELATION_ID_LENGTH: int = 128
+MAX_CONTEXT_FIELDS: int = 256
 
 def validate_correlation_id(value: str) -> None:
     if len(value) > MAX_CORRELATION_ID_LENGTH:
@@ -34,6 +35,8 @@ class LogContext:
     span_id: str
 
     def __init__(self, fields: list[LogField], request_id: str = "", trace_id: str = "", span_id: str = "") -> None:
+        if len(fields) > MAX_CONTEXT_FIELDS:
+            raise ValueError("context has too many fields")
         obsidian.field_set.validate_unique_field_keys(fields)
         validate_correlation_id(request_id)
         validate_correlation_id(trace_id)
@@ -49,6 +52,8 @@ class LogContext:
 
     def with_binding(self, fields: list[LogField], request_id: str = "", trace_id: str = "", span_id: str = "") -> LogContext:
 
+        if len(fields) > MAX_CONTEXT_FIELDS:
+            raise ValueError("context has too many fields")
         obsidian.field_set.validate_unique_field_keys(fields)
         merged: list[LogField] = without_event_collisions(self._fields, fields)
         for field in fields:

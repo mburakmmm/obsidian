@@ -20,7 +20,7 @@ Constructors validate before a logger is changed and copy caller-owned key lists
 
 ## Sink factory
 
-Use `memory_sink_config`, `console_sink_config`, `file_sink_config` or `rotating_file_sink_config` to create a typed `SinkConfig`, then pass the list to `factory.build_logger(config, sink_configs, clock)`. The rotating form additionally requires `max_bytes` and `max_archives`. The factory constructs every sink before returning the logger. If one construction fails, it closes sinks already constructed during that attempt and raises `SinkError("logger factory sink construction failed")` without echoing paths or values. A cleanup failure is separately observable as the fixed `logger factory cleanup failed` category.
+Use `memory_sink_config`, `console_sink_config`, `file_sink_config` or `rotating_file_sink_config` to create a typed `SinkConfig`, then pass the list to `factory.build_logger(config, sink_configs, clock)`. The rotating form additionally requires `max_bytes` and `max_archives`. At most 64 sink configs are accepted; a larger list is rejected before any sink resource is constructed. The factory constructs every accepted sink before returning the logger. If one construction fails, it closes sinks already constructed during that attempt and raises `SinkError("logger factory sink construction failed")` without echoing paths or values. A cleanup failure is separately observable as the fixed `logger factory cleanup failed` category.
 
 `FormatterConfig(FORMAT_TEXT)` and `FormatterConfig(FORMAT_JSON)` are supported. Console configuration accepts only the pinned compiler's supported stdout target. File configuration remains subject to the trusted-root restrictions in `operations.md`.
 
