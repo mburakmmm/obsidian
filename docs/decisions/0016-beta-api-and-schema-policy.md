@@ -21,5 +21,5 @@ Obsidian has executable synchronous behavior through Phase 10, but the repositor
 
 ## Consequences
 
-The repository can evaluate compatibility mechanically without claiming that every importable helper is stable. Existing pre-beta users of undocumented symbols must migrate to the listed surface. The manifest remains `0.0.0` until a redistribution license, beta version, changelog section and tag are approved together; this ADR does not authorize a release by itself.
+The repository can evaluate compatibility mechanically without claiming that every importable helper is stable. Existing pre-beta users of undocumented symbols must migrate to the listed surface. The MIT license and `0.9.0-beta.1` release preparation were approved after this decision; an immutable tag still requires the aligned commit to pass the release matrix.
 

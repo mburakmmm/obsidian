@@ -6,14 +6,15 @@ Structured, secure logging foundations for the NOX ecosystem.
 
 [![CI](https://github.com/mburakmmm/obsidian/actions/workflows/ci.yml/badge.svg)](https://github.com/mburakmmm/obsidian/actions/workflows/ci.yml)
 [![Release](https://github.com/mburakmmm/obsidian/actions/workflows/release.yml/badge.svg)](https://github.com/mburakmmm/obsidian/actions/workflows/release.yml)
-![Status](https://img.shields.io/badge/status-experimental-orange)
+![Status](https://img.shields.io/badge/status-beta_candidate-orange)
 ![NOX](https://img.shields.io/badge/NOX-2.1.0-6f42c1)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
 </div>
 
 Obsidian is a small standalone logging library being built for Nyx, Aether, Nova, Feather, Atlas, Quartz, Rune, Chronos, Ember, VAULT, Pulse and Aura. Those projects may depend on Obsidian; Obsidian core never depends on them.
 
-The project is experimental. The synchronous scalar logging core is under evidence-gated development and no stable release has been published. `AGENTS.md` is the engineering contract and `todo.md` contains the phase roadmap.
+The project is preparing its first beta. The synchronous scalar logging core is evidence-gated; no stable release has been published. `AGENTS.md` is the engineering contract and `todo.md` contains the phase roadmap.
 
 ## Design priorities
 
@@ -56,7 +57,7 @@ Stderr is unavailable in the pinned NOX public API and remains explicitly disabl
 |---|---|
 | NOX compiler | `noxc 2.1.0` |
 | NOX source | `fd107b922c67a804520dc30f849039d977542f6c` |
-| Obsidian package | `0.0.0`, unreleased |
+| Obsidian package | `0.9.0-beta.1`, release preparation |
 | Verified locally | macOS arm64, LLVM and QBE |
 | Verified in CI | macOS arm64, Linux x64/arm64; LLVM and QBE |
 
@@ -64,7 +65,7 @@ See [`docs/compatibility.md`](docs/compatibility.md) before relying on a NOX cap
 
 ## Example
 
-The API is internal and may change before the first release:
+The documented synchronous core is a beta API candidate; preview adapters and undocumented symbols may still change:
 
 ```nox
 import obsidian.fields
@@ -88,7 +89,7 @@ See [`examples/file_rotation.nox`](examples/file_rotation.nox), [`docs/operation
 See [`docs/ecosystem.md`](docs/ecosystem.md) and [`examples/integrations`](examples/integrations) for optional Nyx, Aether and Quartz integrations. Core use does not require those packages.
 See [`docs/hardening.md`](docs/hardening.md) and ADR-0015 for the Phase 10 safety scope, closed findings and unsupported boundaries.
 See [`docs/public-api.md`](docs/public-api.md), [`docs/schema.md`](docs/schema.md) and [`docs/migration.md`](docs/migration.md) for the Phase 11 beta-candidate surface and compatibility rules.
-The unreleased beta candidate notes and explicit release blockers are in [`docs/releases/0.9.0-beta.1.md`](docs/releases/0.9.0-beta.1.md).
+The beta release notes and remaining preparation gates are in [`docs/releases/0.9.0-beta.1.md`](docs/releases/0.9.0-beta.1.md).
 
 Library, test and example imports use the package name `obsidian`. The pinned compiler resolves those self-imports correctly when Obsidian is loaded as a dependency, but not while compiling the package as the root project. Development therefore runs a hermetic downstream-consumer fixture; see ADR-0006.
 
@@ -146,4 +147,4 @@ Read [`CONTRIBUTING.md`](CONTRIBUTING.md), [`AGENTS.md`](AGENTS.md) and the curr
 
 ## License
 
-No redistribution license has been selected yet. The release workflow intentionally prevents publication until this is resolved.
+Obsidian is licensed under the [MIT License](LICENSE).

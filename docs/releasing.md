@@ -4,7 +4,7 @@ Obsidian releases are immutable tag-driven publications. A normal branch push ne
 
 ## Prerequisites
 
-1. Select and review a redistribution license. The release gate rejects the current pre-release placeholder license.
+1. Confirm the repository's MIT license remains appropriate for the release.
 2. Configure a protected GitHub Actions environment named `release`.
 3. Add the noxpkg API token created by `noxc login` as the environment secret `NOXPKG_TOKEN`.
 4. Require the CI checks for `main` and restrict who may approve the `release` environment.

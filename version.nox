@@ -1,4 +1,4 @@
-OBSIDIAN_VERSION: str = "0.0.0"
+OBSIDIAN_VERSION: str = "0.9.0-beta.1"
 
 def current_version() -> str:
     return OBSIDIAN_VERSION

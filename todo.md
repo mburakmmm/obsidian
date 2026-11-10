@@ -449,7 +449,7 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] Copy-vs-mutation, failure, flush, close ve registration/call/schema ordering garantileri açık; cross-thread total order açıkça desteklenmiyor.
 - [x] Destek matrisi yalnız çalıştırılan CI `42765823934` kanıtlarını listeliyor; Windows unsupported.
 - [x] Tüm core ve pinned adaptör örnekleri clean downstream checkout'tan LLVM/QBE compile/run oluyor.
-- [ ] BLOCKED: redistribution license seçilmedi; bu nedenle changelog sürüm bölümü, `nox.json`/`version.nox` beta sürümü ve immutable tag hizası hazırlanmadı.
+- [ ] MIT license, `0.9.0-beta.1` changelog bölümü ve `nox.json`/`version.nox` hizası hazır; immutable tag tam CI sonrası aynı commit'e bağlanacak.
 - [x] Yayımlanmamış `0.9.0-beta.1` release-note taslağı bilinen limitleri ve release blocker'larını içeriyor.
 
 ### Phase 11 kapısı

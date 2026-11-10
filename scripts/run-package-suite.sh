@@ -80,7 +80,7 @@ run_exact_example() {
   test "$output" = "$expected"
 }
 
-run_exact_example examples/hello.nox "obsidian 0.0.0"
+run_exact_example examples/hello.nox "obsidian 0.9.0-beta.1"
 run_exact_example examples/memory_logging.nox "1700000000000 INFO service.auth password=*** ***"
 run_exact_example examples/json_logging.nox "$expected_json"
 run_exact_example examples/console_logging.nox "$expected_console"

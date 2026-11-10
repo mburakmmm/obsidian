@@ -1,8 +1,10 @@
 # Changelog
 
-All notable changes will be recorded here. Versions follow Semantic Versioning once a public API is released.
+All notable changes are recorded here. Versions follow Semantic Versioning, including prerelease identifiers for beta candidates.
 
 ## [Unreleased]
+
+## [0.9.0-beta.1] - 2026-11-10
 
 ### Added
 
