@@ -1,6 +1,6 @@
 # Operations
 
-Status: synchronous operation through Phase 10 path hardening; no durability, time rotation, shared-logger thread-safety or stderr claim.
+Status: Phase 11 beta-candidate synchronous operations; no durability, time rotation, shared-logger thread-safety or stderr claim.
 
 ## Dispatch mode
 

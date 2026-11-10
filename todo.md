@@ -442,8 +442,8 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 ## 15. `0.9.x` — Phase 11: beta API freeze
 
-- [ ] Public API listesi ve stability/versioning işaretleri tamam.
-- [ ] JSON schema version ve compatibility policy tamam.
+- [x] Public API beta adayı ve stability/versioning politikası `docs/public-api.md` ile ADR-0016'da listelendi; yerel LLVM/QBE 22 dosya/467 assertion/0 skip contract kanıtı geçti, uzak matris bekleniyor.
+- [x] `obsidian.log.v1` required/optional alanları ve compatibility policy `docs/schema.md` içinde tamamlandı; additive-property consumer regresyonu yerel LLVM/QBE'de geçti, uzak matris bekleniyor.
 - [ ] `docs/api.md`, `security.md`, `operations.md`, `ecosystem.md`, `migration.md` güncel.
 - [ ] Upgrade/backward-compatibility testleri.
 - [ ] Copy-vs-mutation, failure, flush, close ve ordering garantileri açık.

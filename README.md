@@ -87,6 +87,7 @@ See [`examples/request_context.nox`](examples/request_context.nox) for explicit 
 See [`examples/file_rotation.nox`](examples/file_rotation.nox), [`docs/operations.md`](docs/operations.md) and [`docs/recovery.md`](docs/recovery.md) before enabling file rotation.
 See [`docs/ecosystem.md`](docs/ecosystem.md) and [`examples/integrations`](examples/integrations) for optional Nyx, Aether and Quartz integrations. Core use does not require those packages.
 See [`docs/hardening.md`](docs/hardening.md) and ADR-0015 for the Phase 10 safety scope, closed findings and unsupported boundaries.
+See [`docs/public-api.md`](docs/public-api.md), [`docs/schema.md`](docs/schema.md) and [`docs/migration.md`](docs/migration.md) for the Phase 11 beta-candidate surface and compatibility rules.
 
 Library, test and example imports use the package name `obsidian`. The pinned compiler resolves those self-imports correctly when Obsidian is loaded as a dependency, but not while compiling the package as the root project. Development therefore runs a hermetic downstream-consumer fixture; see ADR-0006.
 

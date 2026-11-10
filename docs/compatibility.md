@@ -32,6 +32,8 @@ CI run `42635939949` passed the fixed-seed fuzz addition on macOS arm64, Linux x
 
 Commit `f71bbba` and CI run `42640500312` completed the Phase 10 P0/P1 closeout on macOS arm64, Linux x64 and Linux arm64 with LLVM/QBE. Every job passed 20 behavioral files/423 assertions/0 skips, three expected compile-fail fixtures, the capability audit, package import/dependency checks, pinned ecosystem adapters, benchmark smoke and 8,000-event file/rotation stress smoke. The added regressions cover callback-time mutation, recursive flush/close, route/context limits and saturating sink counters.
 
+The Phase 11 beta API/schema candidate passes locally on NOX 2.1.0 LLVM/QBE with 22 behavioral files/467 assertions/0 skips. The two new downstream contracts compile the documented beta surface and verify required/optional `obsidian.log.v1` properties, scalar kinds and additive-property tolerance. Remote platform evidence is pending and is not inferred from the local run.
+
 ## Audited public APIs at the pinned revision
 
 | Area | Observed public contract | Obsidian consequence | Status |
@@ -48,7 +50,7 @@ Commit `f71bbba` and CI run `42640500312` completed the Phase 10 P0/P1 closeout 
 | `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 scalar/lifetime probes pass locally and in supported CI on LLVM/QBE; LLVM overlap observation is reported separately |
 | scheduler | LLVM M:N work-stealing; QBE cooperative tasks; `Task.cancel` is cooperative, while `ThreadHandle` has join only and channels expose no close/timeout contract | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak 2 is proven but scheduling-sensitive; QBE scalar thread-channel probe passes locally and in supported CI |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 10 closeout locally and in CI `42640500312`: 20 files/423 assertions/0 skips; three expected compile-fail fixtures remain separate |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Local Phase 11 candidate: 22 files/467 assertions/0 skips; supported remote evidence remains Phase 10 CI `42640500312` at 20/423 until the new commit runs |
 
 ## Known gaps and conservative decisions
 

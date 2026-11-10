@@ -1,6 +1,6 @@
 # Security model and redaction limits
 
-Status: Phase 4 scalar boundary, Phase 8 filter/diagnostic extensions and Phase 9 optional adapters are verified in the supported CI matrix.
+Status: Phase 11 beta-candidate security contract; the scalar boundary, filter/diagnostic extensions and optional adapters are verified in the supported CI matrix.
 
 ## Protected output paths
 

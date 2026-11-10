@@ -57,6 +57,8 @@ All notable changes will be recorded here. Versions follow Semantic Versioning o
 - Bounded multi-process file/rotation stress harness with repeated reopen/close cycles, timeout, peak-RSS observation, exact JSONL/retention accounting and sentinel scans.
 - Reproducible seeded NOX fuzz corpus covering 2,048 JSON/text encoding, scalar field, mixed-case redaction, path/archive and configuration cases.
 - Phase 10 safety closeout audit and ADR for bounded callback lifecycle, route registration and context snapshots.
+- Phase 11 beta-candidate public API inventory, JSONL schema compatibility policy and migration guide.
+- Downstream beta API and schema-v1 compatibility contract tests.
 
 ### Changed
 

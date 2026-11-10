@@ -1,0 +1,55 @@
+import nox.json
+import nox.test
+import obsidian.fields
+import obsidian.format_json
+from nox.json import JsonValue
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.record import LOG_SCHEMA_VERSION, LogRecord
+
+def object_value_by_key(source: JsonValue, key: str) -> JsonValue:
+    index: int = 0
+    while index < nox.json.object_len(source):
+        if nox.json.object_key(source, index) == key:
+            return nox.json.object_value(source, index)
+        index += 1
+    raise ValueError("schema property missing")
+
+fields: list[LogField] = [LogField("active", obsidian.fields.bool_value(True)), LogField("attempt", obsidian.fields.int_value(2)), LogField("missing", obsidian.fields.null_value()), LogField("ratio", obsidian.fields.float_value(1.5)), LogField("text", obsidian.fields.string_value("ok"))]
+context: list[LogField] = []
+base: LogRecord = LogRecord(1700000000123, INFO, "schema", "base", fields, context)
+base_json: str = obsidian.format_json.format_record(base)
+base_object: JsonValue = nox.json.parse(base_json)
+
+nox.test.assert_eq_int(nox.json.object_len(base_object), 8, "v1 base property count")
+nox.test.assert_eq_str(nox.json.object_key(base_object, 0), "timestamp", "v1 timestamp order")
+nox.test.assert_eq_str(nox.json.object_key(base_object, 1), "timestamp_ms", "v1 timestamp_ms order")
+nox.test.assert_eq_str(nox.json.object_key(base_object, 2), "level", "v1 level order")
+nox.test.assert_eq_str(nox.json.object_key(base_object, 3), "logger", "v1 logger order")
+nox.test.assert_eq_str(nox.json.object_key(base_object, 4), "message", "v1 message order")
+nox.test.assert_eq_str(nox.json.object_key(base_object, 5), "fields", "v1 fields order")
+nox.test.assert_eq_str(nox.json.object_key(base_object, 6), "context", "v1 context order")
+nox.test.assert_eq_str(nox.json.object_key(base_object, 7), "schema_version", "v1 schema version order")
+nox.test.assert_eq_str(nox.json.as_string(object_value_by_key(base_object, "schema_version")), LOG_SCHEMA_VERSION, "v1 schema identifier")
+nox.test.assert_eq_str(nox.json.as_string(object_value_by_key(base_object, "timestamp")), "2023-11-14T22:13:20.123Z", "v1 timestamp meaning")
+nox.test.assert_eq_int(int(nox.json.as_number(object_value_by_key(base_object, "timestamp_ms"))), 1700000000123, "v1 timestamp_ms kind")
+
+parsed_fields: JsonValue = object_value_by_key(base_object, "fields")
+nox.test.assert_true(nox.json.as_bool(object_value_by_key(parsed_fields, "active")), "v1 bool kind")
+nox.test.assert_eq_int(int(nox.json.as_number(object_value_by_key(parsed_fields, "attempt"))), 2, "v1 integer token parses as number")
+nox.test.assert_true(nox.json.is_null(object_value_by_key(parsed_fields, "missing")), "v1 null kind")
+nox.test.assert_eq_float(nox.json.as_number(object_value_by_key(parsed_fields, "ratio")), 1.5, "v1 float kind")
+nox.test.assert_eq_str(nox.json.as_string(object_value_by_key(parsed_fields, "text")), "ok", "v1 string kind")
+
+correlated: LogRecord = LogRecord(1, INFO, "schema", "ids", [], [], "req-1", "trace-1", "span-1")
+correlated_object: JsonValue = nox.json.parse(obsidian.format_json.format_record(correlated))
+nox.test.assert_eq_int(nox.json.object_len(correlated_object), 11, "v1 optional correlation count")
+nox.test.assert_eq_str(nox.json.object_key(correlated_object, 7), "request_id", "v1 request id position")
+nox.test.assert_eq_str(nox.json.object_key(correlated_object, 8), "trace_id", "v1 trace id position")
+nox.test.assert_eq_str(nox.json.object_key(correlated_object, 9), "span_id", "v1 span id position")
+nox.test.assert_eq_str(nox.json.object_key(correlated_object, 10), "schema_version", "v1 schema remains last")
+
+additive_fixture: JsonValue = nox.json.parse("{\"timestamp\":\"1970-01-01T00:00:00.000Z\",\"timestamp_ms\":0,\"level\":\"INFO\",\"logger\":\"consumer\",\"message\":\"event\",\"fields\":{},\"context\":{},\"future_optional\":true,\"schema_version\":\"obsidian.log.v1\"}")
+nox.test.assert_eq_str(nox.json.as_string(object_value_by_key(additive_fixture, "schema_version")), LOG_SCHEMA_VERSION, "v1 consumer ignores additive property")
+nox.test.assert_eq_str(nox.json.as_string(object_value_by_key(additive_fixture, "message")), "event", "v1 required property remains readable")
+
