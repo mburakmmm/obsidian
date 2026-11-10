@@ -1,6 +1,6 @@
 # Public API inventory
 
-Status: Phase 11 beta candidate for the synchronous core on NOX 2.1.0. This inventory is normative; importable symbols not listed here are internal and have no compatibility guarantee.
+Status: published `v0.9.0-beta.1` synchronous beta contract for NOX 2.1.0. This inventory is normative; importable symbols not listed here are internal and have no compatibility guarantee.
 
 ## Stability labels
 
@@ -56,5 +56,5 @@ Preview adapters do not expand the core dependency graph and are not covered by 
 
 ## Explicitly absent
 
-There is no default global logger, async logger/queue, exception/stack capture, source metadata, network sink, config-file loader, time-based rotation, cross-process rotation, stderr implementation, recursive field value or tracing engine. Absence is part of the beta candidate scope; code must not depend on speculative spellings for these capabilities.
+There is no default global logger, async logger/queue, exception/stack capture, source metadata, network sink, config-file loader, time-based rotation, cross-process rotation, stderr implementation, recursive field value or tracing engine. Absence is part of the published beta scope; code must not depend on speculative spellings for these capabilities.
 

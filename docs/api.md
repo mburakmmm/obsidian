@@ -1,6 +1,6 @@
 # API status
 
-Status: Phase 11 beta candidate for the documented synchronous core. The normative protected symbol list is `public-api.md`; optional adapters remain preview.
+Status: published `v0.9.0-beta.1` synchronous beta API. The normative protected symbol list is `public-api.md`; optional adapters remain preview.
 
 ## Levels
 
@@ -28,7 +28,7 @@ Repository tests use the same `obsidian.*` imports as consumers and execute thro
 
 Obsidian's `WARNING` maps to the standard library's `WARN` severity without changing `nox.log` behavior. Tests restore the prior `nox.log` module threshold after checking the mapping.
 
-The documented logger, record, sink, context, configuration and formatter surface is now a beta candidate. Importable helpers absent from `public-api.md` remain internal.
+The documented logger, record, sink, context, configuration and formatter surface is the protected beta contract beginning with `v0.9.0-beta.1`. Importable helpers absent from `public-api.md` remain internal.
 
 ## Beta field and record model
 

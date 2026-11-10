@@ -1,6 +1,6 @@
 # Security model and redaction limits
 
-Status: Phase 11 beta-candidate security contract; the scalar boundary, filter/diagnostic extensions and optional adapters are verified in the supported CI matrix.
+Status: published `v0.9.0-beta.1` security contract; the scalar boundary, filter/diagnostic extensions and optional adapters are verified in the supported CI matrix.
 
 ## Protected output paths
 

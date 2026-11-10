@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–10 and the Phase 11 beta API/schema candidate are green on NOX 2.1.0 for the supported synchronous matrix. This document does not extend support beyond tested jobs.
+Status: Phase 0–11 and the `v0.9.0-beta.1` prerelease are green on NOX 2.1.0 for the supported synchronous matrix. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -33,6 +33,8 @@ CI run `42635939949` passed the fixed-seed fuzz addition on macOS arm64, Linux x
 Commit `f71bbba` and CI run `42640500312` completed the Phase 10 P0/P1 closeout on macOS arm64, Linux x64 and Linux arm64 with LLVM/QBE. Every job passed 20 behavioral files/423 assertions/0 skips, three expected compile-fail fixtures, the capability audit, package import/dependency checks, pinned ecosystem adapters, benchmark smoke and 8,000-event file/rotation stress smoke. The added regressions cover callback-time mutation, recursive flush/close, route/context limits and saturating sink counters.
 
 Commit `5d20822` and CI run `42765823934` passed the Phase 11 beta API/schema candidate on macOS arm64, Linux x64 and Linux arm64 with LLVM/QBE: 22 behavioral files/467 assertions/0 skips per backend. The two new downstream contracts compile the documented beta surface and verify required/optional `obsidian.log.v1` properties, scalar kinds and additive-property tolerance. Every job also passed three expected compile-fail fixtures, capability/import/dependency checks, pinned ecosystem adapters, all examples, benchmark smoke and 8,000-event file/rotation stress smoke.
+
+Annotated tag `v0.9.0-beta.1` peels to exact commit `c2379fe493b8eb431220f8a5c2b1bd12b13f1867`. Tag-driven run `42774325476` repeated the complete supported matrix successfully on all three platforms before its obsolete registry-secret step failed. The tag was then submitted through the existing local `noxc` session and published as a GitHub prerelease without retargeting. This records matrix and submission evidence; it does not claim Windows support, registry moderator approval or a clean downstream registry install.
 
 ## Audited public APIs at the pinned revision
 

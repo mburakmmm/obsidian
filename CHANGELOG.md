@@ -4,6 +4,11 @@ All notable changes are recorded here. Versions follow Semantic Versioning, incl
 
 ## [Unreleased]
 
+### Changed
+
+- GitHub Release automation no longer reads, generates or stores noxpkg credentials; registry submission is performed explicitly from the trusted local operator session.
+- Hyphenated release tags are published as GitHub prereleases instead of being marked as the latest stable release.
+
 ## [0.9.0-beta.1] - 2026-11-10
 
 ### Added

@@ -6,10 +6,10 @@ Obsidian releases are immutable tag-driven publications. A normal branch push ne
 
 1. Confirm the repository's MIT license remains appropriate for the release.
 2. Configure a protected GitHub Actions environment named `release`.
-3. Add the noxpkg API token created by `noxc login` as the environment secret `NOXPKG_TOKEN`.
-4. Require the CI checks for `main` and restrict who may approve the `release` environment.
+3. Require the CI checks for `main` and restrict who may approve the `release` environment.
+4. Keep the release operator's existing noxpkg session outside the repository and GitHub Actions.
 
-The secret is the registry token stored in `$NOX_HOME/credentials`, not a GitHub personal access token. It must never be printed, committed or copied into repository configuration.
+Do not copy a noxpkg token or generated credentials into the repository, workflow, GitHub secret configuration or release evidence. Package submission is an explicit operator action using an already authenticated local `noxc` installation.
 
 ## Preparing a version
 
@@ -25,23 +25,27 @@ The secret is the registry token stored in `$NOX_HOME/credentials`, not a GitHub
    git push origin vX.Y.Z
    ```
 
-## Automated publication
+## Publication
 
 The `Release` workflow:
 
 1. Reuses the complete CI matrix at the tagged commit.
 2. Verifies tag, manifest, changelog, license and clean checkout alignment.
-3. Downloads the pinned NOX compiler and verifies the release checksum.
-4. Validates the noxpkg identity with `noxc whoami`.
-5. Creates a draft GitHub Release.
-6. Executes `noxc publish github.com/mburakmmm/obsidian --ref vX.Y.Z`.
-7. Makes the GitHub Release public only after registry submission succeeds.
+3. Creates a draft GitHub Release.
+4. Marks hyphenated versions such as `v0.9.0-beta.1` as prereleases.
+5. Publishes stable tags as latest releases and prerelease tags without the latest marker.
 
-Registry submission is not proof of moderator approval. After the workflow succeeds, verify the version from a clean downstream project and confirm its status in noxpkg before updating the release evidence.
+After the exact tag passes the matrix, submit it from the trusted local operator session:
+
+```sh
+noxc publish github.com/mburakmmm/obsidian --ref vX.Y.Z
+```
+
+Registry submission is not proof of moderator approval or downstream installability. Verify its reported status separately before updating release evidence. The repository never stores or synthesizes registry credentials.
 
 ## Failure recovery
 
 - Before the draft exists: fix the release commit and create a new version/tag. Never move a published tag.
-- Draft exists but registry submission failed: keep the release draft, fix credentials/service state and rerun the failed job.
-- Registry submission succeeded but final publication failed: rerun the workflow; verify the existing draft before manual intervention.
+- Draft exists but final GitHub publication failed: rerun the workflow; verify the existing draft before manual intervention.
+- Local registry submission fails: do not alter the tag or add credentials to CI; record the registry state separately and retry only from the trusted operator environment.
 - Public GitHub Release exists but noxpkg is not approved: leave an explicit note; do not claim registry availability.

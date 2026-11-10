@@ -1,6 +1,6 @@
 # Operations
 
-Status: Phase 11 beta-candidate synchronous operations; no durability, time rotation, shared-logger thread-safety or stderr claim.
+Status: published `v0.9.0-beta.1` synchronous operations contract; no durability, time rotation, shared-logger thread-safety or stderr claim.
 
 ## Dispatch mode
 

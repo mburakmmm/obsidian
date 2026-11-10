@@ -1,6 +1,6 @@
 # ADR-0016: beta API and schema compatibility policy
 
-- Status: accepted for the Phase 11 beta candidate
+- Status: accepted and published in `v0.9.0-beta.1`
 - Date: 2026-11-10
 
 ## Context
@@ -21,5 +21,5 @@ Obsidian has executable synchronous behavior through Phase 10, but the repositor
 
 ## Consequences
 
-The repository can evaluate compatibility mechanically without claiming that every importable helper is stable. Existing pre-beta users of undocumented symbols must migrate to the listed surface. The MIT license and `0.9.0-beta.1` release preparation were approved after this decision; an immutable tag still requires the aligned commit to pass the release matrix.
+The repository can evaluate compatibility mechanically without claiming that every importable helper is stable. Existing pre-beta users of undocumented symbols must migrate to the listed surface. The MIT license and aligned `v0.9.0-beta.1` tag passed the supported release matrix and now establish the first protected beta surface; this does not make preview adapters or undocumented symbols stable.
 

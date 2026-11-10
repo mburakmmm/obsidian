@@ -16,14 +16,11 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   release:
-    name: Publish ${{ github.ref_name }}
+    name: Publish GitHub release ${{ github.ref_name }}
     needs: verify
     runs-on: ubuntu-latest
     environment: release
     env:
-      NOX_VERSION: v2.1.0
-      NOX_REPOSITORY: mburakmmm/nox-lang
-      NOX_HOME: ${{ github.workspace }}/.release-nox-home
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -33,48 +30,6 @@ jobs:
       - name: Validate immutable release inputs
         shell: bash
         run: bash scripts/check-release.sh "${GITHUB_REF_NAME}"
-
-      - name: Install pinned NOX release
-        shell: bash
-        run: |
-          set -euo pipefail
-          stage="nox-lang-${NOX_VERSION}-linux-x64"
-          archive="${stage}.tar.gz"
-          checksum="${archive}.sha256"
-          downloaded=false
-          for attempt in 1 2 3; do
-            rm -f "$archive" "$checksum"
-            if gh release download "$NOX_VERSION" \
-              --repo "$NOX_REPOSITORY" \
-              --pattern "$archive" \
-              --pattern "$checksum"; then
-              downloaded=true
-              break
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              sleep "$((attempt * 2))"
-            fi
-          done
-          test "$downloaded" = true
-          shasum -a 256 -c "${stage}.tar.gz.sha256"
-          tar xzf "${stage}.tar.gz"
-          echo "$PWD/${stage}/bin" >>"$GITHUB_PATH"
-          echo "NOX_RESOURCE_DIR=$PWD/${stage}" >>"$GITHUB_ENV"
-
-      - name: Authenticate to noxpkg
-        shell: bash
-        env:
-          NOXPKG_TOKEN: ${{ secrets.NOXPKG_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "${NOXPKG_TOKEN:-}" ]; then
-            echo "NOXPKG_TOKEN is not configured in the release environment" >&2
-            exit 1
-          fi
-          mkdir -p "$NOX_HOME"
-          umask 077
-          jq -n --arg token "$NOXPKG_TOKEN" '{servers:[{server:"https://noxpkg.noxlang.com",token:$token,login:"mburakmmm"}]}' >"$NOX_HOME/credentials"
-          noxc whoami
 
       - name: Create draft GitHub release
         shell: bash
@@ -88,22 +43,24 @@ jobs:
             fi
             echo "reusing existing draft release"
           else
-            gh release create "$GITHUB_REF_NAME" \
-              --verify-tag \
-              --draft \
-              --generate-notes \
+            release_flags=(
+              --verify-tag
+              --draft
+              --generate-notes
               --title "Obsidian $GITHUB_REF_NAME"
+            )
+            if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+              release_flags+=(--prerelease)
+            fi
+            gh release create "$GITHUB_REF_NAME" "${release_flags[@]}"
           fi
-
-      - name: Submit package to noxpkg
-        shell: bash
-        run: |
-          set -euo pipefail
-          noxc publish github.com/mburakmmm/obsidian \
-            --ref "$GITHUB_REF_NAME" \
-            --description "Structured, secure logging foundations for the NOX ecosystem" \
-            --tags logging,observability,structured-logging,security
 
       - name: Publish GitHub release
         shell: bash
-        run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease
+          else
+            gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+          fi

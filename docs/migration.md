@@ -1,6 +1,6 @@
 # Migration guide
 
-Status: Phase 11 beta-candidate guidance; no beta tag has been issued.
+Status: migration guidance for the published `v0.9.0-beta.1` beta contract.
 
 ## From `nox.log`
 

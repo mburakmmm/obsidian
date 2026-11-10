@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phase 9 optional adapter preview verified in the supported CI matrix. Public APIs are not frozen.
+Status: Phase 11 synchronous beta surface frozen and published as `v0.9.0-beta.1`; optional adapters remain preview and no stable API is claimed before 1.0.
 
 ## Dependency direction
 
