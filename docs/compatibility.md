@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–11 and the `v0.9.0-beta.1` prerelease are green on NOX 2.1.0 for the supported synchronous matrix. This document does not extend support beyond tested jobs.
+Status: Phase 0–11 and the `v0.9.0-beta.1` prerelease are green on NOX 2.1.0 for the supported synchronous matrix. Phase 12 stable readiness is in progress. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -35,6 +35,10 @@ Commit `f71bbba` and CI run `42640500312` completed the Phase 10 P0/P1 closeout 
 Commit `5d20822` and CI run `42765823934` passed the Phase 11 beta API/schema candidate on macOS arm64, Linux x64 and Linux arm64 with LLVM/QBE: 22 behavioral files/467 assertions/0 skips per backend. The two new downstream contracts compile the documented beta surface and verify required/optional `obsidian.log.v1` properties, scalar kinds and additive-property tolerance. Every job also passed three expected compile-fail fixtures, capability/import/dependency checks, pinned ecosystem adapters, all examples, benchmark smoke and 8,000-event file/rotation stress smoke.
 
 Annotated tag `v0.9.0-beta.1` peels to exact commit `c2379fe493b8eb431220f8a5c2b1bd12b13f1867`. Tag-driven run `42774325476` repeated the complete supported matrix successfully on all three platforms before its obsolete registry-secret step failed. The tag was then submitted through the existing local `noxc` session and published as a GitHub prerelease without retargeting. This records matrix and submission evidence; it does not claim Windows support, registry moderator approval or a clean downstream registry install.
+
+Phase 12 added a source-independent registry install gate. On 2026-11-10, checksum-verified `noxc 2.1.0` resolved the approved public-index name `obsidian` at `v0.9.0-beta.1`, locked exact commit `c2379fe493b8eb431220f8a5c2b1bd12b13f1867`, and passed the public API/schema/import/version probes on LLVM and QBE in an empty credential-free `NOX_HOME`. This now proves beta index visibility and clean downstream installation; it does not yet prove a future stable ref.
+
+The developer-machine default compiler reported `noxc 2.1.14` during this audit. That observation does not move the project pin or expand support: every release-readiness command above used the explicit checksum-verified 2.1.0 binary. A compiler-pin update requires the full compatibility workflow and separate evidence.
 
 ## Audited public APIs at the pinned revision
 

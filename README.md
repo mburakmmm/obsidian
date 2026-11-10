@@ -90,6 +90,7 @@ See [`docs/ecosystem.md`](docs/ecosystem.md) and [`examples/integrations`](examp
 See [`docs/hardening.md`](docs/hardening.md) and ADR-0015 for the Phase 10 safety scope, closed findings and unsupported boundaries.
 See [`docs/public-api.md`](docs/public-api.md), [`docs/schema.md`](docs/schema.md) and [`docs/migration.md`](docs/migration.md) for the Phase 11 published beta surface and compatibility rules.
 The beta release evidence and known limitations are in [`docs/releases/0.9.0-beta.1.md`](docs/releases/0.9.0-beta.1.md).
+Stable promotion remains evidence-gated; current Phase 12 progress and blockers are tracked in [`docs/stable-readiness.md`](docs/stable-readiness.md).
 
 Library, test and example imports use the package name `obsidian`. The pinned compiler resolves those self-imports correctly when Obsidian is loaded as a dependency, but not while compiling the package as the root project. Development therefore runs a hermetic downstream-consumer fixture; see ADR-0006.
 

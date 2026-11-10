@@ -5,12 +5,14 @@ project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 noxc_bin="${NOXC:-noxc}"
 probe_root="$(mktemp -d "${TMPDIR:-/tmp}/obsidian-async-audit.XXXXXX")"
 trap 'rm -rf "$probe_root"' EXIT
+probe_nox_home="$probe_root/nox-home"
+mkdir -p "$probe_nox_home"
 
 expect_check_failure() {
   local source_file="$1"
   local expected="$2"
   local output_file="$probe_root/$(basename "$source_file").check"
-  if "$noxc_bin" check "$source_file" >"$output_file" 2>&1; then
+  if NOX_HOME="$probe_nox_home" "$noxc_bin" check "$source_file" >"$output_file" 2>&1; then
     echo "async capability probe unexpectedly type-checked: $source_file" >&2
     exit 1
   fi
@@ -25,7 +27,7 @@ expect_run_failure() {
   local source_file="$2"
   local expected="$3"
   local output_file="$probe_root/$(basename "$source_file").$backend"
-  if "$noxc_bin" run --backend "$backend" "$source_file" >"$output_file" 2>&1; then
+  if NOX_HOME="$probe_nox_home" "$noxc_bin" run --backend "$backend" "$source_file" >"$output_file" 2>&1; then
     echo "async capability probe unexpectedly ran: $source_file ($backend)" >&2
     exit 1
   fi
@@ -40,7 +42,7 @@ expect_exact_run() {
   local source_file="$2"
   local expected="$3"
   local output
-  output="$(NOX_POOL_WORKERS=4 "$noxc_bin" run --backend "$backend" "$source_file" 2>&1)"
+  output="$(NOX_HOME="$probe_nox_home" NOX_POOL_WORKERS=4 "$noxc_bin" run --backend "$backend" "$source_file" 2>&1)"
   if [[ "$output" != "$expected" ]]; then
     echo "async capability probe output mismatch: $source_file ($backend)" >&2
     exit 1
@@ -51,7 +53,7 @@ expect_bounded_overlap_run() {
   local backend="$1"
   local source_file="$2"
   local output
-  output="$(NOX_POOL_WORKERS=4 "$noxc_bin" run --backend "$backend" "$source_file" 2>&1)"
+  output="$(NOX_HOME="$probe_nox_home" NOX_POOL_WORKERS=4 "$noxc_bin" run --backend "$backend" "$source_file" 2>&1)"
   case "$output" in
     "2 True")
       overlap_result="observed"

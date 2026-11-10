@@ -41,7 +41,16 @@ After the exact tag passes the matrix, submit it from the trusted local operator
 noxc publish github.com/mburakmmm/obsidian --ref vX.Y.Z
 ```
 
-Registry submission is not proof of moderator approval or downstream installability. Verify its reported status separately before updating release evidence. The repository never stores or synthesizes registry credentials.
+Registry submission is not proof of public-index visibility or downstream installability. With the exact pinned compiler, verify the public name, tag and peeled commit from an isolated consumer:
+
+```sh
+NOX_RESOURCE_DIR=/path/to/pinned-release \
+  NOXC=/path/to/pinned-release/bin/noxc \
+  bash scripts/verify-registry-install.sh \
+  vX.Y.Z X.Y.Z <expected-full-commit> <expected-noxc-version>
+```
+
+Only record registry availability after this probe succeeds on LLVM and QBE. The repository never stores or synthesizes registry credentials.
 
 ## Failure recovery
 

@@ -464,13 +464,15 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [ ] Test vaka, assertion ve skip toplamları release raporunda.
 - [ ] Sıfır unredacted sentinel.
 - [ ] Bilinen P0/P1 safety bug yok.
-- [ ] Pinned NOX revision ile clean install başarılı.
+- [ ] Pinned NOX revision ile exact stable ref clean install başarılı.
+  - [x] Readiness kanıtı: NOX 2.1.0 ile public noxpkg indexinden credential-free beta install başarılı; `v0.9.0-beta.1` exact `c2379fe…` commit'ine kilitlendi ve LLVM/QBE API/schema/import/version probları geçti.
 - [ ] Tüm örnekler başarılı.
 - [ ] Benchmark raporu release commit'ine ait.
 - [ ] Public API ve schema freeze edilmiş.
 - [ ] Artifact, tag, changelog ve commit aynı sürümü gösteriyor.
 - [ ] İmza/provenance altyapı destekliyorsa doğrulandı.
-- [ ] Registry submission sonrası admin onayı ve downstream install ayrıca doğrulandı.
+- [ ] Stable registry submission sonrası public index görünürlüğü ve downstream install ayrıca doğrulandı.
+  - [x] Readiness kanıtı: beta ref için public index görünürlüğü ve downstream install doğrulandı; bu kanıt gelecekteki stable ref'i kapsamaz.
 - [ ] Immutable release tag sessizce yeniden hedeflenmedi.
 
 ### Phase 12 kapısı
@@ -569,3 +571,4 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Ph
 | 2026-11-09 | Phase 10 P0/P1 safety closeout | Callback route mutasyonu ve recursive lifecycle non-termination yolları kapatıldı; route/context/event/counter sınırları eklendi; ADR-0015 ve hardening risk kaydı yayımlandı | Commit `f71bbba`; yerel ve CI `42640500312` macOS ARM64/Linux x64/Linux ARM64 LLVM/QBE: 20 dosya/423 assertion/0 skip, 3 expected compile-fail; capability, import/dependency, adaptör, benchmark ve file-stress smoke geçti | Desteklenen senkron kapsamda bilinen P0/P1 safety bug yok; unsupported race/durability/async/nested-field/platform sınırları açıkça belgeli. Phase 10 kapandı; Phase 11 beta API freeze sırada |
 | 2026-11-10 | Phase 11 beta API/schema adayı | Normative public API inventory, beta/preview/internal stability katmanları, `obsidian.log.v1` compatibility policy, migration guide ve iki downstream contract testi eklendi | Commit `5d20822`; yerel ve CI `42765823934` macOS ARM64/Linux x64/Linux ARM64 LLVM/QBE: 22 dosya/467 assertion/0 skip; 3 expected compile-fail, capability, import/dependency, adaptör, tüm örnekler, benchmark ve file-stress smoke geçti | API/schema adayı kanıtlı; license + version/changelog/tag hizası kullanıcı lisans kararı beklediği için Phase 11 kapısı açık |
 | 2026-11-10 | `0.9.0-beta.1` / Phase 11 release | MIT lisansı ve sürüm/changelog hizası `c2379fe493b8eb431220f8a5c2b1bd12b13f1867` üzerinde immutable annotated tag ile yayımlandı; GitHub prerelease ve token-free registry sınırı ADR-0017 ile kaydedildi | Tag-driven run `42774325476`: üç platformda LLVM/QBE 22 dosya/467 assertion/0 skip ve tüm ek kapılar geçti; eski workflow registry-secret adımında durdu, tag yerel `noxc publish --ref v0.9.0-beta.1` ile başarıyla gönderildi; origin peeled tag exact commit ile eşleşiyor | Phase 11 kapandı; workflow artık registry credential işlemez ve prerelease tag'lerini latest stable yapmaz. Phase 12 stable release sırada |
+| 2026-11-10 | Phase 12 registry readiness | Public-index clean-install harness'ı ve tek immutable commit'e bağlı stable evidence policy ADR-0018 ile eklendi | Checksum-verified NOX 2.1.0, isolated credential-free `NOX_HOME`: registry `obsidian@v0.9.0-beta.1` → exact `c2379fe…`; LLVM/QBE API/schema/import/version pass, sentinel yok | Beta index/install kapısı kanıtlandı; `1.0.0` exact commit matrix, benchmark, stable API promotion, provenance ve stable artifact hizası açık |
