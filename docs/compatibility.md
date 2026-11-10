@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–10 evidence is green on NOX 2.1.0 for the supported synchronous matrix. This document does not extend support beyond tested jobs.
+Status: Phase 0–10 and the Phase 11 beta API/schema candidate are green on NOX 2.1.0 for the supported synchronous matrix. This document does not extend support beyond tested jobs.
 
 ## Pinned toolchain
 
@@ -32,7 +32,7 @@ CI run `42635939949` passed the fixed-seed fuzz addition on macOS arm64, Linux x
 
 Commit `f71bbba` and CI run `42640500312` completed the Phase 10 P0/P1 closeout on macOS arm64, Linux x64 and Linux arm64 with LLVM/QBE. Every job passed 20 behavioral files/423 assertions/0 skips, three expected compile-fail fixtures, the capability audit, package import/dependency checks, pinned ecosystem adapters, benchmark smoke and 8,000-event file/rotation stress smoke. The added regressions cover callback-time mutation, recursive flush/close, route/context limits and saturating sink counters.
 
-The Phase 11 beta API/schema candidate passes locally on NOX 2.1.0 LLVM/QBE with 22 behavioral files/467 assertions/0 skips. The two new downstream contracts compile the documented beta surface and verify required/optional `obsidian.log.v1` properties, scalar kinds and additive-property tolerance. Remote platform evidence is pending and is not inferred from the local run.
+Commit `5d20822` and CI run `42765823934` passed the Phase 11 beta API/schema candidate on macOS arm64, Linux x64 and Linux arm64 with LLVM/QBE: 22 behavioral files/467 assertions/0 skips per backend. The two new downstream contracts compile the documented beta surface and verify required/optional `obsidian.log.v1` properties, scalar kinds and additive-property tolerance. Every job also passed three expected compile-fail fixtures, capability/import/dependency checks, pinned ecosystem adapters, all examples, benchmark smoke and 8,000-event file/rotation stress smoke.
 
 ## Audited public APIs at the pinned revision
 
@@ -50,7 +50,7 @@ The Phase 11 beta API/schema candidate passes locally on NOX 2.1.0 LLVM/QBE with
 | `nox.atomic` | process-wide scalar cells; explicit handle reconstruction and one manual `free` after worker completion | Never free before a proven join; atomics cannot hold a record graph | Phase 7 scalar/lifetime probes pass locally and in supported CI on LLVM/QBE; LLVM overlap observation is reported separately |
 | scheduler | LLVM M:N work-stealing; QBE cooperative tasks; `Task.cancel` is cooperative, while `ThreadHandle` has join only and channels expose no close/timeout contract | Backend-specific evidence is mandatory and does not imply portable queue semantics | LLVM real-worker peak 2 is proven but scheduling-sensitive; QBE scalar thread-channel probe passes locally and in supported CI |
 | modules | project-root files; cyclic imports rejected; dependency aliases expose package modules; package self-imports use the manifest name | Root `.nox` modules plus `obsidian.*` self-imports; test through a consumer project | Full transitive downstream package graph passes on LLVM/QBE |
-| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Local Phase 11 candidate: 22 files/467 assertions/0 skips; supported remote evidence remains Phase 10 CI `42640500312` at 20/423 until the new commit runs |
+| tests | every `*_test.nox` is a program; failures raise/exit non-zero; `nox.test` has typed assertions and `TestSuite` | Count cases/assertions explicitly; capability and compile-fail probes remain separate from behavioral totals | Phase 11 candidate locally and in CI `42765823934`: 22 files/467 assertions/0 skips; three expected compile-fail fixtures remain separate |
 
 ## Known gaps and conservative decisions
 
@@ -83,12 +83,12 @@ The Phase 11 beta API/schema candidate passes locally on NOX 2.1.0 LLVM/QBE with
 
 | Platform/backend | Check | Build/run | Tests | Concurrency claim |
 |---|---:|---:|---:|---|
-| macOS arm64 / LLVM | Pass | Pass | Phase 10: 20 files/423 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42640500312` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
-| macOS arm64 / QBE | Pass | Pass | Phase 10: 20 files/423 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42640500312` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
-| Linux x64 / LLVM | Pass | Pass | Phase 10: 20 files/423 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42640500312` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
-| Linux x64 / QBE | Pass | Pass | Phase 10: 20 files/423 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42640500312` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
-| Linux arm64 / LLVM | Pass | Pass | Phase 10: 20 files/423 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42640500312` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
-| Linux arm64 / QBE | Pass | Pass | Phase 10: 20 files/423 assertions/0 skips, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42640500312` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
+| macOS arm64 / LLVM | Pass | Pass | Phase 11: 22 files/467 assertions/0 skips, beta API/schema contracts, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42765823934` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| macOS arm64 / QBE | Pass | Pass | Phase 11: 22 files/467 assertions/0 skips, beta API/schema contracts, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42765823934` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
+| Linux x64 / LLVM | Pass | Pass | Phase 11: 22 files/467 assertions/0 skips, beta API/schema contracts, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42765823934` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| Linux x64 / QBE | Pass | Pass | Phase 11: 22 files/467 assertions/0 skips, beta API/schema contracts, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42765823934` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
+| Linux arm64 / LLVM | Pass | Pass | Phase 11: 22 files/467 assertions/0 skips, beta API/schema contracts, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42765823934` | Async no-go revalidated; shared-logger thread safety remains unclaimed |
+| Linux arm64 / QBE | Pass | Pass | Phase 11: 22 files/467 assertions/0 skips, beta API/schema contracts, 208 fixed + 2,048 seeded cases, 7 capability probes and 3 ecosystem probes/36 checks; CI `42765823934` | Scalar thread-channel/atomic lifecycle passes; async remains disabled |
 | Windows x64 | Not run | Not run | Not run | Unsupported until evidence exists |
 
 ## Upgrade policy

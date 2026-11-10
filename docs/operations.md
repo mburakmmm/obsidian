@@ -6,6 +6,8 @@ Status: Phase 11 beta-candidate synchronous operations; no durability, time rota
 
 Only synchronous dispatch is supported. A `True` logger result means every selected route completed; `False` can mean global threshold rejection, redaction failure, filter failure or sink write failure. Per-sink threshold/filter rejection alone is not an infrastructure failure. Success does not imply stable-storage durability. There is no background queue, overflow policy or timeout-based async flush/close. Do not wrap logger calls in unjoined fire-and-forget tasks: their failures would be unobserved and logger shutdown could not prove completion. See ADR-0011.
 
+Within one logger call, selected sinks are invoked in registration order. Sequential calls made by one caller complete in call order because dispatch is synchronous. Obsidian does not promise a total order across simultaneous threads/tasks or shared-logger safety; callers needing such an order must serialize access outside the logger.
+
 Inspect `logger.diagnostics_snapshot()` for bounded sanitized failure counts. The default policy continues after a filter or sink failure. Flush and close also continue across sinks; close remains idempotent. Recursive log/flush/close calls from callbacks terminate and are counted. Route mutation or reconfiguration from a callback is rejected so the active traversal cannot grow or change underneath itself. Enable `raise_on_error` only when a caller explicitly wants a fixed `SinkError` category. Callback exception messages and record data are never copied into diagnostics.
 
 ## Logger construction and context lifecycle

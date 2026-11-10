@@ -442,19 +442,19 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 ## 15. `0.9.x` — Phase 11: beta API freeze
 
-- [x] Public API beta adayı ve stability/versioning politikası `docs/public-api.md` ile ADR-0016'da listelendi; yerel LLVM/QBE 22 dosya/467 assertion/0 skip contract kanıtı geçti, uzak matris bekleniyor.
-- [x] `obsidian.log.v1` required/optional alanları ve compatibility policy `docs/schema.md` içinde tamamlandı; additive-property consumer regresyonu yerel LLVM/QBE'de geçti, uzak matris bekleniyor.
-- [ ] `docs/api.md`, `security.md`, `operations.md`, `ecosystem.md`, `migration.md` güncel.
-- [ ] Upgrade/backward-compatibility testleri.
-- [ ] Copy-vs-mutation, failure, flush, close ve ordering garantileri açık.
-- [ ] Destek matrisi yalnız çalıştırılan CI kanıtlarını listeliyor.
-- [ ] Tüm örnekler clean checkout'tan compile/run oluyor.
-- [ ] License, changelog ve sürüm/tag hizası doğrulandı.
-- [ ] Beta/RC release notes bilinen limitleri içeriyor.
+- [x] Public API beta adayı ve stability/versioning politikası `docs/public-api.md` ile ADR-0016'da listelendi; yerel ve CI `42765823934` LLVM/QBE 22 dosya/467 assertion/0 skip contract kanıtı geçti.
+- [x] `obsidian.log.v1` required/optional alanları ve compatibility policy `docs/schema.md` içinde tamamlandı; additive-property consumer regresyonu desteklenen uzak matriste geçti.
+- [x] `docs/api.md`, `security.md`, `operations.md`, `ecosystem.md`, `migration.md` beta-aday kapsamıyla güncel.
+- [x] Downstream beta API ve schema-v1 upgrade/backward-compatibility testleri LLVM/QBE'de geçti.
+- [x] Copy-vs-mutation, failure, flush, close ve registration/call/schema ordering garantileri açık; cross-thread total order açıkça desteklenmiyor.
+- [x] Destek matrisi yalnız çalıştırılan CI `42765823934` kanıtlarını listeliyor; Windows unsupported.
+- [x] Tüm core ve pinned adaptör örnekleri clean downstream checkout'tan LLVM/QBE compile/run oluyor.
+- [ ] BLOCKED: redistribution license seçilmedi; bu nedenle changelog sürüm bölümü, `nox.json`/`version.nox` beta sürümü ve immutable tag hizası hazırlanmadı.
+- [x] Yayımlanmamış `0.9.0-beta.1` release-note taslağı bilinen limitleri ve release blocker'larını içeriyor.
 
 ### Phase 11 kapısı
 
-- [ ] API adayı compatibility ve upgrade testlerini geçiyor.
+- [ ] API adayı compatibility/upgrade testlerini geçti; Phase 11 kapısı redistribution license ile version/changelog/tag hizası tamamlanana kadar açık.
 
 ---
 
@@ -567,3 +567,4 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Ph
 | 2026-11-08 | Phase 10 bounded file/rotation stress | Repeated flush/idempotent close/reopen, host timeout, fresh-process peak RSS, streamed JSONL/masking doğrulaması, exact rotation sequence ve storage budget harness'ı eklendi | Clean `15fed48`: backend başına 3 süreç, yol başına 120.000 olay; LLVM RSS 3.293.184–3.325.952 byte, QBE 3.522.560 byte; süreç başına 2.499 rotation/4 arşiv/19.600 retained byte. CI `42471701337` üç platformda LLVM/QBE smoke ile tamamen yeşil | Queue stress async no-go nedeniyle N/A; bounded sonuç leak/durability garantisi değil. Random fuzz ve P0/P1 kapanış denetimi sırada |
 | 2026-11-09 | Phase 10 fixed-seed fuzz | NOX-native sabit PRNG ile 2.048 encoding/field/mixed-case redaction/path/archive/config vakası eklendi; sensitive dizin bileşeni sonrası `/` sınırı fuzz tarafından bulunup düzeltildi | Commit `e5936ed`; yerel ve CI `42635939949` macOS ARM64/Linux x64/Linux ARM64 LLVM/QBE: 20 dosya/414 assertion/0 skip, 208 fixed property + 2.048 seeded vaka, 3 expected compile-fail; adaptör, capability, benchmark ve file-stress smoke geçti | Reproducible bounded corpus; coverage-guided/unbounded fuzzing iddiası yok. P0/P1 kapanış denetimi sırada |
 | 2026-11-09 | Phase 10 P0/P1 safety closeout | Callback route mutasyonu ve recursive lifecycle non-termination yolları kapatıldı; route/context/event/counter sınırları eklendi; ADR-0015 ve hardening risk kaydı yayımlandı | Commit `f71bbba`; yerel ve CI `42640500312` macOS ARM64/Linux x64/Linux ARM64 LLVM/QBE: 20 dosya/423 assertion/0 skip, 3 expected compile-fail; capability, import/dependency, adaptör, benchmark ve file-stress smoke geçti | Desteklenen senkron kapsamda bilinen P0/P1 safety bug yok; unsupported race/durability/async/nested-field/platform sınırları açıkça belgeli. Phase 10 kapandı; Phase 11 beta API freeze sırada |
+| 2026-11-10 | Phase 11 beta API/schema adayı | Normative public API inventory, beta/preview/internal stability katmanları, `obsidian.log.v1` compatibility policy, migration guide ve iki downstream contract testi eklendi | Commit `5d20822`; yerel ve CI `42765823934` macOS ARM64/Linux x64/Linux ARM64 LLVM/QBE: 22 dosya/467 assertion/0 skip; 3 expected compile-fail, capability, import/dependency, adaptör, tüm örnekler, benchmark ve file-stress smoke geçti | API/schema adayı kanıtlı; license + version/changelog/tag hizası kullanıcı lisans kararı beklediği için Phase 11 kapısı açık |
