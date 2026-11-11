@@ -1,6 +1,6 @@
 # JSONL schema compatibility
 
-Status: `obsidian.log.v1` published beta contract in `v0.9.0-beta.1`.
+Status: `obsidian.log.v1` published beta contract in `v0.9.0-beta.1` and unchanged stable candidate for `v1.0.0`.
 
 Every encoded event is one UTF-8 JSON object followed by one newline. Embedded line breaks remain escaped within JSON strings. The canonical schema identifier is exported as `record.LOG_SCHEMA_VERSION`.
 

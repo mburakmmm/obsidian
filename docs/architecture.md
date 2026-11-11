@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phase 11 synchronous beta surface frozen and published as `v0.9.0-beta.1`; optional adapters remain preview and no stable API is claimed before 1.0.
+Status: synchronous beta surface published as `v0.9.0-beta.1` and frozen unchanged as the `v1.0.0` stable candidate; optional adapters remain preview and no stable release is claimed before 1.0.
 
 ## Dependency direction
 

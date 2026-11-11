@@ -1,6 +1,6 @@
 # API status
 
-Status: published `v0.9.0-beta.1` synchronous beta API. The normative protected symbol list is `public-api.md`; optional adapters remain preview.
+Status: published `v0.9.0-beta.1` synchronous beta API and unchanged `v1.0.0` stable candidate. The normative protected symbol list is `public-api.md`; optional adapters remain preview.
 
 ## Levels
 
@@ -28,9 +28,9 @@ Repository tests use the same `obsidian.*` imports as consumers and execute thro
 
 Obsidian's `WARNING` maps to the standard library's `WARN` severity without changing `nox.log` behavior. Tests restore the prior `nox.log` module threshold after checking the mapping.
 
-The documented logger, record, sink, context, configuration and formatter surface is the protected beta contract beginning with `v0.9.0-beta.1`. Importable helpers absent from `public-api.md` remain internal.
+The documented logger, record, sink, context, configuration and formatter surface is protected beginning with `v0.9.0-beta.1` and is the proposed stable surface for `v1.0.0`. Importable helpers absent from `public-api.md` remain internal.
 
-## Beta field and record model
+## Stable-candidate field and record model
 
 `FieldValue` is an explicit tagged class for null, string, integer, float and boolean values. It does not accept arbitrary objects or call their structural representation. Nested lists/objects are compile-time rejected and remain deferred pending recursive-type, ownership and redaction experiments.
 
@@ -40,7 +40,7 @@ The documented logger, record, sink, context, configuration and formatter surfac
 
 Messages and scalar string fields are limited to 65,536 Unicode code points. `fields` and `context` are independently limited to 256 unique keys. NaN and positive/negative infinity are rejected by `FieldValue`; null, string, integer, finite float and boolean are the supported scalar kinds.
 
-## Beta formatters
+## Stable-candidate formatters
 
 `format_text.format_record(record)` returns one human-readable physical line without a trailing newline. It renders the captured UTC time as RFC 3339 with millisecond precision, flattens context/event fields with event-field precedence, sorts keys, JSON-quotes ambiguous keys/string values and escapes all ASCII controls plus DEL. Phase 2 emits no ANSI sequences, so `NO_COLOR` and non-TTY output cannot receive color codes.
 
@@ -62,11 +62,11 @@ Absent optional identifiers are omitted without leaving placeholders; the remain
 
 Both formatter entry points apply the default sanitizer before encoding. This is defense in depth for direct use; logger dispatch still sanitizes before any sink boundary. If the default sanitizer fails, direct formatting receives a fixed placeholder record rather than the unsafe input.
 
-## Beta synchronous logger
+## Stable-candidate synchronous logger
 
 `Logger(name, threshold, clock, redactor=None, raise_on_error=False)` is an explicit instance with no global default. Disabled events return `False` before reading the clock or constructing a record. Enabled events capture the clock once, apply the selected redactor, and synchronously dispatch cloned snapshots to registered `Sink` implementations. A redactor exception or failed result drops the event, increments a saturating failure counter and returns `False` without exposing the unsafe record or exception text.
 
-The TRACE convenience method is named `trace_event`. At the pinned compiler revision, the natural `trace` spelling passes type-checking but produces a duplicate LLVM symbol; `log(TRACE, ...)` remains the equivalent semantic path. No future `trace` alias is promised by the beta contract.
+The TRACE convenience method is named `trace_event`. At the pinned compiler revision, the natural `trace` spelling passes type-checking but produces a duplicate LLVM symbol; `log(TRACE, ...)` remains the equivalent semantic path. No future `trace` alias is promised by the stable-candidate contract.
 
 `add_sink` returns a monotonically increasing registration ID and installs an allow-all `TRACE` route. `add_sink_with_filter(sink, minimum_level, filter)` adds a validated per-sink numeric threshold and a `LogFilter`. One logger accepts at most 64 active registrations, and identifiers fail closed before exceeding `2147483647`. `ExactLoggerNameFilter` is case-sensitive exact equality; it is not a prefix matcher. Threshold rejection happens before invoking the filter. Filters receive sanitized clones, so mutation cannot affect sink output. A filter exception or re-entry fails only that route closed and later routes still run.
 
@@ -78,7 +78,7 @@ The TRACE convenience method is named `trace_event`. At the pinned compiler revi
 
 `RedactionPolicy(additional_keys)` extends the fixed case-insensitive denylist with copied, validated application keys. `DefaultRedactor` masks scalar fields/context plus assignments, HTTP credential headers, bearer tokens, URL userinfo and sensitive query parameters. Nested values are deliberately unsupported. Rotation uses the same formatter/redaction boundary; future exception and async records must enter it as well. See `docs/security.md` and ADR-0008 for limitations.
 
-## Beta context and configuration
+## Stable-candidate context and configuration
 
 `Logger.bind(fields, request_id="", trace_id="", span_id="")` returns a `BoundLogger` snapshot view. It delegates to the parent dispatcher and does not own/close sinks. Initial and nested context snapshots are limited to 256 fields. A later binding replaces same-key bound context, and event fields take precedence by removing same-key context before record capture. Caller lists and field values are copied.
 
@@ -106,7 +106,7 @@ There is no async logging API on the pinned NOX 2.1.0 baseline. `Logger.log`, co
 
 These modules are not imported by core and require the corresponding consumer dependency only when selected. Exact tested revisions and examples are documented in `docs/ecosystem.md`; API compatibility beyond them is not claimed.
 
-## Beta synchronous I/O sinks
+## Stable-candidate synchronous I/O sinks
 
 `ConsoleSink(name, target, format_kind)` requires an explicit target and formatter. `CONSOLE_STDOUT` supports text or JSON output. `CONSOLE_STDERR` raises a sanitized `SinkError` because the pinned NOX API has no stderr write primitive. Console `flush()` is a logical no-op, not a process stdio flush.
 
@@ -114,7 +114,7 @@ These modules are not imported by core and require the corresponding consumer de
 
 `FORMAT_TEXT` and `FORMAT_JSON` select the existing deterministic formatters. Both sinks re-enter those sanitizer-backed formatters; file/path/write failures are exposed as stable `SinkError` categories without echoing paths or record data. Plain `FileSink` storage is unbounded; `RotatingFileSink` supplies an explicit size budget. A trusted application-owned root is required because the pinned API has no `lstat`, no-follow open or race-free directory-relative open.
 
-## Beta size rotation
+## Stable-candidate size rotation
 
 `RotationPolicy(max_bytes, max_archives)` validates a positive byte limit up to 1 TiB and an archive count from 0 through 1000. `RotatingFileSink(name, allowed_root, relative_path, format_kind, create_parent, policy)` rotates before a write would cross the encoded-byte boundary and rejects a single record larger than the limit. It reports bounded storage and exposes write/rotation/current-size/archive counters for diagnostics and tests.
 

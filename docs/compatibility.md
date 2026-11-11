@@ -40,6 +40,8 @@ Phase 12 added a source-independent registry install gate. On 2026-11-10, checks
 
 The developer-machine default compiler reported `noxc 2.1.14` during this audit. That observation does not move the project pin or expand support: every release-readiness command above used the explicit checksum-verified 2.1.0 binary. A compiler-pin update requires the full compatibility workflow and separate evidence.
 
+Commit `c0dbaf2` and CI `42834838904` validated the Phase 12 registry-readiness harness and isolated capability-audit home on macOS arm64, Linux x64 and Linux arm64. All six LLVM/QBE combinations retained 22 behavioral files/467 assertions/0 skips, three expected compile-fail fixtures, seven capability probes, dependency/import checks, three ecosystem probes/36 checks, all examples, benchmark smoke and 8,000-event file/rotation stress smoke. This is readiness evidence, not an exact stable-release-commit claim.
+
 ## Audited public APIs at the pinned revision
 
 | Area | Observed public contract | Obsidian consequence | Status |

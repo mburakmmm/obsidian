@@ -45,7 +45,7 @@ jq -e \
   '.packages | length == 1 and .[0].alias == "obsidian" and .[0].repo == "github.com/mburakmmm/obsidian" and .[0].ref == $ref and .[0].resolved == $resolved' \
   nox.lock >/dev/null
 
-cp "$project_root/tests/compatibility/beta_api_test.nox" tests/
+cp "$project_root/tests/compatibility/stable_api_test.nox" tests/
 cp "$project_root/tests/compatibility/schema_v1_test.nox" tests/
 cp "$project_root/tests/fixtures/consumer_main.nox" main.nox
 cp "$project_root/examples/hello.nox" examples/

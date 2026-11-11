@@ -1,20 +1,21 @@
 # Public API inventory
 
-Status: published `v0.9.0-beta.1` synchronous beta contract for NOX 2.1.0. This inventory is normative; importable symbols not listed here are internal and have no compatibility guarantee.
+Status: published `v0.9.0-beta.1` synchronous beta contract and unchanged `v1.0.0` stable candidate for NOX 2.1.0. This inventory is normative; importable symbols not listed here are internal and have no compatibility guarantee.
 
 ## Stability labels
 
 | Label | Contract |
 |---|---|
+| **stable candidate** | Protected today by the beta contract and scheduled to become stable only when an aligned `v1.0.0` tag passes every Phase 12 gate. After that release, incompatible changes require a new major version. |
 | **beta** | Protected within a released minor line. Before 1.0, an incompatible change requires a documented minor version and migration path. |
 | **preview** | Executable and tested only against the exact listed dependency revisions; signatures may change before promotion to beta. |
 | **internal** | No compatibility promise, even if the NOX module system permits importing it. |
 
 Underscore-prefixed fields, helper functions absent from this inventory and injected test hooks such as rotation renamers are internal. Consumers must not mutate object fields directly; use constructors, accessors and snapshot methods below.
 
-For a listed class, the constructor and non-underscore members described in this document or `api.md` are protected unless stated otherwise. `FieldValue` uses typed scalar factories rather than its tagged constructor; `SinkConfig` uses the named sink-config factories; `DiagnosticsSnapshot` and `BoundLogger` are obtained from `Logger`; and the optional `RotatingFileSink` renamer argument is an internal test hook. These exclusions keep representation and failure-injection details out of the beta contract.
+For a listed class, the constructor and non-underscore members described in this document or `api.md` are protected unless stated otherwise. `FieldValue` uses typed scalar factories rather than its tagged constructor; `SinkConfig` uses the named sink-config factories; `DiagnosticsSnapshot` and `BoundLogger` are obtained from `Logger`; and the optional `RotatingFileSink` renamer argument is an internal test hook. These exclusions keep representation and failure-injection details out of the stable-candidate contract.
 
-## Beta core modules
+## Stable-candidate core modules
 
 | Module | Documented symbols |
 |---|---|
@@ -42,7 +43,7 @@ For a listed class, the constructor and non-underscore members described in this
 | `obsidian.factory` | `build_logger` |
 | `obsidian.integration` | `safe_http_method`, `safe_route_name`, `safe_correlation_id`, `safe_http_status`, `safe_duration_ms`, `request_completion_level`, `request_completion_fields` |
 
-`FieldValue` instances are created through the typed scalar factory functions; direct tagged construction is not part of the beta contract. `LogRecord` is public because custom sinks and filters receive it, but callers should normally create records through `Logger`. `FakeClock` is a supported deterministic test utility, not a production clock.
+`FieldValue` instances are created through the typed scalar factory functions; direct tagged construction is not part of the stable-candidate contract. `LogRecord` is public because custom sinks and filters receive it, but callers should normally create records through `Logger`. `FakeClock` is a supported deterministic test utility, not a production clock.
 
 ## Preview adapters
 
@@ -52,9 +53,9 @@ For a listed class, the constructor and non-underscore members described in this
 | `obsidian.adapters.aether` | `AetherRequestLogging`, `bind_request`, `log_completion`, `set_route_name` | Aether `v0.9.0` / `d283a3badd1585dba1c58685dfa4d376f59262b8` |
 | `obsidian.adapters.quartz` | `QuartzCapture` and its sink/count/assertion methods | Quartz `v0.9.15` / `a8e0b9b2d3e71bb61d192362b158a74c3212f38` |
 
-Preview adapters do not expand the core dependency graph and are not covered by beta source-compatibility promises outside the pinned revisions.
+Preview adapters do not expand the core dependency graph and are not covered by stable source-compatibility promises outside the pinned revisions.
 
 ## Explicitly absent
 
-There is no default global logger, async logger/queue, exception/stack capture, source metadata, network sink, config-file loader, time-based rotation, cross-process rotation, stderr implementation, recursive field value or tracing engine. Absence is part of the published beta scope; code must not depend on speculative spellings for these capabilities.
+There is no default global logger, async logger/queue, exception/stack capture, source metadata, network sink, config-file loader, time-based rotation, cross-process rotation, stderr implementation, recursive field value or tracing engine. Absence is part of the stable-candidate scope; code must not depend on speculative spellings for these capabilities.
 

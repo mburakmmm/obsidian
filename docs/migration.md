@@ -38,3 +38,9 @@ Require `schema_version == "obsidian.log.v1"`, read properties by name and ignor
 
 Before adopting a later Obsidian release, run the downstream contract against both supported backends and review the release's migration notes. Preview ecosystem adapters require their exact documented framework revision.
 
+## From 0.9 beta to the 1.0 stable candidate
+
+The proposed `v1.0.0` core surface is intentionally identical to the protected `v0.9.0-beta.1` inventory. Consumers that use only `public-api.md` symbols and `obsidian.log.v1` require no source migration. The compatibility program now named `stable_api_test.nox` is also executed against the published beta tag by the registry-install gate, proving that the stable candidate has not silently added a dependency on unreleased core APIs.
+
+This is a candidate promise, not evidence that `v1.0.0` has been published. Preview Nyx, Aether and Quartz adapters remain outside the stable core guarantee, and every limitation documented for synchronous dispatch, stderr, durability, rotation and recursive values remains in force.
+

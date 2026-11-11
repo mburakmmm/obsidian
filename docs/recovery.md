@@ -1,6 +1,6 @@
 # File rotation recovery
 
-Status: Phase 6 single-process candidate.
+Status: published single-process size-rotation behavior and unchanged `v1.0.0` stable candidate; cross-process recovery remains unsupported.
 
 ## Normal restart
 

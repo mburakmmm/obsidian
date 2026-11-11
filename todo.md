@@ -460,15 +460,21 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 ## 16. `1.0.0` — Phase 12: kararlı sürüm
 
-- [ ] Desteklenen tüm CI matrix job'ları yeşil.
-- [ ] Test vaka, assertion ve skip toplamları release raporunda.
-- [ ] Sıfır unredacted sentinel.
-- [ ] Bilinen P0/P1 safety bug yok.
+- [ ] Exact stable release commit için desteklenen tüm CI matrix job'ları yeşil.
+  - [x] Readiness kanıtı: commit `c0dbaf2`, CI `42834838904` macOS ARM64/Linux x64/Linux ARM64 üzerinde tamamen yeşil.
+- [ ] Test vaka, assertion ve skip toplamları stable release raporunda.
+  - [x] Readiness kanıtı: backend/job başına 22 dosya/467 assertion/0 skip; ek compile-fail/capability/adaptör sayıları `docs/stable-readiness.md` içinde kayıtlı.
+- [ ] Exact stable release commit çıktılarında sıfır unredacted sentinel.
+  - [x] Readiness kanıtı: `c0dbaf2` yerel registry probu ve CI security/example/stress taramaları temiz.
+- [ ] Exact stable release commit için bilinen P0/P1 safety bug yok.
+  - [x] Readiness kanıtı: Phase 10 closeout sonrası `c0dbaf2` tam regresyon matrisi yeşil.
 - [ ] Pinned NOX revision ile exact stable ref clean install başarılı.
   - [x] Readiness kanıtı: NOX 2.1.0 ile public noxpkg indexinden credential-free beta install başarılı; `v0.9.0-beta.1` exact `c2379fe…` commit'ine kilitlendi ve LLVM/QBE API/schema/import/version probları geçti.
-- [ ] Tüm örnekler başarılı.
+- [ ] Exact stable release commit üzerinde tüm örnekler başarılı.
+  - [x] Readiness kanıtı: `c0dbaf2` yerel ve üç platform CI LLVM/QBE örnekleri geçti.
 - [ ] Benchmark raporu release commit'ine ait.
-- [ ] Public API ve schema freeze edilmiş.
+- [ ] Public API ve schema exact stable release commit'te freeze edilmiş.
+  - [x] Readiness kanıtı: ADR-0019 beta core yüzeyini değişiklik olmadan stable candidate olarak dondurdu; preview adaptörler kapsam dışında.
 - [ ] Artifact, tag, changelog ve commit aynı sürümü gösteriyor.
 - [ ] İmza/provenance altyapı destekliyorsa doğrulandı.
 - [ ] Stable registry submission sonrası public index görünürlüğü ve downstream install ayrıca doğrulandı.
@@ -572,3 +578,4 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Ph
 | 2026-11-10 | Phase 11 beta API/schema adayı | Normative public API inventory, beta/preview/internal stability katmanları, `obsidian.log.v1` compatibility policy, migration guide ve iki downstream contract testi eklendi | Commit `5d20822`; yerel ve CI `42765823934` macOS ARM64/Linux x64/Linux ARM64 LLVM/QBE: 22 dosya/467 assertion/0 skip; 3 expected compile-fail, capability, import/dependency, adaptör, tüm örnekler, benchmark ve file-stress smoke geçti | API/schema adayı kanıtlı; license + version/changelog/tag hizası kullanıcı lisans kararı beklediği için Phase 11 kapısı açık |
 | 2026-11-10 | `0.9.0-beta.1` / Phase 11 release | MIT lisansı ve sürüm/changelog hizası `c2379fe493b8eb431220f8a5c2b1bd12b13f1867` üzerinde immutable annotated tag ile yayımlandı; GitHub prerelease ve token-free registry sınırı ADR-0017 ile kaydedildi | Tag-driven run `42774325476`: üç platformda LLVM/QBE 22 dosya/467 assertion/0 skip ve tüm ek kapılar geçti; eski workflow registry-secret adımında durdu, tag yerel `noxc publish --ref v0.9.0-beta.1` ile başarıyla gönderildi; origin peeled tag exact commit ile eşleşiyor | Phase 11 kapandı; workflow artık registry credential işlemez ve prerelease tag'lerini latest stable yapmaz. Phase 12 stable release sırada |
 | 2026-11-10 | Phase 12 registry readiness | Public-index clean-install harness'ı ve tek immutable commit'e bağlı stable evidence policy ADR-0018 ile eklendi | Checksum-verified NOX 2.1.0, isolated credential-free `NOX_HOME`: registry `obsidian@v0.9.0-beta.1` → exact `c2379fe…`; LLVM/QBE API/schema/import/version pass, sentinel yok | Beta index/install kapısı kanıtlandı; `1.0.0` exact commit matrix, benchmark, stable API promotion, provenance ve stable artifact hizası açık |
+| 2026-11-11 | Phase 12 stable API candidate | Published beta core envanteri ve `obsidian.log.v1` değişmeden stable candidate olarak donduruldu; beta contract testi duplicate edilmeden yeniden adlandırıldı; adaptörler preview kaldı | Önceki readiness commit `c0dbaf2`, CI `42834838904`: üç platform, LLVM/QBE, 22 dosya/467 assertion/0 skip ve tüm ek kapılar yeşil; yeni stable contract aynı beta registry ref'e karşı da çalıştırılacak | Stable API promotion readiness tamam; exact `1.0.0` version/changelog/release commit, benchmark, provenance, tag ve artifact hizası açık |

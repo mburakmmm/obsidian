@@ -1,6 +1,6 @@
 # Configuration
 
-Status: internal API through the Phase 8 local implementation; registry approval remains pending.
+Status: published beta configuration contract and unchanged `v1.0.0` stable candidate; public symbols are limited to the normative inventory in `public-api.md`.
 
 Obsidian configuration is explicit and typed. It never searches `.env`, a home directory, the working tree or a network location.
 

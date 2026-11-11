@@ -1,6 +1,6 @@
 # Ecosystem adapters
 
-Status: Phase 11 preview adapters verified on NOX 2.1.0 in local and supported CI matrices. They are intentionally excluded from the beta core compatibility guarantee.
+Status: preview adapters verified on NOX 2.1.0 in local and supported CI matrices. They are intentionally excluded from the stable-candidate core compatibility guarantee.
 
 Obsidian core has no Nyx, Aether, Quartz or other ecosystem dependency. Optional modules under `obsidian.adapters` are compiled only when imported by a consumer, and the consumer must add the corresponding framework package. The tested matrix is deliberately narrow:
 
