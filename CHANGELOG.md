@@ -4,18 +4,20 @@ All notable changes are recorded here. Versions follow Semantic Versioning, incl
 
 ## [Unreleased]
 
-### Changed
-
-- GitHub Release automation no longer reads, generates or stores noxpkg credentials; registry submission is performed explicitly from the trusted local operator session.
-- Hyphenated release tags are published as GitHub prereleases instead of being marked as the latest stable release.
-- Async capability audits now use an isolated temporary `NOX_HOME` so cache permissions or developer state cannot replace the expected compiler capability evidence.
-- The beta API contract program is now the non-duplicated stable-candidate contract and is also executed against the published beta ref during registry verification.
+## [1.0.0] - 2026-11-11
 
 ### Added
 
 - Credential-free public-registry install verification that pins the expected repository, release ref, resolved commit, package version and LLVM/QBE compatibility contracts.
 - Phase 12 stable-readiness evidence policy binding source, tests, benchmarks, registry resolution and release artifacts to one immutable commit.
 - ADR-0019 freezes the documented synchronous core and `obsidian.log.v1` unchanged as the `v1.0.0` candidate while keeping ecosystem adapters preview.
+
+### Changed
+
+- GitHub Release automation no longer reads, generates or stores noxpkg credentials; registry submission is performed explicitly from the trusted local operator session.
+- Hyphenated release tags are published as GitHub prereleases instead of being marked as the latest stable release.
+- Async capability audits now use an isolated temporary `NOX_HOME` so cache permissions or developer state cannot replace the expected compiler capability evidence.
+- The beta API contract program is now the non-duplicated stable-candidate contract and is also executed against the published beta ref during registry verification.
 
 ## [0.9.0-beta.1] - 2026-11-10
 

@@ -6,7 +6,7 @@ Structured, secure logging foundations for the NOX ecosystem.
 
 [![CI](https://github.com/mburakmmm/obsidian/actions/workflows/ci.yml/badge.svg)](https://github.com/mburakmmm/obsidian/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/mburakmmm/obsidian?include_prereleases&sort=semver)](https://github.com/mburakmmm/obsidian/releases/tag/v0.9.0-beta.1)
-![Status](https://img.shields.io/badge/status-beta_prerelease-orange)
+![Status](https://img.shields.io/badge/status-stable_candidate-orange)
 ![NOX](https://img.shields.io/badge/NOX-2.1.0-6f42c1)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -14,7 +14,7 @@ Structured, secure logging foundations for the NOX ecosystem.
 
 Obsidian is a small standalone logging library being built for Nyx, Aether, Nova, Feather, Atlas, Quartz, Rune, Chronos, Ember, VAULT, Pulse and Aura. Those projects may depend on Obsidian; Obsidian core never depends on them.
 
-The first beta, [`v0.9.0-beta.1`](https://github.com/mburakmmm/obsidian/releases/tag/v0.9.0-beta.1), is published as a prerelease. The synchronous scalar logging core is evidence-gated; no stable release has been published. `AGENTS.md` is the engineering contract and `todo.md` contains the phase roadmap.
+The first beta, [`v0.9.0-beta.1`](https://github.com/mburakmmm/obsidian/releases/tag/v0.9.0-beta.1), is published as a prerelease. Version `1.0.0` is now in evidence-gated release preparation; no stable tag or release has been published. `AGENTS.md` is the engineering contract and `todo.md` contains the phase roadmap.
 
 ## Design priorities
 
@@ -57,7 +57,7 @@ Stderr is unavailable in the pinned NOX public API and remains explicitly disabl
 |---|---|
 | NOX compiler | `noxc 2.1.0` |
 | NOX source | `fd107b922c67a804520dc30f849039d977542f6c` |
-| Obsidian package | `0.9.0-beta.1`, published prerelease |
+| Obsidian package | `1.0.0`, stable release preparation |
 | Verified locally | macOS arm64, LLVM and QBE |
 | Verified in CI | macOS arm64, Linux x64/arm64; LLVM and QBE |
 
@@ -65,7 +65,7 @@ See [`docs/compatibility.md`](docs/compatibility.md) before relying on a NOX cap
 
 ## Example
 
-The documented synchronous core is the protected `v0.9.0-beta.1` beta API; preview adapters and undocumented symbols may still change:
+The documented synchronous core is the unchanged `v1.0.0` stable candidate; preview adapters and undocumented symbols remain outside that compatibility promise:
 
 ```nox
 import obsidian.fields
@@ -91,6 +91,7 @@ See [`docs/hardening.md`](docs/hardening.md) and ADR-0015 for the Phase 10 safet
 See [`docs/public-api.md`](docs/public-api.md), [`docs/schema.md`](docs/schema.md) and [`docs/migration.md`](docs/migration.md) for the Phase 11 published beta surface and compatibility rules.
 The beta release evidence and known limitations are in [`docs/releases/0.9.0-beta.1.md`](docs/releases/0.9.0-beta.1.md).
 Stable promotion remains evidence-gated; current Phase 12 progress and blockers are tracked in [`docs/stable-readiness.md`](docs/stable-readiness.md).
+The unpublished stable release preparation notes are in [`docs/releases/1.0.0.md`](docs/releases/1.0.0.md).
 
 Library, test and example imports use the package name `obsidian`. The pinned compiler resolves those self-imports correctly when Obsidian is loaded as a dependency, but not while compiling the package as the root project. Development therefore runs a hermetic downstream-consumer fixture; see ADR-0006.
 

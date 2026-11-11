@@ -1,6 +1,6 @@
 # v1.0.0 stable readiness
 
-Status: Phase 12 in progress. No `v1.0.0` tag, stable GitHub Release or stable registry ref exists.
+Status: `1.0.0` release preparation in progress. Manifest/source/changelog alignment is prepared, but no `v1.0.0` tag, stable GitHub Release or stable registry ref exists.
 
 ## Promotion baseline
 
@@ -34,11 +34,13 @@ ADR-0019 and `stable_api_test.nox` now define the unchanged stable core candidat
 
 Commit `ccc9e411ca8dc5087f8fcc12b017d16b481c50d6` and CI `42968550569` then passed the stable-candidate rename and policy on the same three-platform LLVM/QBE matrix with unchanged totals: 22 behavioral files/467 assertions/0 skips per backend, plus every compile-fail, capability, dependency, adapter, example, benchmark-smoke and file-stress gate. The public registry probe also ran `stable_api_test.nox` successfully against immutable beta commit `c2379fe493b8eb431220f8a5c2b1bd12b13f1867` on both backends.
 
+## Provenance assessment
+
+The release workstation has no configured `user.signingkey`, `tag.gpgSign` or `commit.gpgSign`, and the GitHub Release workflow does not emit an artifact attestation. Current infrastructure therefore supports an immutable annotated tag plus exact workflow/lock evidence, but not a signed-provenance claim. This must be reassessed before tagging if signing infrastructure is deliberately configured; otherwise the release remains explicitly unsigned.
+
 ## Remaining stable blockers
 
-1. Prepare one aligned `1.0.0` manifest/source/changelog/release-note commit.
-2. Run the complete supported platform/backend matrix, examples, security scans, benchmark harness and bounded stress at that exact commit.
-3. Decide and verify signing/provenance only if working infrastructure exists; otherwise document it as unavailable without claiming it.
-4. Create one immutable annotated `v1.0.0` tag only after the pre-publication gates pass.
-5. Submit that exact tag with the external operator session, then rerun the public-index install probe against the stable tag and peeled commit.
-6. Verify the public GitHub Release, registry resolution and documented evidence all identify the same commit before closing Phase 12.
+1. Run the complete supported platform/backend matrix, examples, security scans, benchmark harness and bounded stress at the aligned preparation commit.
+2. Create one immutable annotated `v1.0.0` tag only after the pre-publication gates pass.
+3. Submit that exact tag with the external operator session, then rerun the public-index install probe against the stable tag and peeled commit.
+4. Verify the public GitHub Release, registry resolution and documented evidence all identify the same commit before closing Phase 12.
