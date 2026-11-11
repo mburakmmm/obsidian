@@ -32,6 +32,8 @@ Commit `c0dbaf2244d8430a5f25cb721b8c0ac2540c9ba1` and CI `42834838904` passed on
 
 ADR-0019 and `stable_api_test.nox` now define the unchanged stable core candidate. The same test is run against the public beta tag by the registry gate, so stable-candidate source usage remains compatible with the released beta checkout.
 
+Commit `ccc9e411ca8dc5087f8fcc12b017d16b481c50d6` and CI `42968550569` then passed the stable-candidate rename and policy on the same three-platform LLVM/QBE matrix with unchanged totals: 22 behavioral files/467 assertions/0 skips per backend, plus every compile-fail, capability, dependency, adapter, example, benchmark-smoke and file-stress gate. The public registry probe also ran `stable_api_test.nox` successfully against immutable beta commit `c2379fe493b8eb431220f8a5c2b1bd12b13f1867` on both backends.
+
 ## Remaining stable blockers
 
 1. Prepare one aligned `1.0.0` manifest/source/changelog/release-note commit.

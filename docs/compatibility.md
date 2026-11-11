@@ -42,6 +42,8 @@ The developer-machine default compiler reported `noxc 2.1.14` during this audit.
 
 Commit `c0dbaf2` and CI `42834838904` validated the Phase 12 registry-readiness harness and isolated capability-audit home on macOS arm64, Linux x64 and Linux arm64. All six LLVM/QBE combinations retained 22 behavioral files/467 assertions/0 skips, three expected compile-fail fixtures, seven capability probes, dependency/import checks, three ecosystem probes/36 checks, all examples, benchmark smoke and 8,000-event file/rotation stress smoke. This is readiness evidence, not an exact stable-release-commit claim.
 
+Commit `ccc9e41` and CI `42968550569` passed the unchanged stable-candidate core contract on the same complete supported matrix with identical test totals. The renamed `stable_api_test.nox` also passed locally against the public `v0.9.0-beta.1` registry checkout on LLVM and QBE, proving the candidate does not depend on unreleased core APIs. Stable release/version/tag evidence remains pending.
+
 ## Audited public APIs at the pinned revision
 
 | Area | Observed public contract | Obsidian consequence | Status |
