@@ -460,31 +460,23 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 ## 16. `1.0.0` — Phase 12: kararlı sürüm
 
-- [ ] Exact stable release commit için desteklenen tüm CI matrix job'ları yeşil.
-  - [x] Readiness kanıtı: commit `c0dbaf2`, CI `42834838904` macOS ARM64/Linux x64/Linux ARM64 üzerinde tamamen yeşil.
-- [ ] Test vaka, assertion ve skip toplamları stable release raporunda.
-  - [x] Readiness kanıtı: backend/job başına 22 dosya/467 assertion/0 skip; ek compile-fail/capability/adaptör sayıları `docs/stable-readiness.md` içinde kayıtlı.
-- [ ] Exact stable release commit çıktılarında sıfır unredacted sentinel.
-  - [x] Readiness kanıtı: `c0dbaf2` yerel registry probu ve CI security/example/stress taramaları temiz.
-- [ ] Exact stable release commit için bilinen P0/P1 safety bug yok.
-  - [x] Readiness kanıtı: Phase 10 closeout sonrası `c0dbaf2` tam regresyon matrisi yeşil.
-- [ ] Pinned NOX revision ile exact stable ref clean install başarılı.
-  - [x] Readiness kanıtı: NOX 2.1.0 ile public noxpkg indexinden credential-free beta install başarılı; `v0.9.0-beta.1` exact `c2379fe…` commit'ine kilitlendi ve LLVM/QBE API/schema/import/version probları geçti.
-- [ ] Exact stable release commit üzerinde tüm örnekler başarılı.
-  - [x] Readiness kanıtı: `c0dbaf2` yerel ve üç platform CI LLVM/QBE örnekleri geçti.
-- [ ] Benchmark raporu release commit'ine ait.
-- [ ] Public API ve schema exact stable release commit'te freeze edilmiş.
+- [x] Exact stable release commit için desteklenen tüm CI matrix job'ları yeşil: `e787ab6`, main CI `42971160582` ve tag-driven release CI `42971769840`.
+- [x] Test vaka, assertion ve skip toplamları stable release raporunda: backend/job başına 22 dosya/467 assertion/0 skip; 3 compile-fail, 7 capability ve 3 adaptör/36 kontrol.
+- [x] Exact stable release commit çıktılarında sıfır unredacted sentinel; security, example, registry, benchmark ve stress taramaları temiz.
+- [x] Exact stable release commit için desteklenen senkron kapsamda bilinen P0/P1 safety bug yok.
+- [x] Pinned NOX 2.1.0 ile exact stable ref clean install başarılı: public index `v1.0.0` -> `e787ab6d8f6232ed9951e672cf38a88060e4cb0c`, LLVM/QBE pass.
+- [x] Exact stable release commit üzerinde tüm örnekler LLVM/QBE ve üç platform release matrisinde başarılı.
+- [x] Benchmark raporu release commit'ine ait: Apple M4/macOS ARM64, LLVM/QBE, 7 sample, `dirty=false`, commit `e787ab6`.
+- [x] Public API ve schema exact stable release commit'te freeze edilmiş.
   - [x] Readiness kanıtı: ADR-0019 beta core yüzeyini değişiklik olmadan stable candidate olarak dondurdu; commit `ccc9e41` ve CI `42968550569` tam matriste geçti, preview adaptörler kapsam dışında.
-- [ ] Artifact, tag, changelog ve commit aynı sürümü gösteriyor.
-  - [x] Preparation: `nox.json`, `version.nox`, version testi, hello beklentisi, changelog ve release notu `1.0.0` için hizalandı; tag henüz oluşturulmadı.
-- [x] İmza/provenance altyapısı değerlendirildi: signing key/tag-signing/attestation yapılandırması yok; annotated tag kullanılacak ve imzalı provenance iddiası yapılmayacak.
-- [ ] Stable registry submission sonrası public index görünürlüğü ve downstream install ayrıca doğrulandı.
-  - [x] Readiness kanıtı: beta ref için public index görünürlüğü ve downstream install doğrulandı; bu kanıt gelecekteki stable ref'i kapsamaz.
-- [ ] Immutable release tag sessizce yeniden hedeflenmedi.
+- [x] Artifact, annotated tag, changelog, GitHub Release, public registry ve commit aynı `1.0.0` sürümünü/`e787ab6` kaynağını gösteriyor.
+- [x] İmza/provenance altyapısı değerlendirildi: signing key/tag-signing/attestation yapılandırması yok; annotated unsigned tag kullanıldı ve imzalı provenance iddiası yapılmıyor.
+- [x] Stable registry submission sonrası public index görünürlüğü ve downstream install ayrıca doğrulandı; version/API/schema/import LLVM/QBE pass.
+- [x] Immutable release tag sessizce yeniden hedeflenmedi; uzak annotated tag `f3f1837…`, peeled commit `e787ab6…`.
 
 ### Phase 12 kapısı
 
-- [ ] Yayınlanan artifact ve belgelerin tamamı aynı doğrulanmış commit'e ait.
+- [x] Yayınlanan artifact ve belgelerin tamamı aynı doğrulanmış `e787ab6d8f6232ed9951e672cf38a88060e4cb0c` commit'ine ait. Phase 12 kapandı.
 
 ---
 
@@ -581,3 +573,4 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Ph
 | 2026-11-10 | Phase 12 registry readiness | Public-index clean-install harness'ı ve tek immutable commit'e bağlı stable evidence policy ADR-0018 ile eklendi | Checksum-verified NOX 2.1.0, isolated credential-free `NOX_HOME`: registry `obsidian@v0.9.0-beta.1` → exact `c2379fe…`; LLVM/QBE API/schema/import/version pass, sentinel yok | Beta index/install kapısı kanıtlandı; `1.0.0` exact commit matrix, benchmark, stable API promotion, provenance ve stable artifact hizası açık |
 | 2026-11-11 | Phase 12 stable API candidate | Published beta core envanteri ve `obsidian.log.v1` değişmeden stable candidate olarak donduruldu; beta contract testi duplicate edilmeden yeniden adlandırıldı; adaptörler preview kaldı | Commit `ccc9e41`, CI `42968550569`: üç platform, LLVM/QBE, 22 dosya/467 assertion/0 skip ve tüm ek kapılar yeşil; stable contract public beta registry ref'e karşı iki backend'de geçti | Stable API promotion readiness tamam; exact `1.0.0` version/changelog/release commit, benchmark, provenance, tag ve artifact hizası açık |
 | 2026-11-11 | `1.0.0` release preparation | Manifest/source/test/example/changelog/release-notu stable sürüm için hizalandı; provenance altyapısı değerlendirildi ve imzalı iddia kapalı tutuldu | Exact preparation commit yerel tam suite, benchmark/stress ve uzak matrix sonrası kaydedilecek; tag henüz yok | Pre-publication gates geçmeden `v1.0.0` oluşturulmayacak veya yayımlanmayacak |
+| 2026-11-12 | `1.0.0` / Phase 12 stable release | Exact `e787ab6` commit'i immutable annotated `v1.0.0` tag, stable GitHub Release ve public registry ref olarak yayımlandı; token GitHub Actions'a eklenmedi | Main CI `42971160582` ve release CI `42971769840` üç platform LLVM/QBE tamamen yeşil; clean full benchmark/stress `dirty=false`; registry clean install `v1.0.0` -> exact `e787ab6`, version 1.0.0, LLVM/QBE pass | Phase 12 kapandı; stable sözleşme senkron core ile sınırlı, tag unsigned ve adaptörler preview |
