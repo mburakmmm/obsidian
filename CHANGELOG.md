@@ -4,6 +4,15 @@ All notable changes are recorded here. Versions follow Semantic Versioning, incl
 
 ## [Unreleased]
 
+### Added
+
+- Canonical noxpkg publication metadata for the package description, search tags and pure-NOX source declaration.
+- A token-free operator wrapper that applies the same registry metadata to branch and immutable tag submissions.
+
+### Documentation
+
+- NOX 2.1.186 compatibility-candidate findings and a Phase 13 plan covering the toolchain lane, concurrency re-audit, SBOM and optional provenance decisions.
+
 ## [1.0.0] - 2026-11-11
 
 ### Added

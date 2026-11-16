@@ -1,6 +1,6 @@
 # NOX compatibility baseline
 
-Status: Phase 0–11 and the `v0.9.0-beta.1` prerelease are green on NOX 2.1.0 for the supported synchronous matrix. Phase 12 stable readiness is in progress. This document does not extend support beyond tested jobs.
+Status: `v1.0.0` and Phase 12 are complete on the pinned NOX 2.1.0 supported synchronous matrix. NOX 2.1.186 is an audited upgrade candidate with local macOS ARM64 LLVM/QBE evidence only; it is not yet the project pin or a support claim.
 
 ## Pinned toolchain
 
@@ -10,13 +10,13 @@ Status: Phase 0–11 and the `v0.9.0-beta.1` prerelease are green on NOX 2.1.0 f
 | Pinned test compiler | `noxc 2.1.0` | Verified release archive, `noxc --version` on 2026-11-07 |
 | Release archive SHA-256 | `b96d286772da8eaa9d161824d7e4c91c34af85874045dbbae44909b607e65062` | Published checksum plus local `shasum -a 256 -c` |
 | Compiler binary SHA-256 | `41296804cf1fe802e778f26940265dd1451dee5cdaf4838e7cc66c3329e49eb0` | Extracted pinned release binary |
-| Ambient user compiler | `noxc 2.1.0` | Observed on 2026-11-07; final evidence uses the isolated verified archive |
+| Ambient user compiler | `noxc 2.1.186` | Observed on 2026-11-16; candidate analysis only, not release evidence |
 | Host | macOS 27.2, arm64 | `sw_vers`, `uname -m` |
 | C compiler | Apple clang 21.0.0 | `clang --version` |
 | Bundled QBE | present in the verified 2.1.0 release archive | filesystem inspection |
 | Profile under test | `hosted` | filesystem, process and clock APIs are required |
 
-The compiler reports a version but not its source SHA. The annotated `v2.1.0` tag resolves to the selected commit and contains no signature. Release assets include per-platform SHA-256 files; local verification and CI run `42308138269` checked the platform archives against their matching checksums on macOS arm64 and Linux x64/arm64. This is integrity evidence, not signed provenance. The ambient installation matches the pin, but the isolated checksum-verified archive remains the evidence source.
+The compiler reports a version but not its source SHA. The annotated `v2.1.0` tag resolves to the selected commit and contains no signature. Release assets include per-platform SHA-256 files; local verification and CI run `42308138269` checked the platform archives against their matching checksums on macOS arm64 and Linux x64/arm64. This is integrity evidence, not signed provenance. The ambient installation is now newer than the pin, so the isolated checksum-verified 2.1.0 archive remains the stable release evidence source.
 
 CI run `42363929287` additionally passed the complete Phase 9 behavioral/integration matrix and the Phase 10 LLVM/QBE benchmark smoke step on macOS arm64, Linux x64 and Linux arm64. Shared-runner timings are deliberately not treated as performance baselines.
 
@@ -42,7 +42,29 @@ The developer-machine default compiler reported `noxc 2.1.14` during this audit.
 
 Commit `c0dbaf2` and CI `42834838904` validated the Phase 12 registry-readiness harness and isolated capability-audit home on macOS arm64, Linux x64 and Linux arm64. All six LLVM/QBE combinations retained 22 behavioral files/467 assertions/0 skips, three expected compile-fail fixtures, seven capability probes, dependency/import checks, three ecosystem probes/36 checks, all examples, benchmark smoke and 8,000-event file/rotation stress smoke. This is readiness evidence, not an exact stable-release-commit claim.
 
-Commit `ccc9e41` and CI `42968550569` passed the unchanged stable-candidate core contract on the same complete supported matrix with identical test totals. The renamed `stable_api_test.nox` also passed locally against the public `v0.9.0-beta.1` registry checkout on LLVM and QBE, proving the candidate does not depend on unreleased core APIs. Stable release/version/tag evidence remains pending.
+Commit `ccc9e41` and CI `42968550569` passed the unchanged stable-candidate core contract on the same complete supported matrix with identical test totals. The renamed `stable_api_test.nox` also passed locally against the public `v0.9.0-beta.1` registry checkout on LLVM and QBE, proving the candidate does not depend on unreleased core APIs. At that point, stable release/version/tag evidence still remained pending; the following paragraph records its later completion.
+
+Annotated tag `v1.0.0` peels to exact commit `e787ab6d8f6232ed9951e672cf38a88060e4cb0c`. Main CI `42971160582` and tag-driven release CI `42971769840` passed the complete supported matrix before the stable GitHub Release and public registry ref were verified. The clean registry gate resolved `v1.0.0` to that exact commit and passed version/API/schema/import contracts on LLVM and QBE under checksum-verified NOX 2.1.0.
+
+## NOX 2.1.186 upgrade-candidate audit — 2026-11-16
+
+This audit does not move the stable pin. Upstream annotated tag `v2.1.186` peels to commit `5cf4f63d49cdf2a4a2c619a666df45799d7aac2e` and is unsigned. The published macOS ARM64 archive digest is `6195d697dacc1311a427ed3b09f1ec4aa626311f6155b84073969e1f0879fbb8`; the ambient compiler binary digest is `c45ce31d6b9cc94c20f182a44a6c243125ecafcf5d1fd440ca6d7acfb0c66218`, but the ambient installation was not independently reconstructed from that archive and is candidate evidence only. All mandatory stdlib, concurrency, architecture and package-tool documents read from upstream `main` were hash-identical to the `v2.1.186` tag.
+
+| Area | 2.1.186 finding | Obsidian decision |
+|---|---|---|
+| Stable synchronous core | Local downstream LLVM and QBE suites each passed 22/22 behavioral files, all examples and exact lock resolution | Add a pinned 2.1.186 CI lane before changing the minimum or release pin |
+| Registry metadata | `publish` accepts `--description`, comma-separated `--tags` and `--source`; `source: nox` is also valid in `nox.json` and is checked against a production-tree scan. The added field remained backward-compatible in checksum-verified 2.1.0 LLVM/QBE package suites | Declare `source: nox`, centralize canonical metadata in `scripts/publish-package.sh`, keep credentials outside the repository |
+| Public noxpkg entry | Live index now records the canonical description, `logging`/`observability`/`structured-logging`/`security` tags and `source: nox` | Reverify metadata after every immutable release submission |
+| SBOM and attestation | `noxc sbom` emits deterministic CycloneDX 1.5; this dependency-free project reports zero components and `nox:native=false`. Publish reported no signing key and therefore no signed attestation | Add an SBOM reproducibility/release-artifact task; do not create or register a signing key without an explicit provenance decision |
+| Record transfer | Class-valued `ThreadChannel` ran successfully on both LLVM and QBE; both backends observed two overlapping workers | Update the capability audit and its documentation; this removes an old transport limitation but is not enough for a safe async logger |
+| Queue lifecycle | `try_send` remains absent, timed `ThreadHandle.join` remains absent, synchronous `send` still fails codegen, and cancelling a worker blocked in `recv` deadlocks | Keep async dispatch disabled; require bounded overflow, wakeable close, timeout and exact accounting evidence before an API is added |
+| Shared values | Hosted concurrency docs now describe memory-safe list/dict/class transfer and offer `--strict-spawn-shared` as a lint; compound scalar updates are still not atomic | Add the strict lint as candidate CI evidence and continue preferring channels/atomics for exact counters |
+| Time | `now_ns` and `monotonic_ns` are public | Evaluate `monotonic_ns` for benchmark precision only; adding nanosecond record fields requires an explicit schema/API decision |
+| Paths | `nox.path.safe_join` confines missing targets through canonical parent/component checks | Differential-test it against existing hostile path/symlink fixtures before considering replacement of proven confinement code |
+| Logging, console and files | `nox.log`/`nox.console` remain stdout-only; file handles remain synchronous/unbuffered and expose no `fsync` or no-follow open | No stderr, stable-storage durability or hostile-directory race claim is unlocked |
+| JSON | `nox.json` received internal lazy-tape performance work without a required Obsidian API change; `nox.yyjson` is a separate embedded-C option | Retain `nox.json` and the pure-NOX dependency boundary; do not add yyjson merely for novelty |
+
+The current `docs/stdlib/thread.md` table still describes QBE thread arguments more narrowly than the tagged concurrency document and executable class-channel result. Obsidian will treat executable LLVM/QBE probes as the decision evidence and will not advertise a broader async contract until the upstream documentation and lifecycle primitives are consistent.
 
 ## Audited public APIs at the pinned revision
 

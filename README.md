@@ -141,6 +141,8 @@ Redaction is pattern- and policy-based; it cannot discover arbitrary secrets in 
 
 Version tags run the full CI matrix and publish a GitHub Release only after immutable release inputs pass. Registry submission is deliberately separate: the trusted operator runs `noxc publish` locally without placing registry credentials in GitHub Actions, then verifies a credential-free clean install from the public index. The workflow blocks mismatched versions, changelog omissions and missing redistribution licensing.
 
+Operator submissions use `bash scripts/publish-package.sh <ref>` so the registry always receives Obsidian's canonical description, logging/observability search tags and verified pure-NOX source declaration.
+
 See [`docs/releasing.md`](docs/releasing.md) for the exact process and recovery rules.
 
 ## Contributing

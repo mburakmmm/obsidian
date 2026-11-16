@@ -2,5 +2,6 @@
   "name": "obsidian",
   "version": "1.0.0",
   "entry": "examples/hello.nox",
+  "source": "nox",
   "requires": []
 }

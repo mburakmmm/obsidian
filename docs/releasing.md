@@ -15,10 +15,11 @@ Do not copy a noxpkg token or generated credentials into the repository, workflo
 
 1. Complete the applicable phase gate in `todo.md`.
 2. Set the same exact version in `nox.json` and `version.nox`; the gate checks both.
-3. Move relevant entries from `Unreleased` into `## [X.Y.Z] - YYYY-MM-DD` in `CHANGELOG.md`.
-4. Run `scripts/run-package-suite.sh` for LLVM and QBE, `scripts/run-async-capability-audit.sh`, the negative fixtures and the package import probe.
-5. Commit the release preparation and wait for required CI checks.
-6. Create an annotated tag that points at that exact commit and push it without ever retargeting it:
+3. Keep `nox.json`'s `source` declaration at `nox`; publishing scans the production tree and must fail if native source is introduced without an explicit design change.
+4. Move relevant entries from `Unreleased` into `## [X.Y.Z] - YYYY-MM-DD` in `CHANGELOG.md`.
+5. Run `scripts/run-package-suite.sh` for LLVM and QBE, `scripts/run-async-capability-audit.sh`, the negative fixtures and the package import probe.
+6. Commit the release preparation and wait for required CI checks.
+7. Create an annotated tag that points at that exact commit and push it without ever retargeting it:
 
    ```sh
    git tag -a vX.Y.Z -m "Obsidian vX.Y.Z"
@@ -38,8 +39,10 @@ The `Release` workflow:
 After the exact tag passes the matrix, submit it from the trusted local operator session:
 
 ```sh
-noxc publish github.com/mburakmmm/obsidian --ref vX.Y.Z
+bash scripts/publish-package.sh vX.Y.Z
 ```
+
+The wrapper keeps the public description, search tags and `source: nox` declaration identical for branch and tag submissions. It delegates authentication and optional attestation entirely to the operator's existing `noxc` installation; it never reads, creates or stores credentials or signing keys.
 
 Registry submission is not proof of public-index visibility or downstream installability. With the exact pinned compiler, verify the public name, tag and peeled commit from an isolated consumer:
 

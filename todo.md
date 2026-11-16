@@ -480,7 +480,47 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 ---
 
-## 17. Her görev için zorunlu çalışma şablonu
+## 17. `1.1.0` — Phase 13: NOX 2.1.186 uyumluluğu ve paket güven zinciri
+
+### Yayın metadata'sı
+
+- [x] Public noxpkg kaydı canonical açıklama, `logging`/`observability`/`structured-logging`/`security` etiketleri ve `source: nox` ile güncellendi.
+- [x] `nox.json` saf NOX kaynak beyanını taşıyor; üretim ağacında C/C++/Rust/Go/Zig kaynağı olmadığı tarandı ve alan checksum-doğrulanmış 2.1.0 LLVM/QBE paket süitlerinde geriye uyumlu kaldı.
+- [x] Token/credential yönetmeyen `scripts/publish-package.sh <ref>` branch ve tag yayınlarında aynı metadata'yı uygular.
+- [ ] Immutable sonraki sürüm ref'i yayımlandıktan sonra public index metadata'sı ve exact commit çözümlemesi tekrar doğrulanacak.
+
+### Toolchain yükseltme adayı
+
+- [x] `v2.1.186` annotated tag -> `5cf4f63d49cdf2a4a2c619a666df45799d7aac2e`; macOS ARM64 archive SHA-256 ve unsigned tag durumu kaydedildi.
+- [x] Yerel macOS ARM64 aday denetiminde LLVM ve QBE ayrı ayrı 22/22 behavioral test, tüm örnekler ve lock kontrolünden geçti.
+- [ ] Checksum-verified 2.1.186 archive'larıyla macOS ARM64, Linux x64 ve Linux ARM64 tam CI matrisi çalıştırılacak; 2.1.0 stable lane yükseltme ADR'si kapanana kadar korunacak.
+- [ ] Pinned compiler değişikliği yapılacaksa source SHA, üç archive checksum'u, CI installer, compatibility matrisi, benchmark/stress baselines ve release belgeleri aynı committe güncellenecek.
+- [ ] `--strict-spawn-shared` candidate lint lane'i eklenecek; mevcut stable API üzerinde false-positive/gerçek risk ayrımı raporlanacak.
+
+### Async dispatcher yeniden değerlendirmesi
+
+- [x] 2.1.186'da class-valued `ThreadChannel` LLVM/QBE üzerinde geçti ve iki backendde gerçek iki-worker overlap gözlendi.
+- [x] `try_send` ve timed `join` yok; sync `send` codegen'de reddediliyor; bloklu `recv` işçisinde `ThreadHandle.cancel()` deadlock veriyor.
+- [ ] `scripts/run-async-capability-audit.sh` eski compile-fail varsayımlarını güncel pozitif/negatif problara ayıracak; doküman çelişkisi açıkça izlenecek.
+- [ ] Overflow (`BLOCK`, `DROP_NEWEST`, `DROP_OLDEST`, `SYNC_FALLBACK`), wakeable close, timeout, flush kabul sınırı ve exact counters kanıtlanmadan async public API eklenmeyecek; güvenli yol yoksa no-go ADR'si yenilenecek.
+
+### SBOM, provenance ve opsiyonel API değerlendirmeleri
+
+- [ ] `noxc sbom` çıktısı deterministik olarak doğrulanacak ve release artifact politikası ADR ile belirlenecek; dependency-free Obsidian için `components=0`, `nox:native=false` bekleniyor.
+- [ ] Publisher attestation için anahtar üretme/kaydetme kararı kullanıcı onayı ve ayrı threat-model/provenance ADR'si olmadan uygulanmayacak.
+- [ ] `nox.path.safe_join` mevcut traversal/symlink/eksik-target korpusuna karşı differential test edilecek; kanıtlı mevcut confinement kodu sonuç eşdeğer olmadan değiştirilmeyecek.
+- [ ] `nox.time.monotonic_ns` benchmark zamanlayıcı hassasiyeti için değerlendirilecek; production schema'ya nanosecond alan eklemek ayrı schema sürümü/uyumluluk kararı gerektirir.
+- [x] `nox.yyjson` ve gömülü C stdlib modülleri core logging için gerekli değil; saf-NOX bağımlılık sınırını bozacak gereksiz entegrasyon yapılmayacak.
+- [x] `nox.log`, `nox.console` ve `nox.fs` denetimi stderr, `fsync` veya race-free no-follow açma sağlamadı; mevcut sınırlamalar korunuyor.
+
+### Phase 13 kapısı
+
+- [ ] Metadata, dual-toolchain matrisi, güncel capability audit, SBOM kararı ve belgeler tek doğrulanmış sürüm commitinde hizalı.
+- [ ] Yeni minimum NOX sürümü veya async desteği yalnız gerçek üç-platform LLVM/QBE kanıtı ve ayrı ADR sonrasında ilan edilecek.
+
+---
+
+## 18. Her görev için zorunlu çalışma şablonu
 
 Yeni bir implementasyon görevine başlamadan önce aşağıdaki blok issue/PR/çalışma notuna kopyalanır:
 
@@ -502,7 +542,7 @@ Bilinen limitler:
 Sonraki görev:
 ```
 
-## 18. Sürekli güvenlik ve kalite kontrol listesi
+## 19. Sürekli güvenlik ve kalite kontrol listesi
 
 Her kod değişikliğinde yeniden gözden geçirilecek:
 
@@ -520,7 +560,7 @@ Her kod değişikliğinde yeniden gözden geçirilecek:
 - [ ] Nyx/Aether/Aura/diğer consumer'lara core bağımlılığı eklenmiyor.
 - [ ] Network/telemetry/upload explicit opt-in olmadan eklenmiyor.
 
-## 19. İlk uygulanacak çalışma dilimi
+## 20. İlk uygulanacak çalışma dilimi
 
 Phase 0 tamamlanmadan Phase 1 koduna başlanmayacaktır. İlk sıra:
 
@@ -533,7 +573,7 @@ Phase 0 tamamlanmadan Phase 1 koduna başlanmayacaktır. İlk sıra:
 
 Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Phase 7 executable capability audit'i async için no-go verdi; senkron çekirdek Phase 8'e devam edebilir.
 
-## 20. İlerleme günlüğü
+## 21. İlerleme günlüğü
 
 | Tarih | Sürüm/faz | Değişiklik | Komut/test kanıtı | Sonuç / sonraki adım |
 |---|---|---|---|---|
@@ -574,3 +614,4 @@ Size-based rotation Phase 1–5 kanıtlarından sonra Phase 6'da tamamlandı. Ph
 | 2026-11-11 | Phase 12 stable API candidate | Published beta core envanteri ve `obsidian.log.v1` değişmeden stable candidate olarak donduruldu; beta contract testi duplicate edilmeden yeniden adlandırıldı; adaptörler preview kaldı | Commit `ccc9e41`, CI `42968550569`: üç platform, LLVM/QBE, 22 dosya/467 assertion/0 skip ve tüm ek kapılar yeşil; stable contract public beta registry ref'e karşı iki backend'de geçti | Stable API promotion readiness tamam; exact `1.0.0` version/changelog/release commit, benchmark, provenance, tag ve artifact hizası açık |
 | 2026-11-11 | `1.0.0` release preparation | Manifest/source/test/example/changelog/release-notu stable sürüm için hizalandı; provenance altyapısı değerlendirildi ve imzalı iddia kapalı tutuldu | Exact preparation commit yerel tam suite, benchmark/stress ve uzak matrix sonrası kaydedilecek; tag henüz yok | Pre-publication gates geçmeden `v1.0.0` oluşturulmayacak veya yayımlanmayacak |
 | 2026-11-12 | `1.0.0` / Phase 12 stable release | Exact `e787ab6` commit'i immutable annotated `v1.0.0` tag, stable GitHub Release ve public registry ref olarak yayımlandı; token GitHub Actions'a eklenmedi | Main CI `42971160582` ve release CI `42971769840` üç platform LLVM/QBE tamamen yeşil; clean full benchmark/stress `dirty=false`; registry clean install `v1.0.0` -> exact `e787ab6`, version 1.0.0, LLVM/QBE pass | Phase 12 kapandı; stable sözleşme senkron core ile sınırlı, tag unsigned ve adaptörler preview |
+| 2026-11-16 | Phase 13 NOX 2.1.186 + registry metadata audit | noxpkg description/tags/source yüzeyi entegre edildi; 2.1.186 mandatory docs, release provenance, SBOM, sync regressions ve concurrency primitives denetlendi | Yerel macOS ARM64 LLVM/QBE 22/22 + examples/lock pass; class channel ve overlap iki backendde pass; `try_send`/timed join yok, blocked-recv cancel deadlock; public index canonical metadata'yı gösteriyor | 2.1.186 henüz pin/support değil; üç-platform matrix, audit revizyonu, SBOM/attestation kararı ve Phase 13 gate açık |
