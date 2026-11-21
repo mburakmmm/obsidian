@@ -42,3 +42,7 @@ No synthetic queue counters, fake worker or LLVM-only record transport will be a
 ## Re-evaluation trigger
 
 Re-open Phase 7 only after a pinned NOX revision publicly documents and tests portable record transfer plus non-blocking bounded queue operations and timeout-aware worker shutdown. A new ADR must repeat genuine LLVM overlap, QBE behavior, exact accounting, security-sentinel and lifetime stress tests.
+
+## NOX 2.2.38 follow-up
+
+Local macOS ARM64 probes on both hosted backends transferred a class payload and observed two overlapping workers. Synchronous `send` now fails during type checking. `try_send` and timed `ThreadHandle.join` are still rejected. Calling `cancel()` on a worker parked in an empty `ThreadChannel.recv` reports deadlock. The documented receive-readiness methods on task channels do not provide atomic enqueue or completion-aware shutdown. The no-go decision remains in force. The audit has distinct expectations for both compilers.

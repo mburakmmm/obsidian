@@ -32,7 +32,12 @@ cp "$project_root/benchmarks/core_bench.nox" main.nox
 NOX_HOME="$probe_nox_home" "$noxc_bin" add obsidian "$package_root" --ref main >/dev/null
 NOX_HOME="$probe_nox_home" "$noxc_bin" fetch >/dev/null
 
-compiler_version="$($noxc_bin --version 2>&1)"
+compiler_version="$("$noxc_bin" --version 2>&1)"
+case "$compiler_version" in
+  "noxc 2.1.0") compiler_source=fd107b922c67a804520dc30f849039d977542f6c ;;
+  "noxc 2.2.38") compiler_source=7f879fe0ecb972dc9994ee1e8f420d4aaa0cdd9a ;;
+  *) compiler_source=unknown ;;
+esac
 source_commit="$(git -C "$project_root" rev-parse HEAD)"
 dirty="false"
 if [[ -n "$(git -C "$project_root" status --porcelain)" ]]; then
@@ -60,7 +65,7 @@ fi
 
 printf 'benchmark_environment schema=obsidian.benchmark.environment.v1 os=%s kernel=%s arch=%s cpu=%q compiler=%q nox_source=%s obsidian_commit=%s dirty=%s backend=%s\n' \
   "$(uname -s)" "$(uname -r)" "$(uname -m)" "$cpu" "$compiler_version" \
-  "fd107b922c67a804520dc30f849039d977542f6c" "$source_commit" "$dirty" "$backend"
+  "$compiler_source" "$source_commit" "$dirty" "$backend"
 
 if ! output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" run --backend "$backend" main.nox 2>&1)"; then
   printf '%s\n' "$output"

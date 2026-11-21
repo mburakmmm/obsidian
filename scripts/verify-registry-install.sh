@@ -30,6 +30,19 @@ if [[ -z "$resource_dir" || ! -d "$resource_dir/lib/nox/stdlib/nox" ]]; then
 fi
 
 cd "$consumer_root"
+if [[ "${OBSIDIAN_VERIFY_REGISTRY_METADATA:-0}" == 1 ]]; then
+  curl --fail --silent --show-error --location --max-time 30 https://noxpkg.noxlang.com/index.json |
+    jq -e --arg ref "$release_ref" '
+      [.. | objects | select(.name? == "obsidian")] |
+      length == 1 and (.[0] |
+        .repo == "github.com/mburakmmm/obsidian" and
+        .version == $ref and
+        .description == "Structured, secure logging and observability foundations for the NOX ecosystem" and
+        .source == "nox" and
+        (.tags | sort) == ["logging", "observability", "security", "structured-logging"])
+    ' >/dev/null
+fi
+
 NOX_HOME="$probe_nox_home" "$noxc_bin" init . >/dev/null
 NOX_HOME="$probe_nox_home" "$noxc_bin" add obsidian --ref "$release_ref" >/dev/null
 NOX_HOME="$probe_nox_home" "$noxc_bin" fetch >/dev/null

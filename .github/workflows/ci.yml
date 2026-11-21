@@ -10,23 +10,29 @@ permissions:
   contents: read
 
 env:
-  NOX_VERSION: v2.1.0
   NOX_REPOSITORY: mburakmmm/nox-lang
 
 jobs:
   phase0:
-    name: ${{ matrix.asset }}
+    name: ${{ matrix.version == 'v2.1.0' && matrix.platform.asset || format('{0} (NOX {1})', matrix.platform.asset, matrix.version) }}
+    env:
+      NOX_VERSION: ${{ matrix.version }}
     strategy:
       fail-fast: false
       matrix:
-        include:
+        version: [v2.1.0, v2.2.38]
+        platform:
           - os: macos-15
             asset: macos-arm64
+            candidate_sha256: 7e973be6020fb908fed3d5194b87bff59ce5b4a0194cb81dee78fd7ff6abfcca
           - os: ubuntu-latest
             asset: linux-x64
+            candidate_sha256: 66cc746dcd0640e596283f13b00758d9acb9ddf2761d89204105ff51b308c546
           - os: ubuntu-24.04-arm
             asset: linux-arm64
-    runs-on: ${{ matrix.os }}
+            candidate_sha256: 12cc0dbb5edcacd2b7d618465d58a8f7f5301721e01c59f007670cb0c5a00982
+    runs-on: ${{ matrix.platform.os }}
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
@@ -34,9 +40,10 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA256: ${{ matrix.platform.candidate_sha256 }}
         run: |
           set -euo pipefail
-          stage="nox-lang-${NOX_VERSION}-${{ matrix.asset }}"
+          stage="nox-lang-${NOX_VERSION}-${{ matrix.platform.asset }}"
           archive="${stage}.tar.gz"
           checksum="${archive}.sha256"
           downloaded=false
@@ -55,6 +62,9 @@ jobs:
           done
           test "$downloaded" = true
           shasum -a 256 -c "${stage}.tar.gz.sha256"
+          if [[ "$NOX_VERSION" == v2.2.38 ]]; then
+            printf '%s  %s\n' "$CANDIDATE_SHA256" "$archive" | shasum -a 256 -c -
+          fi
           tar xzf "${stage}.tar.gz"
           echo "$PWD/${stage}/bin" >>"$GITHUB_PATH"
           echo "NOX_RESOURCE_DIR=$PWD/${stage}" >>"$GITHUB_ENV"
@@ -64,9 +74,10 @@ jobs:
         run: |
           set -euo pipefail
           version_output="$(noxc --version 2>&1)"
-          test "$version_output" = "noxc 2.1.0"
+          test "$version_output" = "noxc ${NOX_VERSION#v}"
 
       - name: Format check
+        if: matrix.version == 'v2.1.0'
         shell: bash
         run: |
           set -euo pipefail
@@ -100,6 +111,18 @@ jobs:
         shell: bash
         run: bash scripts/run-async-capability-audit.sh
 
+      - name: Check shared-spawn lint, path policy and nanosecond clock
+        if: matrix.version == 'v2.2.38'
+        shell: bash
+        run: |
+          OBSIDIAN_STRICT_SPAWN=1 bash scripts/run-package-suite.sh llvm
+          OBSIDIAN_STRICT_SPAWN=1 bash scripts/run-package-suite.sh qbe
+
+      - name: Verify deterministic package SBOM
+        if: matrix.version == 'v2.2.38'
+        shell: bash
+        run: bash scripts/generate-release-sbom.sh > /dev/null
+
       - name: Verify dependency alias import
         shell: bash
         run: bash scripts/verify-package-import.sh
@@ -130,7 +153,7 @@ jobs:
           set -euo pipefail
           test_files="$(find tests -name '*_test.nox' -type f | wc -l | tr -d ' ')"
           assertions="$(find tests -name '*_test.nox' -type f -print0 | xargs -0 grep -ho 'nox\.test\.assert_[a-z_]*' | wc -l | tr -d ' ')"
-          capability_probes="$(find tests/capability -name '*.nox' -type f | wc -l | tr -d ' ')"
+          capability_probes="$(find tests/capability -name 'async_*.nox' -type f | wc -l | tr -d ' ')"
           ecosystem_probes="$(find tests/ecosystem -name '*_probe.nox' -type f | wc -l | tr -d ' ')"
           ecosystem_checks="$(grep -RhoE '(nox\.test\.assert_[a-z_]*|capture\.assert_[a-z_]*)' tests/ecosystem | wc -l | tr -d ' ')"
           {

@@ -31,6 +31,17 @@ jobs:
         shell: bash
         run: bash scripts/check-release.sh "${GITHUB_REF_NAME}"
 
+      - name: Generate verified package SBOM
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage=nox-lang-v2.2.38-linux-x64
+          archive="$stage.tar.gz"
+          gh release download v2.2.38 --repo mburakmmm/nox-lang --pattern "$archive" --dir "$RUNNER_TEMP"
+          printf '%s  %s\n' 66cc746dcd0640e596283f13b00758d9acb9ddf2761d89204105ff51b308c546 "$RUNNER_TEMP/$archive" | shasum -a 256 -c -
+          tar xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP"
+          NOXC="$RUNNER_TEMP/$stage/bin/noxc" bash scripts/generate-release-sbom.sh > "$RUNNER_TEMP/obsidian-${GITHUB_REF_NAME}.cdx.json"
+
       - name: Create draft GitHub release
         shell: bash
         run: |
@@ -59,6 +70,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/obsidian-${GITHUB_REF_NAME}.cdx.json" --clobber
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then
             gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease
           else

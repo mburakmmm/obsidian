@@ -1,6 +1,6 @@
 # Release process
 
-Obsidian releases are immutable tag-driven publications. A normal branch push never publishes a package.
+Obsidian releases are immutable tag-driven publications. GitHub Actions publishes a GitHub Release on a version tag, and the operator runs registry publication separately.
 
 ## Prerequisites
 
@@ -33,8 +33,8 @@ The `Release` workflow:
 1. Reuses the complete CI matrix at the tagged commit.
 2. Verifies tag, manifest, changelog, license and clean checkout alignment.
 3. Creates a draft GitHub Release.
-4. Marks hyphenated versions such as `v0.9.0-beta.1` as prereleases.
-5. Publishes stable tags as latest releases and prerelease tags without the latest marker.
+4. Attaches a CycloneDX 1.5 package SBOM from checksum-verified NOX 2.2.38. The generator verifies identical compiler output across two invocations and adds the validated manifest version when the compiler omits it.
+5. Publishes stable tags as latest releases and hyphenated tags as prereleases.
 
 After the exact tag passes the matrix, submit it from the trusted local operator session:
 
@@ -42,12 +42,13 @@ After the exact tag passes the matrix, submit it from the trusted local operator
 bash scripts/publish-package.sh vX.Y.Z
 ```
 
-The wrapper keeps the public description, search tags and `source: nox` declaration identical for branch and tag submissions. It delegates authentication and optional attestation entirely to the operator's existing `noxc` installation; it never reads, creates or stores credentials or signing keys.
+The wrapper keeps the public description, search tags and `source: nox` declaration consistent. The registry may display the submitted ref as the package version. For routine commits, point the operator submission at the latest verified release tag to keep the public version stable. The existing local `noxc` installation handles authentication and optional attestation.
 
 Registry submission is not proof of public-index visibility or downstream installability. With the exact pinned compiler, verify the public name, tag and peeled commit from an isolated consumer:
 
 ```sh
-NOX_RESOURCE_DIR=/path/to/pinned-release \
+OBSIDIAN_VERIFY_REGISTRY_METADATA=1 \
+  NOX_RESOURCE_DIR=/path/to/pinned-release \
   NOXC=/path/to/pinned-release/bin/noxc \
   bash scripts/verify-registry-install.sh \
   vX.Y.Z X.Y.Z <expected-full-commit> <expected-noxc-version>

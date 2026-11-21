@@ -70,13 +70,30 @@ expect_bounded_overlap_run() {
 
 capability_root="$project_root/tests/capability"
 expect_check_failure "$capability_root/async_try_send.nox" "no method 'try_send'"
-expect_check_failure "$capability_root/async_thread_cancel.nox" "no method 'cancel'"
 expect_check_failure "$capability_root/async_timed_join.nox" "'join' takes no arguments"
-expect_run_failure qbe "$capability_root/async_record_channel.nox" "'ThreadChannel' element type"
-expect_run_failure llvm "$capability_root/async_sync_send.nox" "codegen:"
 expect_exact_run llvm "$capability_root/async_record_channel.nox" "7"
+expect_exact_run qbe "$capability_root/async_qbe_scalar_channel.nox" "1 1"
 overlap_result="not-run"
 expect_bounded_overlap_run llvm "$capability_root/async_worker_overlap.nox"
-expect_exact_run qbe "$capability_root/async_qbe_scalar_channel.nox" "1 1"
-
-echo "async capability audit: decision=no-go llvm-overlap=$overlap_result qbe-scalar-transfer=pass"
+llvm_overlap="$overlap_result"
+case "$("$noxc_bin" --version 2>&1)" in
+  "noxc 2.1.0")
+    expect_check_failure "$capability_root/async_thread_cancel.nox" "no method 'cancel'"
+    expect_run_failure qbe "$capability_root/async_record_channel.nox" "'ThreadChannel' element type"
+    expect_run_failure llvm "$capability_root/async_sync_send.nox" "codegen:"
+    echo "async capability audit: decision=no-go llvm-overlap=$llvm_overlap qbe-scalar-transfer=pass"
+    ;;
+  "noxc 2.2.38")
+    expect_check_failure "$capability_root/async_sync_send.nox" "'send' suspends the task"
+    expect_exact_run qbe "$capability_root/async_record_channel.nox" "7"
+    expect_bounded_overlap_run qbe "$capability_root/async_worker_overlap.nox"
+    for backend in llvm qbe; do
+      expect_run_failure "$backend" "$capability_root/async_thread_cancel.nox" "deadlock detected"
+    done
+    echo "async capability audit: decision=no-go llvm-overlap=$llvm_overlap qbe-overlap=$overlap_result both-class-transfer=pass"
+    ;;
+  *)
+    echo "async capability audit: select a supported audit compiler (2.1.0 or 2.2.38)" >&2
+    exit 2
+    ;;
+esac

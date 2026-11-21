@@ -41,6 +41,13 @@ ln -s "$consumer_root/obsidian-rotation-tests/symlink/unrelated.log" "$consumer_
 ln -s "$consumer_root/obsidian-rotation-tests/active-link/unrelated.log" "$consumer_root/obsidian-rotation-tests/active-link/events.jsonl"
 chmod 500 "$consumer_root/obsidian-file-denied"
 
+if [[ "${OBSIDIAN_STRICT_SPAWN:-0}" == 1 ]]; then
+  NOX_HOME="$probe_nox_home" "$noxc_bin" check --backend "$backend" --strict-spawn-shared tests/concurrency/context_isolation_test.nox
+  NOX_HOME="$probe_nox_home" "$noxc_bin" run --backend "$backend" tests/capability/nox22_path_clock.nox
+  printf 'shared-spawn lint: backend=%s context-isolation=pass\n' "$backend"
+  exit 0
+fi
+
 if ! test_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" test --backend "$backend" tests 2>&1)"; then
   if [[ "$test_output" == *SYNTHETIC_* ]]; then
     echo "test suite failed and captured output contained a security sentinel" >&2

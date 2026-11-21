@@ -1,0 +1,41 @@
+import nox.path
+import nox.test
+import nox.time
+from nox.path import PathError
+from obsidian.sinks.file import canonical_root, resolve_target
+from obsidian.sink_error import SinkError
+
+def stdlib_rejects(root: str, name: str) -> bool:
+    try:
+        nox.path.safe_join(root, name)
+        return False
+    except PathError:
+        return True
+
+def obsidian_rejects(root: str, name: str) -> bool:
+    try:
+        resolve_target(root, name, False)
+        return False
+    except SinkError:
+        return True
+    except ValueError:
+        return True
+
+root: str = canonical_root("obsidian-file-tests")
+for name in ["events.log", "世界.log"]:
+    stdlib_target: str = nox.path.safe_join(root, name)
+    obsidian_target: str = resolve_target(root, name, False)
+    nox.test.assert_eq_str(stdlib_target, obsidian_target, "missing leaf agrees")
+for name in ["../outside.log", "escape-link/outside.log"]:
+    nox.test.assert_true(stdlib_rejects(root, name), "safe_join rejects escaping target")
+    nox.test.assert_true(obsidian_rejects(root, name), "Obsidian rejects escaping target")
+for name in ["password.log", "./events.log"]:
+    nox.test.assert_true(not stdlib_rejects(root, name), "safe_join allows confined target")
+    nox.test.assert_true(obsidian_rejects(root, name), "Obsidian applies additional sink policy")
+nox.test.assert_true(stdlib_rejects(root, "missing/events.log"), "safe_join requires a resolvable parent")
+nox.test.assert_true(obsidian_rejects(root, "missing/events.log"), "Obsidian requires an existing parent in this mode")
+
+start_ns: int = nox.time.monotonic_ns()
+nox.time.sleep_ms(2)
+end_ns: int = nox.time.monotonic_ns()
+nox.test.assert_true(end_ns > start_ns, "monotonic nanosecond clock advances")

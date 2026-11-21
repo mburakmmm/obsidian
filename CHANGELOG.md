@@ -4,6 +4,11 @@ All notable changes are recorded here. Versions follow Semantic Versioning, incl
 
 ## [Unreleased]
 
+### Build and release
+
+- Test the supported NOX 2.1.0 baseline and the checksum-pinned 2.2.38 candidate across the hosted matrix.
+- Check candidate async, shared-spawn, path and clock capabilities, and attach a deterministic package SBOM to tagged GitHub releases.
+
 ### Added
 
 - Canonical noxpkg publication metadata for the package description, search tags and pure-NOX source declaration.

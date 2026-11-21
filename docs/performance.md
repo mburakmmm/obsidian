@@ -139,3 +139,17 @@ Each backend ran three fresh processes. Per process, the append path wrote 40,00
 Every round produced exactly 9,680,000 append bytes from 40,000 masked 242-byte JSONL records. The rotation path used 245-byte records and a 3,920-byte active/archive limit, completed exactly 2,499 rotations, retained four archives plus the active file, and remained at exactly 19,600 retained bytes. Archive sequences were contiguous across 40 reopen cycles per path and process. The first record of every retained file parsed with schema `obsidian.log.v1`; every remaining line was byte-identical, every denylisted field was `***`, no synthetic sentinel appeared, and no round timed out or exited unsuccessfully.
 
 CI run `42471701337` separately passed one 8,000-event smoke round per path and backend on macOS arm64, Linux x64 and Linux arm64. Shared-runner timings and RSS are not copied into this observation.
+## NOX 2.2.38 candidate comparison
+
+Local Apple M4, Darwin 27.2.0, checksum-verified NOX 2.1.0 and 2.2.38 archives. The unchanged Obsidian NOX workload from `ebc7723` ran sequentially through `scripts/run-benchmarks.sh` for each compiler/backend. Each row uses the harness mean of seven samples after its per-workload warm-up. The same millisecond timer was used in both builds. These are triage observations from a checkout with pending workflow and probe changes. The release baseline above is based on clean runs.
+
+| Workload | LLVM 2.1.0 → 2.2.38 | QBE 2.1.0 → 2.2.38 |
+|---|---:|---:|
+| Disabled DEBUG, ns/event | 61 → 57 | 104 → 64 |
+| JSONL, ns/event | 6,357 → 5,000 | 10,785 → 5,785 |
+| Long Unicode JSONL, ms/event | 3.22 → 3.76 | 5.59 → 3.65 |
+| Logger construction and close, ns/pair | 100 → 92 | 257 → 128 |
+| File rotation, µs/event | 384 → 650 | 424 → 403 |
+| Bounded sink peak RSS, MiB | 2.30 → 2.28 | 2.89 → 2.46 |
+
+JSONL size stayed 309 bytes per normal event and 196,824 per long Unicode event. The bounded sink retained 128 of 50,000 records and reported 49,872 evictions in all four runs. LLVM rotation and long Unicode need repeated measurements before using the candidate as the performance baseline. The candidate nanosecond clock probe is separate so changing timer resolution cannot confound these ratios.

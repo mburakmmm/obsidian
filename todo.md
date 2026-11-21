@@ -480,7 +480,7 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 ---
 
-## 17. `1.1.0` — Phase 13: NOX 2.1.186 uyumluluğu ve paket güven zinciri
+## 17. `1.1.0` — Phase 13: NOX 2.2.38 uyumluluğu ve paket güven zinciri
 
 ### Yayın metadata'sı
 
@@ -493,23 +493,25 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 - [x] `v2.1.186` annotated tag -> `5cf4f63d49cdf2a4a2c619a666df45799d7aac2e`; macOS ARM64 archive SHA-256 ve unsigned tag durumu kaydedildi.
 - [x] Yerel macOS ARM64 aday denetiminde LLVM ve QBE ayrı ayrı 22/22 behavioral test, tüm örnekler ve lock kontrolünden geçti.
-- [ ] Checksum-verified 2.1.186 archive'larıyla macOS ARM64, Linux x64 ve Linux ARM64 tam CI matrisi çalıştırılacak; 2.1.0 stable lane yükseltme ADR'si kapanana kadar korunacak.
+- [x] Doğrulanmış 2.2.38 macOS ARM64 arşiviyle LLVM/QBE ayrı ayrı 22/22, dokuz örnek ve lock kontrolü geçti. Registry `v1.0.0` temiz kurulumu aynı iki backend'de geçti.
+- [ ] 2.1.0 ve checksum-pinned 2.2.38 CI matrisi macOS ARM64, Linux x64 ve Linux ARM64 üzerinde tamamlanacak.
 - [ ] Pinned compiler değişikliği yapılacaksa source SHA, üç archive checksum'u, CI installer, compatibility matrisi, benchmark/stress baselines ve release belgeleri aynı committe güncellenecek.
-- [ ] `--strict-spawn-shared` candidate lint lane'i eklenecek; mevcut stable API üzerinde false-positive/gerçek risk ayrımı raporlanacak.
+- [x] `--strict-spawn-shared` denetimi 2.2.38 matrisine eklendi ve açık bağlam izolasyonu fixture'ına bağlandı.
 
 ### Async dispatcher yeniden değerlendirmesi
 
 - [x] 2.1.186'da class-valued `ThreadChannel` LLVM/QBE üzerinde geçti ve iki backendde gerçek iki-worker overlap gözlendi.
 - [x] `try_send` ve timed `join` yok; sync `send` codegen'de reddediliyor; bloklu `recv` işçisinde `ThreadHandle.cancel()` deadlock veriyor.
-- [ ] `scripts/run-async-capability-audit.sh` eski compile-fail varsayımlarını güncel pozitif/negatif problara ayıracak; doküman çelişkisi açıkça izlenecek.
-- [ ] Overflow (`BLOCK`, `DROP_NEWEST`, `DROP_OLDEST`, `SYNC_FALLBACK`), wakeable close, timeout, flush kabul sınırı ve exact counters kanıtlanmadan async public API eklenmeyecek; güvenli yol yoksa no-go ADR'si yenilenecek.
+- [x] Async audit 2.1.0 ve 2.2.38 için sürüme göre beklentileri ayırıyor. 2.2.38 senkron send'i tip denetiminde reddediyor; her iki backend'de sınıf taşıma ve iki işçi örtüşmesi gözlendi.
+- [x] ADR-0011 no-go kararı 2.2.38 ile yenilendi. Bloklu recv iptali iki backend'de deadlock; taşma ve süreli kapanış koşulları karşılanmıyor.
 
 ### SBOM, provenance ve opsiyonel API değerlendirmeleri
 
-- [ ] `noxc sbom` çıktısı deterministik olarak doğrulanacak ve release artifact politikası ADR ile belirlenecek; dependency-free Obsidian için `components=0`, `nox:native=false` bekleniyor.
+- [x] CycloneDX 1.5 üreticisi iki ham çıktıyı karşılaştırır, sıfır bileşeni ve `nox:native=false` değerini denetler. Release iş akışına manifest sürümüyle zenginleştirilmiş artifact adımı eklendi.
 - [ ] Publisher attestation için anahtar üretme/kaydetme kararı kullanıcı onayı ve ayrı threat-model/provenance ADR'si olmadan uygulanmayacak.
-- [ ] `nox.path.safe_join` mevcut traversal/symlink/eksik-target korpusuna karşı differential test edilecek; kanıtlı mevcut confinement kodu sonuç eşdeğer olmadan değiştirilmeyecek.
-- [ ] `nox.time.monotonic_ns` benchmark zamanlayıcı hassasiyeti için değerlendirilecek; production schema'ya nanosecond alan eklemek ayrı schema sürümü/uyumluluk kararı gerektirir.
+- [x] `safe_join` fark testi eksik yaprak, eksik ebeveyn, symlink kaçışı, traversal ve hassas dosya adı politikasını kapsıyor. Obsidian'a özgü ret kuralları korunuyor.
+- [x] `monotonic_ns` 2.2.38 aday probuna eklendi. İki derleyici kıyası aynı milisaniye zamanlayıcısıyla yapılıyor. Yeni saat benchmark için pin geçişinden sonra kullanılabilir.
+- [x] Skaler `match`, alan Optional daraltması, `:=` ve `__all__` değerlendirildi. Bu sürüm dil uyumluluğu ve public import yüzeyi için mevcut sözdizimini kullanıyor.
 - [x] `nox.yyjson` ve gömülü C stdlib modülleri core logging için gerekli değil; saf-NOX bağımlılık sınırını bozacak gereksiz entegrasyon yapılmayacak.
 - [x] `nox.log`, `nox.console` ve `nox.fs` denetimi stderr, `fsync` veya race-free no-follow açma sağlamadı; mevcut sınırlamalar korunuyor.
 
