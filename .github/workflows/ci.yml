@@ -43,6 +43,7 @@ jobs:
           CANDIDATE_SHA256: ${{ matrix.platform.candidate_sha256 }}
         run: |
           set -euo pipefail
+          cd "$RUNNER_TEMP"
           stage="nox-lang-${NOX_VERSION}-${{ matrix.platform.asset }}"
           archive="${stage}.tar.gz"
           checksum="${archive}.sha256"

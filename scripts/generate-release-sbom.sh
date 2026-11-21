@@ -11,11 +11,15 @@ cd "$project_root"
 NOX_HOME="$scratch/home" "$noxc_bin" sbom . > "$scratch/first.json"
 NOX_HOME="$scratch/home" "$noxc_bin" sbom . > "$scratch/second.json"
 cmp "$scratch/first.json" "$scratch/second.json"
-jq -e --arg version "$(jq -er .version nox.json)" '
+version="$(jq -er .version nox.json)"
+if ! jq -e --arg version "$version" '
   .bomFormat == "CycloneDX" and .specVersion == "1.5" and
   .metadata.component.name == "obsidian" and
   (.metadata.component.version // $version) == $version and
   .components == [] and
   any(.metadata.component.properties[]; .name == "nox:native" and .value == "false")
-' "$scratch/first.json" >/dev/null
-jq --arg version "$(jq -er .version nox.json)" '.metadata.component.version = $version' "$scratch/first.json"
+' "$scratch/first.json" >/dev/null; then
+  echo "SBOM does not match the Obsidian manifest and pure-NOX dependency policy" >&2
+  exit 1
+fi
+jq --arg version "$version" '.metadata.component.version = $version' "$scratch/first.json"

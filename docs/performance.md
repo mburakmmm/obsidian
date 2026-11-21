@@ -152,4 +152,4 @@ Local Apple M4, Darwin 27.2.0, checksum-verified NOX 2.1.0 and 2.2.38 archives. 
 | File rotation, µs/event | 384 → 650 | 424 → 403 |
 | Bounded sink peak RSS, MiB | 2.30 → 2.28 | 2.89 → 2.46 |
 
-JSONL size stayed 309 bytes per normal event and 196,824 per long Unicode event. The bounded sink retained 128 of 50,000 records and reported 49,872 evictions in all four runs. LLVM rotation and long Unicode need repeated measurements before using the candidate as the performance baseline. The candidate nanosecond clock probe is separate so changing timer resolution cannot confound these ratios.
+JSONL size stayed 309 bytes per normal event and 196,824 per long Unicode event. The bounded sink retained 128 of 50,000 records and reported 49,872 evictions in all four runs. On clean commit `fd61776`, a second LLVM run in reverse compiler order measured rotation at 401 → 394 µs/event, long Unicode JSONL at 3.37 → 3.28 ms/event, and ordinary JSONL at 6,785 → 4,571 ns/event. The initial LLVM slowdowns did not repeat. The candidate nanosecond clock probe is separate so changing timer resolution cannot confound these ratios.

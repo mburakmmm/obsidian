@@ -487,6 +487,7 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] Public noxpkg kaydı canonical açıklama, `logging`/`observability`/`structured-logging`/`security` etiketleri ve `source: nox` ile güncellendi.
 - [x] `nox.json` saf NOX kaynak beyanını taşıyor; üretim ağacında C/C++/Rust/Go/Zig kaynağı olmadığı tarandı ve alan checksum-doğrulanmış 2.1.0 LLVM/QBE paket süitlerinde geriye uyumlu kaldı.
 - [x] Token/credential yönetmeyen `scripts/publish-package.sh <ref>` branch ve tag yayınlarında aynı metadata'yı uygular.
+- [x] 2.2.38 ile yeniden gönderilen `v1.0.0` için public version, açıklama, etiketler ve kaynak dili doğrulandı. Temiz kurulum beklenen commit'i çözümledi.
 - [ ] Immutable sonraki sürüm ref'i yayımlandıktan sonra public index metadata'sı ve exact commit çözümlemesi tekrar doğrulanacak.
 
 ### Toolchain yükseltme adayı

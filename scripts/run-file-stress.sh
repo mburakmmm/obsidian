@@ -52,7 +52,12 @@ if ! build_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" build --backend "$ba
   exit 1
 fi
 
-compiler_version="$($noxc_bin --version 2>&1)"
+compiler_version="$("$noxc_bin" --version 2>&1)"
+case "$compiler_version" in
+  "noxc 2.1.0") compiler_source=fd107b922c67a804520dc30f849039d977542f6c ;;
+  "noxc 2.2.38") compiler_source=7f879fe0ecb972dc9994ee1e8f420d4aaa0cdd9a ;;
+  *) compiler_source=unknown ;;
+esac
 source_commit="$(git -C "$project_root" rev-parse HEAD)"
 dirty="false"
 if [[ -n "$(git -C "$project_root" status --porcelain)" ]]; then
@@ -60,7 +65,7 @@ if [[ -n "$(git -C "$project_root" status --porcelain)" ]]; then
 fi
 printf 'stress_environment schema=obsidian.file-stress-environment.v1 os=%s kernel=%s arch=%s compiler=%q nox_source=%s obsidian_commit=%s dirty=%s backend=%s mode=%s\n' \
   "$(uname -s)" "$(uname -r)" "$(uname -m)" "$compiler_version" \
-  "fd107b922c67a804520dc30f849039d977542f6c" "$source_commit" "$dirty" "$backend" "$mode"
+  "$compiler_source" "$source_commit" "$dirty" "$backend" "$mode"
 
 if ! output="$(python3 "$project_root/scripts/run-file-stress.py" "$binary" "$iterations" "$rounds" "$timeout_seconds" 2>&1)"; then
   if [[ "$output" == *SYNTHETIC_* ]]; then
