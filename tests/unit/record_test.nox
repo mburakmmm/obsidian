@@ -13,9 +13,9 @@ def reserved_key_raises() -> bool:
     except ValueError as e:
         return e.message == "field key is reserved"
 
-def control_key_raises() -> bool:
+def control_key_raises(separator: str) -> bool:
     try:
-        LogField("safe\nforged", obsidian.fields.string_value("x"))
+        LogField("safe" + separator + "forged", obsidian.fields.string_value("x"))
         return False
     except ValueError as e:
         return e.message == "field key contains a control character"
@@ -35,10 +35,10 @@ def off_record_raises() -> bool:
     except ValueError as e:
         return e.message == "record level must be an event level"
 
-def invalid_logger_raises() -> bool:
+def invalid_logger_raises(separator: str) -> bool:
     empty: list[LogField] = []
     try:
-        LogRecord(1, INFO, "bad\nname", "message", empty, empty)
+        LogRecord(1, INFO, "bad" + separator + "name", "message", empty, empty)
         return False
     except ValueError as e:
         return e.message == "logger name contains a control character"
@@ -99,7 +99,9 @@ nox.test.assert_eq_str(captured.field_at(0).value.text_value, "before", "clone i
 nox.test.assert_true(obsidian.fields.is_reserved_key("message"), "message reserved")
 nox.test.assert_true(not obsidian.fields.is_reserved_key("user_id"), "user_id available")
 nox.test.assert_true(reserved_key_raises(), "reserved key rejected")
-nox.test.assert_true(control_key_raises(), "control key rejected")
+nox.test.assert_true(control_key_raises("\n"), "newline in field key rejected")
+nox.test.assert_true(control_key_raises(chr(13)), "carriage return in field key rejected")
 nox.test.assert_true(invalid_kind_raises(), "invalid field kind rejected")
 nox.test.assert_true(off_record_raises(), "OFF record rejected")
-nox.test.assert_true(invalid_logger_raises(), "control logger rejected")
+nox.test.assert_true(invalid_logger_raises("\n"), "newline in logger name rejected")
+nox.test.assert_true(invalid_logger_raises(chr(13)), "carriage return in logger name rejected")

@@ -84,5 +84,5 @@ def validate_logger_name(logger_name: str) -> None:
         raise ValueError("logger name must not be empty")
     if len(logger_name) > 128:
         raise ValueError("logger name is too long")
-    if "\n" in logger_name or "" in logger_name or "\t" in logger_name:
+    if "\n" in logger_name or "\r" in logger_name or "\t" in logger_name:
         raise ValueError("logger name contains a control character")

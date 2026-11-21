@@ -78,7 +78,7 @@ jobs:
           test "$version_output" = "noxc ${NOX_VERSION#v}"
 
       - name: Format check
-        if: matrix.version == 'v2.1.0'
+        if: matrix.version == 'v2.2.38'
         shell: bash
         run: |
           set -euo pipefail
@@ -116,8 +116,8 @@ jobs:
         if: matrix.version == 'v2.2.38'
         shell: bash
         run: |
-          OBSIDIAN_STRICT_SPAWN=1 bash scripts/run-package-suite.sh llvm
-          OBSIDIAN_STRICT_SPAWN=1 bash scripts/run-package-suite.sh qbe
+          OBSIDIAN_NOX22_PROBES=1 bash scripts/run-package-suite.sh llvm
+          OBSIDIAN_NOX22_PROBES=1 bash scripts/run-package-suite.sh qbe
 
       - name: Verify deterministic package SBOM
         if: matrix.version == 'v2.2.38'

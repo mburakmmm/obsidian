@@ -1,8 +1,8 @@
 # NOX compatibility baseline
 
-Status: `v1.0.0` and Phase 12 are complete on the pinned NOX 2.1.0 supported synchronous matrix. Phase 13 tests NOX 2.2.38 as the current upgrade candidate.
+Phase 13 selects NOX 2.2.38 for development and release tooling, with 2.1.0 retained as a consumer compatibility lane. The documented synchronous API and JSON schema remain at their v1 contracts.
 
-## Pinned toolchain
+## Historical v1.0.0 toolchain
 
 | Item | Pinned/observed value | Evidence |
 |---|---|---|
@@ -46,9 +46,11 @@ Commit `ccc9e41` and CI `42968550569` passed the unchanged stable-candidate core
 
 Annotated tag `v1.0.0` peels to exact commit `e787ab6d8f6232ed9951e672cf38a88060e4cb0c`. Main CI `42971160582` and tag-driven release CI `42971769840` passed the complete supported matrix before the stable GitHub Release and public registry ref were verified. The clean registry gate resolved `v1.0.0` to that exact commit and passed version/API/schema/import contracts on LLVM and QBE under checksum-verified NOX 2.1.0.
 
-## NOX 2.2.38 upgrade candidate — 2026-11-21
+## NOX 2.2.38 toolchain — 2026-11-21
 
 The upstream tag points to `7f879fe0ecb972dc9994ee1e8f420d4aaa0cdd9a`. The candidate CI entries pin the published SHA-256 for macOS ARM64, Linux x64 and Linux ARM64. On the checksum-verified macOS ARM64 archive, both backends passed 22 behavioral files, all nine package examples and lock resolution. A clean registry consumer resolved Obsidian `v1.0.0` to `e787ab6d8f6232ed9951e672cf38a88060e4cb0c` and passed stable API, JSON schema, import and version checks on both backends.
+
+[CI 44891584365](https://github.com/mburakmmm/obsidian/actions/runs/44891584365) passed all six compiler/platform jobs, with LLVM and QBE on each. The 2.2.38 lanes also passed the strict-spawn, path/clock and deterministic SBOM checks. Local full file stress completed 120,000 append events and 120,000 rotation events per backend with exactly four owned archives and 19,600 retained bytes per round.
 
 The candidate audit exercises real worker overlap and class transfer, verifies shared-spawn lint on explicit request context, and compares `safe_join` with the sink path policy. The stdlib helper permits some confined paths that Obsidian deliberately rejects. See [ADR-0011](decisions/0011-async-dispatch-no-go.md) for the blocked receive and shutdown findings and [performance](performance.md) for the compiler comparison.
 

@@ -150,6 +150,7 @@ control_record: LogRecord = LogRecord(0, INFO, "control", all_controls, empty_co
 control_text: str = obsidian.format_text.format_record(control_record)
 control_json: str = obsidian.format_json.format_record(control_record)
 nox.test.assert_eq_int(control_text.count("\n"), 0, "all text controls escaped")
+nox.test.assert_true(chr(13) not in control_text and "\\r" in control_text, "carriage return escaped in text")
 nox.test.assert_true("\\u0000" in control_text, "NUL escaped in text")
 nox.test.assert_true("\\u001b" in control_text, "escape character escaped in text")
 nox.test.assert_true("\\u007f" in control_text, "DEL escaped in text")

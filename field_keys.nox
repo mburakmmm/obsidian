@@ -12,7 +12,7 @@ def validate_field_key(key: str) -> None:
         raise ValueError("field key must not be empty")
     if len(key) > 128:
         raise ValueError("field key is too long")
-    if "\n" in key or "" in key or "\t" in key:
+    if "\n" in key or "\r" in key or "\t" in key:
         raise ValueError("field key contains a control character")
     if is_reserved_key(key):
         raise ValueError("field key is reserved")

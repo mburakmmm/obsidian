@@ -7,7 +7,7 @@ Structured, secure logging foundations for the NOX ecosystem.
 [![CI](https://github.com/mburakmmm/obsidian/actions/workflows/ci.yml/badge.svg)](https://github.com/mburakmmm/obsidian/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/mburakmmm/obsidian?include_prereleases&sort=semver)](https://github.com/mburakmmm/obsidian/releases/tag/v1.0.0)
 ![Status](https://img.shields.io/badge/status-stable-2ea44f)
-![NOX](https://img.shields.io/badge/NOX-2.1.0-6f42c1)
+![NOX](https://img.shields.io/badge/NOX-2.2.38-6f42c1)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 </div>
@@ -55,9 +55,9 @@ Stderr is unavailable in the pinned NOX public API and remains explicitly disabl
 
 | Component | Baseline |
 |---|---|
-| NOX compiler | `noxc 2.1.0` |
-| NOX source | `fd107b922c67a804520dc30f849039d977542f6c` |
-| Obsidian package | `1.0.0`, stable |
+| Development and release compiler | `noxc 2.2.38` |
+| NOX source | `7f879fe0ecb972dc9994ee1e8f420d4aaa0cdd9a` |
+| Consumer compatibility | `noxc 2.1.0` and `noxc 2.2.38` |
 | Verified locally | macOS arm64, LLVM and QBE |
 | Verified in CI | macOS arm64, Linux x64/arm64; LLVM and QBE |
 

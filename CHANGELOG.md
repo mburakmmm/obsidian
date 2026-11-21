@@ -4,10 +4,13 @@ All notable changes are recorded here. Versions follow Semantic Versioning, incl
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-21
+
 ### Build and release
 
-- Test the supported NOX 2.1.0 baseline and the checksum-pinned 2.2.38 candidate across the hosted matrix.
-- Check candidate async, shared-spawn, path and clock capabilities, and attach a deterministic package SBOM to tagged GitHub releases.
+- Use checksum-pinned NOX 2.2.38 for development and release tooling, and retain 2.1.0 consumer compatibility checks across the hosted matrix.
+- Check async, shared-spawn, path and clock capabilities on 2.2.38 and attach a deterministic package SBOM to tagged GitHub releases.
+- Verify the immutable release ref and canonical package metadata from the public registry.
 
 ### Added
 
@@ -16,7 +19,7 @@ All notable changes are recorded here. Versions follow Semantic Versioning, incl
 
 ### Documentation
 
-- NOX 2.1.186 compatibility-candidate findings and a Phase 13 plan covering the toolchain lane, concurrency re-audit, SBOM and optional provenance decisions.
+- Record the NOX 2.2.38 compatibility and benchmark evidence, the async dispatch decision and the package SBOM policy.
 
 ## [1.0.0] - 2026-11-11
 

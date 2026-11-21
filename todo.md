@@ -495,8 +495,8 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] `v2.1.186` annotated tag -> `5cf4f63d49cdf2a4a2c619a666df45799d7aac2e`; macOS ARM64 archive SHA-256 ve unsigned tag durumu kaydedildi.
 - [x] Yerel macOS ARM64 aday denetiminde LLVM ve QBE ayrı ayrı 22/22 behavioral test, tüm örnekler ve lock kontrolünden geçti.
 - [x] Doğrulanmış 2.2.38 macOS ARM64 arşiviyle LLVM/QBE ayrı ayrı 22/22, dokuz örnek ve lock kontrolü geçti. Registry `v1.0.0` temiz kurulumu aynı iki backend'de geçti.
-- [ ] 2.1.0 ve checksum-pinned 2.2.38 CI matrisi macOS ARM64, Linux x64 ve Linux ARM64 üzerinde tamamlanacak.
-- [ ] Pinned compiler değişikliği yapılacaksa source SHA, üç archive checksum'u, CI installer, compatibility matrisi, benchmark/stress baselines ve release belgeleri aynı committe güncellenecek.
+- [x] 2.1.0 ve checksum-pinned 2.2.38 CI matrisi macOS ARM64, Linux x64 ve Linux ARM64 üzerinde [44891584365](https://github.com/mburakmmm/obsidian/actions/runs/44891584365) koşusunda geçti.
+- [x] 2.2.38 geliştirme/yayın pinine yükseltildi ve 2.1.0 tüketici matrisi korundu. Kaynak SHA, arşiv checksum'ları, formatter ve migration kararları ADR-0020 ile izleniyor.
 - [x] `--strict-spawn-shared` denetimi 2.2.38 matrisine eklendi ve açık bağlam izolasyonu fixture'ına bağlandı.
 
 ### Async dispatcher yeniden değerlendirmesi
@@ -509,7 +509,7 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 ### SBOM, provenance ve opsiyonel API değerlendirmeleri
 
 - [x] CycloneDX 1.5 üreticisi iki ham çıktıyı karşılaştırır, sıfır bileşeni ve `nox:native=false` değerini denetler. Release iş akışına manifest sürümüyle zenginleştirilmiş artifact adımı eklendi.
-- [ ] Publisher attestation için anahtar üretme/kaydetme kararı kullanıcı onayı ve ayrı threat-model/provenance ADR'si olmadan uygulanmayacak.
+- [x] ADR-0020, 1.1 için checksum ve commit doğrulamasını kaydediyor. Publisher attestation opsiyonel ve ayrı anahtar yönetimi kararı gerektiriyor.
 - [x] `safe_join` fark testi eksik yaprak, eksik ebeveyn, symlink kaçışı, traversal ve hassas dosya adı politikasını kapsıyor. Obsidian'a özgü ret kuralları korunuyor.
 - [x] `monotonic_ns` 2.2.38 aday probuna eklendi. İki derleyici kıyası aynı milisaniye zamanlayıcısıyla yapılıyor. Yeni saat benchmark için pin geçişinden sonra kullanılabilir.
 - [x] Skaler `match`, alan Optional daraltması, `:=` ve `__all__` değerlendirildi. Bu sürüm dil uyumluluğu ve public import yüzeyi için mevcut sözdizimini kullanıyor.
@@ -519,7 +519,7 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 ### Phase 13 kapısı
 
 - [ ] Metadata, dual-toolchain matrisi, güncel capability audit, SBOM kararı ve belgeler tek doğrulanmış sürüm commitinde hizalı.
-- [ ] Yeni minimum NOX sürümü veya async desteği yalnız gerçek üç-platform LLVM/QBE kanıtı ve ayrı ADR sonrasında ilan edilecek.
+- [x] ADR-0020 iki derleyicili tüketici desteğini ve 2.2.38 geliştirme pinini belgeliyor. ADR-0011 async desteğini kapalı tutuyor.
 
 ---
 

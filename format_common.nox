@@ -52,7 +52,7 @@ def escape_text(value: str) -> str:
             pieces.append("\\\\")
         elif character == "\n":
             pieces.append("\\n")
-        elif character == "":
+        elif character == "\r":
             pieces.append("\\r")
         elif character == "\t":
             pieces.append("\\t")

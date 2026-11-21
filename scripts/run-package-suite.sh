@@ -41,10 +41,10 @@ ln -s "$consumer_root/obsidian-rotation-tests/symlink/unrelated.log" "$consumer_
 ln -s "$consumer_root/obsidian-rotation-tests/active-link/unrelated.log" "$consumer_root/obsidian-rotation-tests/active-link/events.jsonl"
 chmod 500 "$consumer_root/obsidian-file-denied"
 
-if [[ "${OBSIDIAN_STRICT_SPAWN:-0}" == 1 ]]; then
+if [[ "${OBSIDIAN_NOX22_PROBES:-0}" == 1 ]]; then
   NOX_HOME="$probe_nox_home" "$noxc_bin" check --backend "$backend" --strict-spawn-shared tests/concurrency/context_isolation_test.nox
   NOX_HOME="$probe_nox_home" "$noxc_bin" run --backend "$backend" tests/capability/nox22_path_clock.nox
-  printf 'shared-spawn lint: backend=%s context-isolation=pass\n' "$backend"
+  printf 'NOX 2.2 probes: backend=%s context-lint=pass path-policy=pass clock=pass\n' "$backend"
   exit 0
 fi
 
@@ -87,7 +87,7 @@ run_exact_example() {
   test "$output" = "$expected"
 }
 
-run_exact_example examples/hello.nox "obsidian 1.0.0"
+run_exact_example examples/hello.nox "obsidian $(jq -er .version "$project_root/nox.json")"
 run_exact_example examples/memory_logging.nox "1700000000000 INFO service.auth password=*** ***"
 run_exact_example examples/json_logging.nox "$expected_json"
 run_exact_example examples/console_logging.nox "$expected_console"
