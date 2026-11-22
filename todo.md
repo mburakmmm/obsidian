@@ -488,7 +488,7 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] `nox.json` saf NOX kaynak beyanını taşıyor; üretim ağacında C/C++/Rust/Go/Zig kaynağı olmadığı tarandı ve alan checksum-doğrulanmış 2.1.0 LLVM/QBE paket süitlerinde geriye uyumlu kaldı.
 - [x] Token/credential yönetmeyen `scripts/publish-package.sh <ref>` branch ve tag yayınlarında aynı metadata'yı uygular.
 - [x] 2.2.38 ile yeniden gönderilen `v1.0.0` için public version, açıklama, etiketler ve kaynak dili doğrulandı. Temiz kurulum beklenen commit'i çözümledi.
-- [ ] Immutable sonraki sürüm ref'i yayımlandıktan sonra public index metadata'sı ve exact commit çözümlemesi tekrar doğrulanacak.
+- [x] Public registry, `v1.1.0` sürümünü ve paket metadata'sını gösteriyor. NOX 2.1.0 ve 2.2.38 temiz kurulumları `d3f189f02e138431df419e1664e673e2df8a9733` commit'ini çözümledi ve iki backend'de geçti.
 
 ### Toolchain yükseltme adayı
 
@@ -518,7 +518,7 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 ### Phase 13 kapısı
 
-- [ ] Metadata, dual-toolchain matrisi, güncel capability audit, SBOM kararı ve belgeler tek doğrulanmış sürüm commitinde hizalı.
+- [x] `v1.1.0` etiketi, GitHub Release, CycloneDX eki ve noxpkg kurulumu `d3f189f02e138431df419e1664e673e2df8a9733` kaynak commit'ine bağlı. [Etiketli Release koşusu](https://github.com/mburakmmm/obsidian/actions/runs/44892337383) altı CI işini ve yayın adımını geçti. Phase 13 kapandı.
 - [x] ADR-0020 iki derleyicili tüketici desteğini ve 2.2.38 geliştirme pinini belgeliyor. ADR-0011 async desteğini kapalı tutuyor.
 
 ---

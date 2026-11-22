@@ -52,6 +52,8 @@ The upstream tag points to `7f879fe0ecb972dc9994ee1e8f420d4aaa0cdd9a`. The candi
 
 [CI 44891584365](https://github.com/mburakmmm/obsidian/actions/runs/44891584365) passed all six compiler/platform jobs, with LLVM and QBE on each. The 2.2.38 lanes also passed the strict-spawn, path/clock and deterministic SBOM checks. Local full file stress completed 120,000 append events and 120,000 rotation events per backend with exactly four owned archives and 19,600 retained bytes per round.
 
+The `v1.1.0` tag resolves to `d3f189f02e138431df419e1664e673e2df8a9733`. [Release 44892337383](https://github.com/mburakmmm/obsidian/actions/runs/44892337383) passed all six compiler/platform jobs, covering both backends per job with 22 behavioral files and 470 explicit assertion sites. The downloaded CycloneDX asset matched local regeneration byte for byte, with SHA-256 `94a709262c78907a1258104388598e5db1395cf04b0a1191c026a14a849d3933`. Credential-free installs of the published registry ref resolved the same commit and passed API, schema, import and version probes on LLVM and QBE with both compilers.
+
 The candidate audit exercises real worker overlap and class transfer, verifies shared-spawn lint on explicit request context, and compares `safe_join` with the sink path policy. The stdlib helper permits some confined paths that Obsidian deliberately rejects. See [ADR-0011](decisions/0011-async-dispatch-no-go.md) for the blocked receive and shutdown findings and [performance](performance.md) for the compiler comparison.
 
 ## NOX 2.1.186 historical candidate audit — 2026-11-16
