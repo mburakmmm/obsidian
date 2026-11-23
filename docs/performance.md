@@ -153,3 +153,26 @@ Local Apple M4, Darwin 27.2.0, checksum-verified NOX 2.1.0 and 2.2.38 archives. 
 | Bounded sink peak RSS, MiB | 2.30 → 2.28 | 2.89 → 2.46 |
 
 JSONL size stayed 309 bytes per normal event and 196,824 per long Unicode event. The bounded sink retained 128 of 50,000 records and reported 49,872 evictions in all four runs. On clean commit `fd61776`, a second LLVM run in reverse compiler order measured rotation at 401 → 394 µs/event, long Unicode JSONL at 3.37 → 3.28 ms/event, and ordinary JSONL at 6,785 → 4,571 ns/event. The initial LLVM slowdowns did not repeat. The candidate nanosecond clock probe is separate so changing timer resolution cannot confound these ratios.
+
+## NOX 2.2.38 clean baseline and MemorySink prototype
+
+Clean source commit `e2ba9f7001edd9f2a6eef1139cf6917ccfd3e9a4`, NOX source `7f879fe0ecb972dc9994ee1e8f420d4aaa0cdd9a`, Apple M4 ARM64, macOS 27.2.1 (Darwin 27.2.0), Apple clang 21.0.0 and Python 3.15.2. The checksum-verified release binary ran the full benchmark and full file stress harness sequentially, LLVM then QBE. The complete structured output includes warm-up, means, ranges and variance. [Baseline output](benchmarks/nox-2.2.38-e2ba9f7.txt)
+
+```sh
+bash scripts/run-benchmarks.sh llvm
+bash scripts/run-file-stress.sh llvm full
+bash scripts/run-benchmarks.sh qbe
+bash scripts/run-file-stress.sh qbe full
+```
+
+The benchmark-only ring compares the saturated write path at the same capacity with the same owned record cloning and eviction counts. Each configuration has one 1,024-write warm-up, then seven 65,536-write samples with alternating execution order. Capacity fill, count, FIFO marker checks and close are outside the measured loop.
+
+| Capacity | LLVM MemorySink → ring (ns/write) | QBE MemorySink → ring (ns/write) |
+|---|---:|---:|
+| 8 | 184 → 173 | 204 → 187 |
+| 128 | 483 → 154 | 529 → 204 |
+| 2,048 | 6,360 → 178 | 5,259 → 193 |
+
+At large capacity, overwriting the head avoids shifting the retained list. The prototype measures the saturated write path. A production change still needs equivalence across public indexing, snapshots, writes after close, allocation failures and capacity boundaries. No timing budget or cross-platform speedup is inferred from this host.
+
+Full stress passed three rounds of 40,000 events per path and backend, keeping four owned archives and 19,600 retained bytes per round. No application records or sentinel values are included in the report.

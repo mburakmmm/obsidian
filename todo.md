@@ -526,13 +526,14 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 ## Phase 14 — v1.1.0 teknik inceleme takibi
 
 - [x] P0: Worker'a ait logger/sink yaşam döngüsü ve paylaşılan dispatcher için harici seri erişim sözleşmesi belgelendi.
-- [ ] P0: Gerçek iki-worker dispatch probu çalıştırılacak. Compiler/backend kapsamı ve gözlenen sınırlar kaydedilecek.
+- [x] P0: İki gerçek worker ile dispatch probu NOX 2.2.38 LLVM/QBE ve 2.1.0 LLVM'de geçti. 2.1.0 QBE bu probu codegen'de reddediyor; standart paket ve task-context testleri o hatta çalışıyor.
 - [x] P1: Async kapalı. Upstream bounded enqueue, wake-on-close ve timeout-aware completion kabul koşulları ADR-0011'de kaydedildi.
-- [ ] P1: Temiz commit üzerinde NOX 2.2.38 LLVM/QBE tam benchmark ve dosya stres kanıtı kaydedilecek.
+- [x] P1: Temiz `e2ba9f7` checkout'unda NOX 2.2.38 LLVM/QBE tam benchmark ve backend başına 120.000 append + 120.000 rotation olayı geçti. [Ölçüm çıktısı](docs/benchmarks/nox-2.2.38-e2ba9f7.txt).
 - [x] P2: GitHub artifact provenance ve noxpkg publisher kimliği için ayrı rollout stratejisi ADR-0021'de belgelendi.
-- [ ] P2: MemorySink dolu kapasite ölçümü 8, 128 ve 2048 kayıtla yürütülecek. Önce FIFO ve eviction doğrulanacak.
+- [x] P2: Dolu MemorySink ve benchmark-only ring prototipi 8, 128 ve 2.048 kayıtta karşılaştırıldı. FIFO ve eviction kontrolleri geçti; üretim geçişi için snapshot, indexing ve lifecycle eşdeğerliği gerekli.
 - [x] P2: Nested alanlar için tipli builder, snapshot, bütçe, redaction ve schema tasarımı ADR-0022'de kaydedildi.
 - [x] P3: README release rozeti son kararlı sürüme yöneliyor.
+- Doğrulama: [Üç platformlu CI](https://github.com/mburakmmm/obsidian/actions/runs/45252279664). NOX 2.1.0 için yerel macOS ARM64 paket süiti LLVM/QBE'de 22/22 ve dokuz örnekle geçti.
 
 ---
 

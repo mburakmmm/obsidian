@@ -49,7 +49,7 @@ Obsidian wraps and extends `nox.log`; it does not replace or fork the standard l
 - Optional Nyx, Aether and Quartz adapters with isolated dependency graphs and safe request metadata defaults.
 - Deterministic LLVM and QBE tests.
 
-Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. Nested values, exception capture and time-based rotation remain gated future phases. Async dispatch is unsupported on the pinned toolchain because portable record transfer, non-blocking overflow and timeout-aware shutdown cannot all be proven. Simultaneous calls through one shared logger have no thread-safety claim; rotating files require one owning process and a trusted directory.
+Stderr is unavailable in the pinned NOX public API and remains explicitly disabled. Nested values, exception capture and time-based rotation remain gated future phases. Async dispatch is unsupported on the pinned toolchain because non-blocking overflow and timeout-aware shutdown are unavailable. Give each worker its own logger and sinks, or serialize all shared access in the application. Rotating files require one owning process and a trusted directory. [Operations contract](docs/operations.md#dispatch-mode)
 
 ## Toolchain
 
