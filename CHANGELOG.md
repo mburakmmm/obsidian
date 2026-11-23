@@ -7,7 +7,7 @@ All notable changes are recorded here. Versions follow Semantic Versioning, incl
 ### Verification and documentation
 
 - Document worker-owned synchronous dispatch and external serialization for shared logger graphs. Exercise isolated real-worker dispatch with exact ordering, context and redaction checks.
-- Measure saturated `MemorySink` writes at three capacities and validate eviction accounting.
+- Compare saturated `MemorySink` writes with a benchmark-only ring prototype at three capacities and validate eviction accounting.
 - Record async upstream acceptance criteria, release provenance strategy and the nested-fields security design. Point the README badge at the latest stable release.
 
 ## [1.1.0] - 2026-11-21

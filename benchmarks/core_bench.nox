@@ -4,6 +4,7 @@ import nox.time
 import obsidian.fields
 import obsidian.format_json
 from obsidian.clock import FakeClock
+from obsidian.diagnostics import saturating_increment
 from obsidian.fields import LogField
 from obsidian.level import INFO
 from obsidian.logger import Logger
@@ -19,7 +20,7 @@ LONG_JSON_ITERATIONS: int = 20
 WARMUP_CONSTRUCTION_ITERATIONS: int = 1000
 CONSTRUCTION_ITERATIONS: int = 20000
 SAMPLE_COUNT: int = 7
-MEMORY_SINK_ITERATIONS: int = 32768
+MEMORY_SINK_ITERATIONS: int = 65536
 MEMORY_SINK_WARMUP: int = 1024
 NANOSECONDS_PER_MILLISECOND: int = 1000000
 NANOSECONDS_PER_SECOND: int = 1000000000
@@ -35,6 +36,33 @@ class BenchmarkStats:
         self.min_ns = min_ns
         self.max_ns = max_ns
         self.variance_ns2 = variance_ns2
+
+# Benchmark-only model. Like MemorySink, it stores an owned record clone
+# and counts oldest-first eviction whenever it writes at full capacity.
+class MemoryRingModel:
+    records: list[LogRecord]
+    capacity: int
+    oldest: int
+    dropped: int
+
+    def __init__(self, capacity: int) -> None:
+        self.records = []
+        self.capacity = capacity
+        self.oldest = 0
+        self.dropped = 0
+
+    def write(self, entry: LogRecord) -> None:
+
+        if len(self.records) < self.capacity:
+            self.records.append(entry.clone())
+        else:
+            self.records[self.oldest] = entry.clone()
+            self.oldest = (self.oldest + 1) % self.capacity
+            self.dropped = saturating_increment(self.dropped)
+
+    def record_at(self, index: int) -> LogRecord:
+
+        return self.records[(self.oldest + index) % self.capacity].clone()
 
 def summarize(samples: list[int]) -> BenchmarkStats:
     if len(samples) == 0:
@@ -123,6 +151,22 @@ def time_saturated_memory_sink(entry: LogRecord, marker: LogRecord, capacity: in
     sink.close()
     return ns_per_operation(elapsed_ms, iterations)
 
+def time_saturated_memory_ring(entry: LogRecord, marker: LogRecord, capacity: int, iterations: int) -> int:
+    ring: MemoryRingModel = MemoryRingModel(capacity)
+    ring.write(marker)
+    for i in range(capacity - 1):
+        ring.write(entry)
+    start: nox.time.Instant = nox.time.instant_now()
+    for i in range(iterations):
+        ring.write(entry)
+    elapsed_ms: int = start.elapsed_ms()
+    if len(ring.records) != capacity or ring.dropped != iterations or ring.record_at(0).message != entry.message:
+        raise ValueError("saturated ring model accounting mismatch")
+    ring.write(marker)
+    if ring.record_at(capacity - 1).message != marker.message or ring.dropped != iterations + 1:
+        raise ValueError("saturated ring model ordering mismatch")
+    return ns_per_operation(elapsed_ms, iterations)
+
 def print_stats(name: str, iterations: int, stats: BenchmarkStats, bytes_per_event: int = 0) -> None:
     events_per_second: int = 0
     if stats.mean_ns > 0:
@@ -196,10 +240,18 @@ print_stats("logger_construct_close", CONSTRUCTION_ITERATIONS, summarize(constru
 
 memory_entry: LogRecord = LogRecord(0, INFO, "benchmark.memory", "sample", [], [])
 memory_marker: LogRecord = LogRecord(0, INFO, "benchmark.memory", "marker", [], [])
-print("benchmark_schema=obsidian.memory-saturated.v1 warmup=" + str(MEMORY_SINK_WARMUP))
+print("benchmark_schema=obsidian.memory-saturated.v2 warmup=" + str(MEMORY_SINK_WARMUP))
 for capacity in [8, 128, 2048]:
     time_saturated_memory_sink(memory_entry, memory_marker, capacity, MEMORY_SINK_WARMUP)
+    time_saturated_memory_ring(memory_entry, memory_marker, capacity, MEMORY_SINK_WARMUP)
     memory_samples: list[int] = []
+    ring_samples: list[int] = []
     for sample in range(SAMPLE_COUNT):
-        memory_samples.append(time_saturated_memory_sink(memory_entry, memory_marker, capacity, MEMORY_SINK_ITERATIONS))
+        if sample % 2 == 0:
+            memory_samples.append(time_saturated_memory_sink(memory_entry, memory_marker, capacity, MEMORY_SINK_ITERATIONS))
+            ring_samples.append(time_saturated_memory_ring(memory_entry, memory_marker, capacity, MEMORY_SINK_ITERATIONS))
+        else:
+            ring_samples.append(time_saturated_memory_ring(memory_entry, memory_marker, capacity, MEMORY_SINK_ITERATIONS))
+            memory_samples.append(time_saturated_memory_sink(memory_entry, memory_marker, capacity, MEMORY_SINK_ITERATIONS))
     print_stats("memory_sink_saturated_c" + str(capacity), MEMORY_SINK_ITERATIONS, summarize(memory_samples))
+    print_stats("memory_ring_model_c" + str(capacity), MEMORY_SINK_ITERATIONS, summarize(ring_samples))
