@@ -4,6 +4,10 @@ All notable changes are recorded here. Versions follow Semantic Versioning, incl
 
 ## [Unreleased]
 
+### Changed
+
+- Use an in-place ring cursor for bounded `MemorySink` storage. Saturated writes replace the oldest slot without shifting retained records. Preserve logical FIFO indexing, owned copies and the synchronous sink lifecycle.
+
 ### Verification and documentation
 
 - Document worker-owned synchronous dispatch and external serialization for shared logger graphs. Exercise isolated real-worker dispatch with exact ordering, context and redaction checks.

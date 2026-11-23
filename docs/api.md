@@ -76,6 +76,8 @@ The TRACE convenience method is named `trace_event`. At the pinned compiler revi
 
 `Sink` exposes lifecycle methods, a stable name and a bounded-storage capability flag. `MemorySink` is a bounded drop-oldest ring with an explicit drop counter and clone-returning snapshots. Built-in drop, flush, write and rotation counters saturate at `2147483647`. Recursive logger operations from a sink are rejected before another callback traversal begins. No lock is held while calling a sink because the current dispatcher is synchronous and lock-free.
 
+`MemorySink.record_at(0)` reads the oldest retained record and `snapshot()` returns retained records in FIFO order. The sink grows as records arrive up to capacity, then overwrites the oldest slot. Writes and reads clone their records. Closing rejects future writes and flushes while retaining the snapshot for inspection.
+
 `RedactionPolicy(additional_keys)` extends the fixed case-insensitive denylist with copied, validated application keys. `DefaultRedactor` masks scalar fields/context plus assignments, HTTP credential headers, bearer tokens, URL userinfo and sensitive query parameters. Nested values are deliberately unsupported. Rotation uses the same formatter/redaction boundary; future exception and async records must enter it as well. See `docs/security.md` and ADR-0008 for limitations.
 
 ## Stable-candidate context and configuration

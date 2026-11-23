@@ -533,7 +533,13 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] P2: Dolu MemorySink ve benchmark-only ring prototipi 8, 128 ve 2.048 kayıtta karşılaştırıldı. FIFO ve eviction kontrolleri geçti; üretim geçişi için snapshot, indexing ve lifecycle eşdeğerliği gerekli.
 - [x] P2: Nested alanlar için tipli builder, snapshot, bütçe, redaction ve schema tasarımı ADR-0022'de kaydedildi.
 - [x] P3: README release rozeti son kararlı sürüme yöneliyor.
-- Doğrulama: [Üç platformlu CI](https://github.com/mburakmmm/obsidian/actions/runs/45252279664). NOX 2.1.0 için yerel macOS ARM64 paket süiti LLVM/QBE'de 22/22 ve dokuz örnekle geçti.
+- Doğrulama: [Üç platformlu CI](https://github.com/mburakmmm/obsidian/actions/runs/45252279664) beş başarılı iş bildirdi. NOX 2.1.0 macOS işi hiçbir adım çalıştırmadan iptal edildi. Yerel macOS ARM64 paket süiti LLVM/QBE'de 22/22 ve dokuz örnekle geçti.
+
+## Phase 15 — MemorySink ring buffer geçişi
+
+- [x] Dolu sink'te liste kaydırma yerine en eski slotu değiştir. Girdi snapshot'ını eviction öncesinde al.
+- [x] FIFO, pozitif/negatif indeks sınırları, wrap-around, kapasite bir, kopya izolasyonu ve close eşdeğerliği eski/yeni sink ile dört yerel derleyici/backend kombinasyonunda geçti. Tasarım ADR-0023'te.
+- [ ] NOX 2.1.0 ve 2.2.38, LLVM/QBE paket süitlerini çalıştır. Üretim ring benchmark'ını temiz commit'te ölç.
 
 ---
 

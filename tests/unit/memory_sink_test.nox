@@ -1,0 +1,71 @@
+import nox.test
+from obsidian.level import INFO
+from obsidian.record import LogRecord
+from obsidian.sinks.memory import MemorySink
+
+def event(number: int) -> LogRecord:
+    return LogRecord(number, INFO, "memory", "sample", [], [])
+
+def rejects_write(sink: MemorySink) -> bool:
+    try:
+        sink.write(event(99))
+        return False
+    except ValueError as e:
+        return e.message == "memory sink is closed"
+
+def rejects_flush(sink: MemorySink) -> bool:
+    try:
+        sink.flush()
+        return False
+    except ValueError as e:
+        return e.message == "memory sink is closed"
+
+def rejects_index(sink: MemorySink, index: int) -> bool:
+    try:
+        sink.record_at(index)
+        return False
+    except IndexError:
+        return True
+
+def retains_fifo(sink: MemorySink, expected: int, count: int) -> bool:
+    snapshot: list[LogRecord] = sink.snapshot()
+    if sink.count() != count or len(snapshot) != count:
+        return False
+    for index in range(count):
+        if snapshot[index].timestamp_ms != expected + index or sink.record_at(index).timestamp_ms != expected + index:
+            return False
+    return True
+
+sink: MemorySink = MemorySink("fifo", 3)
+nox.test.assert_true(sink.is_bounded() and retains_fifo(sink, 0, 0), "new sink is empty and bounded")
+nox.test.assert_true(rejects_index(sink, 0) and rejects_index(sink, -1), "empty sink rejects indexes")
+source: LogRecord = event(0)
+sink.write(source)
+source.timestamp_ms = 77
+nox.test.assert_true(retains_fifo(sink, 0, 1), "append clones the input and preserves order")
+for number in range(1, 3):
+    sink.write(event(number))
+nox.test.assert_true(retains_fifo(sink, 0, 3), "exactly full sink preserves order")
+nox.test.assert_eq_int(sink.dropped_count(), 0, "fill does not evict")
+for number in range(3, 11):
+    sink.write(event(number))
+    nox.test.assert_true(retains_fifo(sink, number - 2, 3), "FIFO after each wrapped write")
+nox.test.assert_eq_int(sink.dropped_count(), 8, "eviction count after multiple wraps")
+nox.test.assert_eq_int(sink.record_at(-1).timestamp_ms, 10, "negative index selects newest")
+nox.test.assert_eq_int(sink.record_at(-3).timestamp_ms, 8, "negative boundary selects oldest")
+nox.test.assert_true(rejects_index(sink, 3) and rejects_index(sink, -4), "wrapped sink rejects indexes outside logical bounds")
+snapshot: list[LogRecord] = sink.snapshot()
+snapshot[0].timestamp_ms = 77
+standalone: LogRecord = sink.record_at(1)
+standalone.timestamp_ms = 88
+nox.test.assert_true(retains_fifo(sink, 8, 3), "snapshot and indexed records are independent clones")
+sink.flush()
+sink.close()
+sink.close()
+nox.test.assert_true(sink.is_closed() and rejects_write(sink) and rejects_flush(sink), "close is idempotent and guards writes and flushes")
+nox.test.assert_true(retains_fifo(sink, 8, 3) and sink.flush_count() == 1 and sink.dropped_count() == 8, "close preserves records and counters")
+
+single: MemorySink = MemorySink("single", 1)
+single.write(event(1))
+single.write(event(2))
+nox.test.assert_true(retains_fifo(single, 2, 1) and single.dropped_count() == 1, "capacity one replaces its only record")
