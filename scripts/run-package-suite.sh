@@ -87,6 +87,13 @@ run_exact_example() {
   test "$output" = "$expected"
 }
 
+if [[ "$backend" == qbe && "$("$noxc_bin" --version 2>&1)" == "noxc 2.1.0" ]]; then
+  echo "owned worker dispatch: skip (NOX 2.1.0 QBE code generation cannot compile this probe)"
+else
+  run_exact_example tests/capability/worker_dispatch.nox ""
+  printf 'owned worker dispatch: backend=%s overlap=pass\n' "$backend"
+fi
+
 run_exact_example examples/hello.nox "obsidian $(jq -er .version "$project_root/nox.json")"
 run_exact_example examples/memory_logging.nox "1700000000000 INFO service.auth password=*** ***"
 run_exact_example examples/json_logging.nox "$expected_json"

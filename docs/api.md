@@ -92,7 +92,9 @@ Stable seeded sampling, hierarchical prefix filters and source metadata are not 
 
 ## Async dispatch
 
-There is no async logging API on the pinned NOX 2.1.0 baseline. `Logger.log`, convenience methods, sink writes, `flush` and `close` remain synchronous. Obsidian does not expose a background worker, queue capacity, overflow policy or async lifecycle counters. The Phase 7 capability audit was rerun unchanged on 2.1.0 and remains a no-go. See ADR-0011 for the executable evidence and re-evaluation conditions.
+`Logger.log`, convenience methods, sink writes, `flush` and `close` run synchronously. Independent workers can dispatch through their own logger and sinks. Shared access to a logger, its bound views or a mutable sink must be serialized by the caller. See [the operations contract](operations.md#dispatch-mode).
+
+The async dispatcher remains unsupported on both tested NOX versions. See [ADR-0011](decisions/0011-async-dispatch-no-go.md) for the executable evidence and re-evaluation conditions.
 
 ## Optional ecosystem adapters
 

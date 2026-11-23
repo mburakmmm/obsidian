@@ -8,6 +8,7 @@ from obsidian.fields import LogField
 from obsidian.level import INFO
 from obsidian.logger import Logger
 from obsidian.record import MAX_MESSAGE_LENGTH, LogRecord
+from obsidian.sinks.memory import MemorySink
 
 WARMUP_DEBUG_ITERATIONS: int = 100000
 DEBUG_ITERATIONS: int = 2000000
@@ -18,6 +19,8 @@ LONG_JSON_ITERATIONS: int = 20
 WARMUP_CONSTRUCTION_ITERATIONS: int = 1000
 CONSTRUCTION_ITERATIONS: int = 20000
 SAMPLE_COUNT: int = 7
+MEMORY_SINK_ITERATIONS: int = 32768
+MEMORY_SINK_WARMUP: int = 1024
 NANOSECONDS_PER_MILLISECOND: int = 1000000
 NANOSECONDS_PER_SECOND: int = 1000000000
 
@@ -103,6 +106,23 @@ def time_logger_construction(clock: FakeClock, iterations: int) -> int:
     elapsed_ms: int = start.elapsed_ms()
     return ns_per_operation(elapsed_ms, iterations)
 
+def time_saturated_memory_sink(entry: LogRecord, marker: LogRecord, capacity: int, iterations: int) -> int:
+    sink: MemorySink = MemorySink("benchmark.memory.saturated", capacity)
+    sink.write(marker)
+    for i in range(capacity - 1):
+        sink.write(entry)
+    start: nox.time.Instant = nox.time.instant_now()
+    for i in range(iterations):
+        sink.write(entry)
+    elapsed_ms: int = start.elapsed_ms()
+    if sink.count() != capacity or sink.dropped_count() != iterations or sink.record_at(0).message != entry.message:
+        raise ValueError("saturated memory sink accounting mismatch")
+    sink.write(marker)
+    if sink.record_at(capacity - 1).message != marker.message or sink.dropped_count() != iterations + 1:
+        raise ValueError("saturated memory sink ordering mismatch")
+    sink.close()
+    return ns_per_operation(elapsed_ms, iterations)
+
 def print_stats(name: str, iterations: int, stats: BenchmarkStats, bytes_per_event: int = 0) -> None:
     events_per_second: int = 0
     if stats.mean_ns > 0:
@@ -173,3 +193,13 @@ print_stats("nox_log_disabled_debug", DEBUG_ITERATIONS, summarize(stdlib_debug_s
 print_stats("jsonl_encoding", JSON_ITERATIONS, summarize(json_samples), json_bytes_per_event)
 print_stats("jsonl_long_unicode", LONG_JSON_ITERATIONS, summarize(long_unicode_samples), long_unicode_bytes_per_event)
 print_stats("logger_construct_close", CONSTRUCTION_ITERATIONS, summarize(construction_samples))
+
+memory_entry: LogRecord = LogRecord(0, INFO, "benchmark.memory", "sample", [], [])
+memory_marker: LogRecord = LogRecord(0, INFO, "benchmark.memory", "marker", [], [])
+print("benchmark_schema=obsidian.memory-saturated.v1 warmup=" + str(MEMORY_SINK_WARMUP))
+for capacity in [8, 128, 2048]:
+    time_saturated_memory_sink(memory_entry, memory_marker, capacity, MEMORY_SINK_WARMUP)
+    memory_samples: list[int] = []
+    for sample in range(SAMPLE_COUNT):
+        memory_samples.append(time_saturated_memory_sink(memory_entry, memory_marker, capacity, MEMORY_SINK_ITERATIONS))
+    print_stats("memory_sink_saturated_c" + str(capacity), MEMORY_SINK_ITERATIONS, summarize(memory_samples))

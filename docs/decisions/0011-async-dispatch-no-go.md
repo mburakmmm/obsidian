@@ -46,3 +46,12 @@ Re-open Phase 7 only after a pinned NOX revision publicly documents and tests po
 ## NOX 2.2.38 follow-up
 
 Local macOS ARM64 probes on both hosted backends transferred a class payload and observed two overlapping workers. Synchronous `send` now fails during type checking. `try_send` and timed `ThreadHandle.join` are still rejected. Calling `cancel()` on a worker parked in an empty `ThreadChannel.recv` reports deadlock. The documented receive-readiness methods on task channels do not provide atomic enqueue or completion-aware shutdown. The no-go decision remains in force. The audit has distinct expectations for both compilers.
+
+### Upstream acceptance criteria
+
+1. A bounded channel exposes atomic non-blocking enqueue with distinct accepted, full and closed outcomes. An overflow policy must never infer capacity from a separate size read.
+2. Closing a channel prevents future sends, wakes blocked senders and receivers, and has a documented drain/EOF contract. Cancellation while parked has a bounded completion path.
+3. A timed completion primitive distinguishes completion, timeout and failure. A timeout preserves a valid handle for a later join, and record storage remains owned until completion is observed.
+4. Hosted LLVM and QBE probes cover real producer overlap, enqueue/close races, exact counters, timeout followed by join, and cancellation while blocked. Repeat tests under load before enabling a public queue.
+
+The owned-worker dispatcher test exercises synchronous logging within two independent workers. It does not use a queue of log records.

@@ -523,6 +523,19 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 ---
 
+## Phase 14 — v1.1.0 teknik inceleme takibi
+
+- [x] P0: Worker'a ait logger/sink yaşam döngüsü ve paylaşılan dispatcher için harici seri erişim sözleşmesi belgelendi.
+- [ ] P0: Gerçek iki-worker dispatch probu çalıştırılacak. Compiler/backend kapsamı ve gözlenen sınırlar kaydedilecek.
+- [x] P1: Async kapalı. Upstream bounded enqueue, wake-on-close ve timeout-aware completion kabul koşulları ADR-0011'de kaydedildi.
+- [ ] P1: Temiz commit üzerinde NOX 2.2.38 LLVM/QBE tam benchmark ve dosya stres kanıtı kaydedilecek.
+- [x] P2: GitHub artifact provenance ve noxpkg publisher kimliği için ayrı rollout stratejisi ADR-0021'de belgelendi.
+- [ ] P2: MemorySink dolu kapasite ölçümü 8, 128 ve 2048 kayıtla yürütülecek. Önce FIFO ve eviction doğrulanacak.
+- [x] P2: Nested alanlar için tipli builder, snapshot, bütçe, redaction ve schema tasarımı ADR-0022'de kaydedildi.
+- [x] P3: README release rozeti son kararlı sürüme yöneliyor.
+
+---
+
 ## 18. Her görev için zorunlu çalışma şablonu
 
 Yeni bir implementasyon görevine başlamadan önce aşağıdaki blok issue/PR/çalışma notuna kopyalanır:

@@ -56,6 +56,8 @@ OBSIDIAN_VERIFY_REGISTRY_METADATA=1 \
 
 Only record registry availability after this probe succeeds on LLVM and QBE. The repository never stores or synthesizes registry credentials.
 
+See [ADR-0021](decisions/0021-release-provenance.md) for the separate GitHub artifact attestation and registry publisher signing rollout criteria.
+
 ## Failure recovery
 
 - Before the draft exists: fix the release commit and create a new version/tag. Never move a published tag.

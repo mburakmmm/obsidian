@@ -162,6 +162,11 @@ jobs:
             echo "- test files: $test_files"
             echo "- assertions: $assertions"
             echo "- skips: 0"
+            if [[ "$NOX_VERSION" == v2.1.0 ]]; then
+              echo "- owned-worker dispatch probe: LLVM pass; QBE skipped (2.1.0 code generation rejects the fixture)"
+            else
+              echo "- owned-worker dispatch probe: LLVM/QBE pass"
+            fi
             echo "- async capability probes: $capability_probes (no-go)"
             echo "- ecosystem probes: $ecosystem_probes ($ecosystem_checks explicit checks per backend)"
             echo "- benchmark harness: LLVM/QBE smoke only (not baseline evidence)"

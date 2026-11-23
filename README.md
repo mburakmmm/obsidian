@@ -5,7 +5,7 @@
 Structured, secure logging foundations for the NOX ecosystem.
 
 [![CI](https://github.com/mburakmmm/obsidian/actions/workflows/ci.yml/badge.svg)](https://github.com/mburakmmm/obsidian/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/mburakmmm/obsidian?include_prereleases&sort=semver)](https://github.com/mburakmmm/obsidian/releases/tag/v1.0.0)
+[![Release](https://img.shields.io/github/v/release/mburakmmm/obsidian?sort=semver)](https://github.com/mburakmmm/obsidian/releases/latest)
 ![Status](https://img.shields.io/badge/status-stable-2ea44f)
 ![NOX](https://img.shields.io/badge/NOX-2.2.38-6f42c1)
 ![License](https://img.shields.io/badge/license-MIT-blue)
