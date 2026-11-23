@@ -27,6 +27,15 @@ def rejects_index(sink: MemorySink, index: int) -> bool:
     except IndexError:
         return True
 
+def rejects_invalid_clone(sink: MemorySink) -> bool:
+    invalid: LogRecord = event(0)
+    invalid.timestamp_ms = -1
+    try:
+        sink.write(invalid)
+        return False
+    except ValueError as e:
+        return e.message == "timestamp must not be negative"
+
 def retains_fifo(sink: MemorySink, expected: int, count: int) -> bool:
     snapshot: list[LogRecord] = sink.snapshot()
     if sink.count() != count or len(snapshot) != count:
@@ -59,6 +68,8 @@ snapshot[0].timestamp_ms = 77
 standalone: LogRecord = sink.record_at(1)
 standalone.timestamp_ms = 88
 nox.test.assert_true(retains_fifo(sink, 8, 3), "snapshot and indexed records are independent clones")
+nox.test.assert_true(rejects_invalid_clone(sink), "invalid input clone is rejected")
+nox.test.assert_true(retains_fifo(sink, 8, 3) and sink.dropped_count() == 8, "clone failure neither evicts nor increments drops")
 sink.flush()
 sink.close()
 sink.close()

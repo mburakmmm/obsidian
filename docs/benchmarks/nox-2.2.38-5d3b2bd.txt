@@ -1,0 +1,48 @@
+benchmark_environment schema=obsidian.benchmark.environment.v1 os=Darwin kernel=27.2.0 arch=arm64 cpu=Apple\ M4 compiler=noxc\ 2.2.38 nox_source=7f879fe0ecb972dc9994ee1e8f420d4aaa0cdd9a obsidian_commit=5d3b2bd12259e88e73034f7a70b520be85cb9a55 dirty=false backend=llvm
+benchmark_schema=obsidian.benchmark.v1 warmup_debug=100000 warmup_json=200 warmup_long_json=2 warmup_construction=1000
+benchmark=obsidian_disabled_debug iterations=2000000 samples=7 mean_ns=79 min_ns=74 max_ns=85 variance_ns2=18 ops_per_second=12658227
+benchmark=nox_log_disabled_debug iterations=2000000 samples=7 mean_ns=2 min_ns=2 max_ns=2 variance_ns2=0 ops_per_second=500000000
+benchmark=jsonl_encoding iterations=2000 samples=7 mean_ns=8071 min_ns=6000 max_ns=10000 variance_ns2=1959183 ops_per_second=123900 bytes_per_event=309
+benchmark=jsonl_long_unicode iterations=20 samples=7 mean_ns=6371428 min_ns=5400000 max_ns=7150000 variance_ns2=434897959184 ops_per_second=156 bytes_per_event=196824
+benchmark=logger_construct_close iterations=20000 samples=7 mean_ns=142 min_ns=100 max_ns=200 variance_ns2=1021 ops_per_second=7042253
+benchmark_schema=obsidian.memory-saturated.v3 warmup=1024
+benchmark=memory_sink_saturated_c8 iterations=65536 samples=7 mean_ns=123 min_ns=106 max_ns=152 variance_ns2=300 ops_per_second=8130081
+benchmark=memory_sink_saturated_c128 iterations=65536 samples=7 mean_ns=130 min_ns=91 max_ns=152 variance_ns2=523 ops_per_second=7692307
+benchmark=memory_sink_saturated_c2048 iterations=65536 samples=7 mean_ns=139 min_ns=106 max_ns=183 variance_ns2=563 ops_per_second=7194244
+benchmark_schema=obsidian.console-benchmark.v1 warmup=200
+benchmark=console_info_text iterations=2000 samples=7 mean_ns=12857 min_ns=10500 max_ns=17000 variance_ns2=4265306 ops_per_second=77778 redirected_lines=14202
+benchmark_schema=obsidian.file-benchmark.v1 warmup_file=200 warmup_rotation=20 rotation_bytes=246
+benchmark=file_info_json iterations=2000 samples=7 mean_ns=13785 min_ns=10000 max_ns=16000 variance_ns2=5346939 ops_per_second=72542 file_lines=14200 bytes_per_event=242
+benchmark=rotation_pause iterations=100 samples=7 mean_ns=670000 min_ns=560000 max_ns=790000 variance_ns2=5771428571 ops_per_second=1492 active_lines=1 retained_archives=0
+benchmark_schema=obsidian.process-startup-benchmark.v1 warmup=10 python=3.15.2
+benchmark=process_startup_empty iterations=50 samples=7 mean_ns=5492436 min_ns=5088205 max_ns=6305075 variance_ns2=162639752652 ops_per_second=182
+benchmark=process_startup_logger iterations=50 samples=7 mean_ns=5636666 min_ns=4916677 max_ns=6470380 variance_ns2=285193429721 ops_per_second=177
+benchmark_schema=obsidian.process-memory-benchmark.v1 python=3.15.2 platform=darwin
+benchmark=memory_empty_peak_rss samples=7 mean_rss_bytes=1769472 min_rss_bytes=1769472 max_rss_bytes=1769472 variance_rss2=0
+benchmark=memory_bounded_peak_rss samples=7 mean_rss_bytes=2415469 min_rss_bytes=2408448 max_rss_bytes=2424832 variance_rss2=65739295 probe=bounded_memory events=50000 capacity=128 retained=128 dropped=49872
+benchmark=memory_failing_peak_rss samples=7 mean_rss_bytes=2251629 min_rss_bytes=2244608 max_rss_bytes=2260992 variance_rss2=65739295 probe=failing_sink events=50000 writes=50000 failures=50000
+benchmark=memory_slow_peak_rss samples=7 mean_rss_bytes=2246948 min_rss_bytes=2244608 max_rss_bytes=2260992 variance_rss2=32869648 probe=slow_sink events=10000 delay_iterations=200 writes=10000 retained=0
+benchmark_environment schema=obsidian.benchmark.environment.v1 os=Darwin kernel=27.2.0 arch=arm64 cpu=Apple\ M4 compiler=noxc\ 2.2.38 nox_source=7f879fe0ecb972dc9994ee1e8f420d4aaa0cdd9a obsidian_commit=5d3b2bd12259e88e73034f7a70b520be85cb9a55 dirty=false backend=qbe
+benchmark_schema=obsidian.benchmark.v1 warmup_debug=100000 warmup_json=200 warmup_long_json=2 warmup_construction=1000
+benchmark=obsidian_disabled_debug iterations=2000000 samples=7 mean_ns=105 min_ns=94 max_ns=117 variance_ns2=53 ops_per_second=9523809
+benchmark=nox_log_disabled_debug iterations=2000000 samples=7 mean_ns=2 min_ns=2 max_ns=3 variance_ns2=0 ops_per_second=500000000
+benchmark=jsonl_encoding iterations=2000 samples=7 mean_ns=9000 min_ns=7500 max_ns=11000 variance_ns2=1071428 ops_per_second=111111 bytes_per_event=309
+benchmark=jsonl_long_unicode iterations=20 samples=7 mean_ns=6214285 min_ns=5750000 max_ns=6600000 variance_ns2=79795918367 ops_per_second=160 bytes_per_event=196824
+benchmark=logger_construct_close iterations=20000 samples=7 mean_ns=214 min_ns=150 max_ns=250 variance_ns2=1938 ops_per_second=4672897
+benchmark_schema=obsidian.memory-saturated.v3 warmup=1024
+benchmark=memory_sink_saturated_c8 iterations=65536 samples=7 mean_ns=158 min_ns=137 max_ns=183 variance_ns2=190 ops_per_second=6329113
+benchmark=memory_sink_saturated_c128 iterations=65536 samples=7 mean_ns=158 min_ns=122 max_ns=183 variance_ns2=319 ops_per_second=6329113
+benchmark=memory_sink_saturated_c2048 iterations=65536 samples=7 mean_ns=169 min_ns=122 max_ns=198 variance_ns2=1020 ops_per_second=5917159
+benchmark_schema=obsidian.console-benchmark.v1 warmup=200
+benchmark=console_info_text iterations=2000 samples=7 mean_ns=17071 min_ns=14000 max_ns=20500 variance_ns2=4244898 ops_per_second=58578 redirected_lines=14202
+benchmark_schema=obsidian.file-benchmark.v1 warmup_file=200 warmup_rotation=20 rotation_bytes=246
+benchmark=file_info_json iterations=2000 samples=7 mean_ns=15714 min_ns=14500 max_ns=18000 variance_ns2=1775510 ops_per_second=63637 file_lines=14200 bytes_per_event=242
+benchmark=rotation_pause iterations=100 samples=7 mean_ns=804285 min_ns=670000 max_ns=960000 variance_ns2=12681632653 ops_per_second=1243 active_lines=1 retained_archives=0
+benchmark_schema=obsidian.process-startup-benchmark.v1 warmup=10 python=3.15.2
+benchmark=process_startup_empty iterations=50 samples=7 mean_ns=7073869 min_ns=6145733 max_ns=7856652 variance_ns2=359496729416 ops_per_second=141
+benchmark=process_startup_logger iterations=50 samples=7 mean_ns=5453369 min_ns=5102695 max_ns=6048795 variance_ns2=99994570076 ops_per_second=183
+benchmark_schema=obsidian.process-memory-benchmark.v1 python=3.15.2 platform=darwin
+benchmark=memory_empty_peak_rss samples=7 mean_rss_bytes=1818624 min_rss_bytes=1818624 max_rss_bytes=1818624 variance_rss2=0
+benchmark=memory_bounded_peak_rss samples=7 mean_rss_bytes=2651867 min_rss_bytes=2637824 max_rss_bytes=2654208 variance_rss2=32869647 probe=bounded_memory events=50000 capacity=128 retained=128 dropped=49872
+benchmark=memory_failing_peak_rss samples=7 mean_rss_bytes=2490368 min_rss_bytes=2490368 max_rss_bytes=2490368 variance_rss2=0 probe=failing_sink events=50000 writes=50000 failures=50000
+benchmark=memory_slow_peak_rss samples=7 mean_rss_bytes=2483346 min_rss_bytes=2473984 max_rss_bytes=2490368 variance_rss2=65739295 probe=slow_sink events=10000 delay_iterations=200 writes=10000 retained=0

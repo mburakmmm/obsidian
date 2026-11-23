@@ -534,12 +534,14 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] P2: Nested alanlar için tipli builder, snapshot, bütçe, redaction ve schema tasarımı ADR-0022'de kaydedildi.
 - [x] P3: README release rozeti son kararlı sürüme yöneliyor.
 - Doğrulama: [Üç platformlu CI](https://github.com/mburakmmm/obsidian/actions/runs/45252279664) beş başarılı iş bildirdi. NOX 2.1.0 macOS işi hiçbir adım çalıştırmadan iptal edildi. Yerel macOS ARM64 paket süiti LLVM/QBE'de 22/22 ve dokuz örnekle geçti.
+- Phase 14 kapanış commit'i `ad5a284` aynı kodu [altı başarılı CI işiyle](https://github.com/mburakmmm/obsidian/actions/runs/45253588500) doğruladı.
 
 ## Phase 15 — MemorySink ring buffer geçişi
 
 - [x] Dolu sink'te liste kaydırma yerine en eski slotu değiştir. Girdi snapshot'ını eviction öncesinde al.
 - [x] FIFO, pozitif/negatif indeks sınırları, wrap-around, kapasite bir, kopya izolasyonu ve close eşdeğerliği eski/yeni sink ile dört yerel derleyici/backend kombinasyonunda geçti. Tasarım ADR-0023'te.
-- [ ] NOX 2.1.0 ve 2.2.38, LLVM/QBE paket süitlerini çalıştır. Üretim ring benchmark'ını temiz commit'te ölç.
+- [x] Dolu sink'te clone doğrulaması başarısız olursa FIFO ve drop sayacı korunuyor. Regresyon dört yerel kombinasyonda geçti.
+- [x] NOX 2.1.0 ve 2.2.38 LLVM/QBE yerel paket süitleri 23/23 geçti. Temiz `5d3b2bd` üretim ring benchmark'ının [LLVM ve QBE çıktısı](docs/benchmarks/nox-2.2.38-5d3b2bd.txt) ve [CI koşusu](https://github.com/mburakmmm/obsidian/actions/runs/45267529277) kayıtlı.
 
 ---
 

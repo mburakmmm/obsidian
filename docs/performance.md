@@ -173,6 +173,18 @@ The benchmark-only ring compares the saturated write path at the same capacity w
 | 128 | 483 → 154 | 529 → 204 |
 | 2,048 | 6,360 → 178 | 5,259 → 193 |
 
-At large capacity, overwriting the head avoids shifting the retained list. The prototype measures the saturated write path. A production change still needs equivalence across public indexing, snapshots, writes after close, allocation failures and capacity boundaries. No timing budget or cross-platform speedup is inferred from this host.
+At large capacity, overwriting the head avoids shifting the retained list. The prototype measured only the saturated write path. No timing budget or cross-platform speedup is inferred from this host.
 
 Full stress passed three rounds of 40,000 events per path and backend, keeping four owned archives and 19,600 retained bytes per round. No application records or sentinel values are included in the report.
+
+## Production MemorySink ring
+
+On clean commit `5d3b2bd12259e88e73034f7a70b520be85cb9a55`, the checksum-verified NOX 2.2.38 compiler ran `bash scripts/run-benchmarks.sh llvm` and then the QBE equivalent on Apple M4 ARM64 (Darwin 27.2.0). Both complete harnesses passed. The saturated-write fixture retained the same warm-up, sample count, iterations and accounting checks. It now times the production sink. [Complete structured output](benchmarks/nox-2.2.38-5d3b2bd.txt)
+
+| Capacity | LLVM mean (ns/write) | QBE mean (ns/write) |
+|---|---:|---:|
+| 8 | 123 | 158 |
+| 128 | 130 | 158 |
+| 2,048 | 139 | 169 |
+
+The ranges overlap across capacities on this host. The fixture measures writes with record cloning and saturated eviction. It excludes snapshot traversal and logger fan-out.
