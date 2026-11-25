@@ -551,7 +551,8 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] 2.2.70 opt-in `TerminalSink` eklendi. LLVM/QBE stdout sıralaması, maskelenmiş çıktı, lifecycle ve kapalı stdout hata yolunu doğruladı.
 - [x] Liste büyümesi ve task receiver iptali LLVM/QBE'de doğrulandı. `ThreadChannel.recv` iptalde sıfır döndü, `try_send` ve süreli join reddedildi. Async no-go güncellendi.
 - [x] Doğrulanmış macOS ARM64 arşivleriyle 2.1.0 ve 2.2.70 LLVM/QBE ayrı ayrı 23/23 paket testi, örnekler ve lock kontrolü geçti. Deterministik SBOM doğrulandı.
-- [ ] Üç platformlu CI koşusunun sonucunu kaydet.
+- [x] Nyx, Aether ve Quartz örnekleri, registry temiz kurulumu ve tam dosya/rotasyon stres testi yerelde 2.2.70 LLVM/QBE ile geçti.
+- [ ] Yeni bir Obsidian etiketi oluşturmadan önce [üç platformlu 2.2.70 CI koşusunun](https://github.com/mburakmmm/obsidian/actions/runs/45588661608) tüm işlerini doğrula.
 
 ---
 

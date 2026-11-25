@@ -188,3 +188,14 @@ On clean commit `5d3b2bd12259e88e73034f7a70b520be85cb9a55`, the checksum-verifie
 | 2,048 | 139 | 169 |
 
 The ranges overlap across capacities on this host. The fixture measures writes with record cloning and saturated eviction. It excludes snapshot traversal and logger fan-out.
+
+## NOX 2.2.70 qualification
+
+On clean commit `8327a2a785ec535cba1048f0f3580077b3e4c266`, the full benchmark and full file stress harnesses passed with the checksum-verified NOX 2.2.70 release on Apple M4 ARM64 (Darwin 27.2.0). The harness ran LLVM before QBE. The workloads and warm-up/sample policies match the production ring section.
+
+| Workload | LLVM mean | QBE mean |
+|---|---:|---:|
+| JSONL encoding, ns/event | 4,428 | 7,500 |
+| Saturated MemorySink at capacity 2,048, ns/write | 78 | 139 |
+
+JSONL retained 309 encoded bytes per normal event. All three stress rounds per backend kept exactly four owned archives and 19,600 total retained bytes. Each backend processed 120,000 append and 120,000 rotation events. Timing is a local observation.

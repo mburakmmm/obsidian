@@ -14,6 +14,8 @@ The release tag resolves to `4dc061f8c8443f8575092c2652d1109b6f4697e9`. Checksum
 | Public terminal API on 2.2.70 | Opt-in stdout `TerminalSink` with error propagation and real flush. The legacy core remains usable with 2.1.0. |
 | Filesystem and stderr | No applicable public stderr write, no-follow open or stable-storage sync was found. The existing file and rotation contract applies. |
 
+Local packaged consumers passed 23 behavioral files with 486 assertion sites on NOX 2.1.0 and 2.2.70, each with LLVM and QBE. The separate owned-worker probe is skipped on 2.1.0 QBE because that code generator rejects the fixture. Nyx v0.24.0, Aether v0.9.0 and Quartz v0.9.15 probes and examples passed locally on both 2.2.70 backends. Installing the published `v1.1.0` through noxpkg resolved the expected `d3f189f` commit and passed the stable API, schema, import and version probes on both backends.
+
 See the [upstream version range](https://github.com/mburakmmm/nox-lang/compare/v2.2.38...v2.2.70), [framework audit](https://github.com/mburakmmm/nox-lang/blob/v2.2.70/project/limitasyon-kaydi-2026-11.md), and [ADR-0011](decisions/0011-async-dispatch-no-go.md).
 
 ## Historical v1.0.0 toolchain
