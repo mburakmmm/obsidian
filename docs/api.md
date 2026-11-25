@@ -78,6 +78,15 @@ The TRACE convenience method is named `trace_event`. At the pinned compiler revi
 
 `MemorySink.record_at(0)` reads the oldest retained record and `snapshot()` returns retained records in FIFO order. The sink grows as records arrive up to capacity, then overwrites the oldest slot. Writes and reads clone their records. Closing rejects future writes and flushes while retaining the snapshot for inspection.
 
+On NOX 2.2.70, the optional `obsidian.sinks.terminal.TerminalSink(name, format_kind)` writes synchronously to stdout through `nox.terminal`. Register it with `Logger.add_sink` and use either the text or JSONL format constant. It exposes a sanitized write error and flushes buffered NOX `print` output when flushed. The default console path stays compatible with NOX 2.1.0.
+
+```nox
+from obsidian.sink_format import FORMAT_TEXT
+from obsidian.sinks.terminal import TerminalSink
+
+logger.add_sink(TerminalSink("stdout", FORMAT_TEXT))
+```
+
 `RedactionPolicy(additional_keys)` extends the fixed case-insensitive denylist with copied, validated application keys. `DefaultRedactor` masks scalar fields/context plus assignments, HTTP credential headers, bearer tokens, URL userinfo and sensitive query parameters. Nested values are deliberately unsupported. Rotation uses the same formatter/redaction boundary; future exception and async records must enter it as well. See `docs/security.md` and ADR-0008 for limitations.
 
 ## Stable-candidate context and configuration

@@ -545,6 +545,16 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 ---
 
+## Phase 16 — NOX 2.2.70 entegrasyonu
+
+- [x] 2.2.39–2.2.70 aralığı ve framework limitasyon kaydı tarandı. CI ve release SBOM için 2.2.70 kaynak SHA ve üç arşiv özeti pinlendi.
+- [x] 2.2.70 opt-in `TerminalSink` eklendi. LLVM/QBE stdout sıralaması, maskelenmiş çıktı, lifecycle ve kapalı stdout hata yolunu doğruladı.
+- [x] Liste büyümesi ve task receiver iptali LLVM/QBE'de doğrulandı. `ThreadChannel.recv` iptalde sıfır döndü, `try_send` ve süreli join reddedildi. Async no-go güncellendi.
+- [x] Doğrulanmış macOS ARM64 arşivleriyle 2.1.0 ve 2.2.70 LLVM/QBE ayrı ayrı 23/23 paket testi, örnekler ve lock kontrolü geçti. Deterministik SBOM doğrulandı.
+- [ ] Üç platformlu CI koşusunun sonucunu kaydet.
+
+---
+
 ## 18. Her görev için zorunlu çalışma şablonu
 
 Yeni bir implementasyon görevine başlamadan önce aşağıdaki blok issue/PR/çalışma notuna kopyalanır:

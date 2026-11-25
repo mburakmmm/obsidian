@@ -55,3 +55,9 @@ Local macOS ARM64 probes on both hosted backends transferred a class payload and
 4. Hosted LLVM and QBE probes cover real producer overlap, enqueue/close races, exact counters, timeout followed by join, and cancellation while blocked. Repeat tests under load before enabling a public queue.
 
 The owned-worker dispatcher test exercises synchronous logging within two independent workers. It does not use a queue of log records.
+
+## NOX 2.2.70 follow-up
+
+The 2.2.63 task cancellation change wakes a task parked in `Channel.recv`. On 2.2.70, the LLVM and QBE probes caught `CancelledError` and then reused the channel successfully. The separate parked `ThreadChannel[int].recv` experiment returned a scalar zero after cancellation, without throwing. The tagged contract does not guarantee typed interruption for `ThreadChannel`, blocked sends or thread joins. A receiver cannot treat a scalar zero as an unambiguous completion event. `try_send` and a timed `ThreadHandle.join` remain rejected, so the dispatcher remains synchronous.
+
+See the [documented cancellation contract](https://github.com/mburakmmm/nox-lang/blob/v2.2.70/docs/language/concurrency.md#cancellation).

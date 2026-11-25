@@ -1,0 +1,31 @@
+import nox.atomic
+import nox.thread
+import nox.time
+from nox.atomic import AtomicInt
+
+async def receive(channel: ThreadChannel[int]) -> int:
+    handle: int = await channel.recv()
+    ready: AtomicInt = nox.atomic.from_int_handle(handle)
+    ready.increment()
+    try:
+        return await channel.recv()
+    except CancelledError:
+        return -1
+
+async def probe() -> None:
+    channel: ThreadChannel[int] = ThreadChannel[int](1)
+    ready: AtomicInt = nox.atomic.new_int(0)
+    worker: ThreadHandle[int] = nox.thread.start(receive, channel)
+    await channel.send(ready.handle)
+    deadline: int = nox.time.boot_ms() + 1000
+    while ready.load() == 0 and nox.time.boot_ms() < deadline:
+        nox.time.sleep_ms(1)
+    if ready.load() == 0:
+        raise ValueError("thread receiver did not start")
+    nox.time.sleep_ms(20)
+    worker.cancel()
+    result: int = await worker.join()
+    ready.free()
+    print(result)
+
+await spawn probe()

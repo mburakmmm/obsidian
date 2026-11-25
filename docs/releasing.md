@@ -33,7 +33,7 @@ The `Release` workflow:
 1. Reuses the complete CI matrix at the tagged commit.
 2. Verifies tag, manifest, changelog, license and clean checkout alignment.
 3. Creates a draft GitHub Release.
-4. Attaches a CycloneDX 1.5 package SBOM from checksum-verified NOX 2.2.38. The generator verifies identical compiler output across two invocations and adds the validated manifest version when the compiler omits it.
+4. Attaches a CycloneDX 1.5 package SBOM from checksum-verified NOX 2.2.70. The generator verifies identical compiler output across two invocations and adds the validated manifest version when the compiler omits it.
 5. Publishes stable tags as latest releases and hyphenated tags as prereleases.
 
 After the exact tag passes the matrix, submit it from the trusted local operator session:

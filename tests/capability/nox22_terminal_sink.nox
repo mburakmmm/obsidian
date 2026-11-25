@@ -1,0 +1,29 @@
+import nox.test
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.sink_error import SinkError
+from obsidian.sink_format import FORMAT_TEXT
+from obsidian.sinks.terminal import TerminalSink
+
+def closed_flush_rejected(sink: TerminalSink) -> bool:
+    try:
+        sink.flush()
+        return False
+    except SinkError as e:
+        return e.message == "terminal sink is closed"
+
+sink: TerminalSink = TerminalSink("terminal", FORMAT_TEXT)
+clock: FakeClock = FakeClock(1700000000123)
+logger: Logger = Logger("service.terminal", INFO, clock)
+logger.add_sink(sink)
+print("before")
+fields: list[LogField] = [LogField("token", obsidian.fields.int_value(1234))]
+nox.test.assert_true(logger.info("hello", fields), "terminal dispatch succeeds")
+logger.flush()
+logger.close()
+sink.close()
+nox.test.assert_true(sink.is_closed() and sink.write_count() == 1 and closed_flush_rejected(sink), "terminal lifecycle is stable")
+print("after")

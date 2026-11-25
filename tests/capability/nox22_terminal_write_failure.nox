@@ -1,0 +1,16 @@
+import nox.test
+from obsidian.level import INFO
+from obsidian.record import LogRecord
+from obsidian.sink_error import SinkError
+from obsidian.sink_format import FORMAT_TEXT
+from obsidian.sinks.terminal import TerminalSink
+
+def rejects_write(sink: TerminalSink) -> bool:
+    try:
+        sink.write(LogRecord(0, INFO, "service.terminal", "sample", [], []))
+        return False
+    except SinkError as e:
+        return e.message == "terminal sink write failed"
+
+sink: TerminalSink = TerminalSink("closed-fd", FORMAT_TEXT)
+nox.test.assert_true(rejects_write(sink) and sink.write_count() == 0, "stdout write failure is sanitized and uncounted")

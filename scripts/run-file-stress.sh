@@ -56,6 +56,7 @@ compiler_version="$("$noxc_bin" --version 2>&1)"
 case "$compiler_version" in
   "noxc 2.1.0") compiler_source=fd107b922c67a804520dc30f849039d977542f6c ;;
   "noxc 2.2.38") compiler_source=7f879fe0ecb972dc9994ee1e8f420d4aaa0cdd9a ;;
+  "noxc 2.2.70") compiler_source=4dc061f8c8443f8575092c2652d1109b6f4697e9 ;;
   *) compiler_source=unknown ;;
 esac
 source_commit="$(git -C "$project_root" rev-parse HEAD)"

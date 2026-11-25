@@ -20,17 +20,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [v2.1.0, v2.2.38]
+        version: [v2.1.0, v2.2.70]
         platform:
           - os: macos-15
             asset: macos-arm64
-            candidate_sha256: 7e973be6020fb908fed3d5194b87bff59ce5b4a0194cb81dee78fd7ff6abfcca
+            candidate_sha256: 0bcf719d1a5207e3470d8461f203b56ca086d04baaa2858cbdc6081ccebea7d1
           - os: ubuntu-latest
             asset: linux-x64
-            candidate_sha256: 66cc746dcd0640e596283f13b00758d9acb9ddf2761d89204105ff51b308c546
+            candidate_sha256: 1920366b080bffaaf8dabef6ed4a37cd1ad4230c5b96a3b0241cba6850427b76
           - os: ubuntu-24.04-arm
             asset: linux-arm64
-            candidate_sha256: 12cc0dbb5edcacd2b7d618465d58a8f7f5301721e01c59f007670cb0c5a00982
+            candidate_sha256: b193478ba556125b3b8bb6b8ab56a6924aeeecbdd123c5819d2287c137d11bf6
     runs-on: ${{ matrix.platform.os }}
     timeout-minutes: 25
     steps:
@@ -63,7 +63,7 @@ jobs:
           done
           test "$downloaded" = true
           shasum -a 256 -c "${stage}.tar.gz.sha256"
-          if [[ "$NOX_VERSION" == v2.2.38 ]]; then
+          if [[ "$NOX_VERSION" == v2.2.70 ]]; then
             printf '%s  %s\n' "$CANDIDATE_SHA256" "$archive" | shasum -a 256 -c -
           fi
           tar xzf "${stage}.tar.gz"
@@ -78,7 +78,7 @@ jobs:
           test "$version_output" = "noxc ${NOX_VERSION#v}"
 
       - name: Format check
-        if: matrix.version == 'v2.2.38'
+        if: matrix.version == 'v2.2.70'
         shell: bash
         run: |
           set -euo pipefail
@@ -112,15 +112,15 @@ jobs:
         shell: bash
         run: bash scripts/run-async-capability-audit.sh
 
-      - name: Check shared-spawn lint, path policy and nanosecond clock
-        if: matrix.version == 'v2.2.38'
+      - name: Check shared-spawn lint, paths, clock, list growth and terminal sink
+        if: matrix.version == 'v2.2.70'
         shell: bash
         run: |
           OBSIDIAN_NOX22_PROBES=1 bash scripts/run-package-suite.sh llvm
           OBSIDIAN_NOX22_PROBES=1 bash scripts/run-package-suite.sh qbe
 
       - name: Verify deterministic package SBOM
-        if: matrix.version == 'v2.2.38'
+        if: matrix.version == 'v2.2.70'
         shell: bash
         run: bash scripts/generate-release-sbom.sh > /dev/null
 
@@ -154,7 +154,11 @@ jobs:
           set -euo pipefail
           test_files="$(find tests -name '*_test.nox' -type f | wc -l | tr -d ' ')"
           assertions="$(find tests -name '*_test.nox' -type f -print0 | xargs -0 grep -ho 'nox\.test\.assert_[a-z_]*' | wc -l | tr -d ' ')"
-          capability_probes="$(find tests/capability -name 'async_*.nox' -type f | wc -l | tr -d ' ')"
+          if [[ "$NOX_VERSION" == v2.1.0 ]]; then
+            capability_probes=7
+          else
+            capability_probes=8
+          fi
           ecosystem_probes="$(find tests/ecosystem -name '*_probe.nox' -type f | wc -l | tr -d ' ')"
           ecosystem_checks="$(grep -RhoE '(nox\.test\.assert_[a-z_]*|capture\.assert_[a-z_]*)' tests/ecosystem | wc -l | tr -d ' ')"
           {

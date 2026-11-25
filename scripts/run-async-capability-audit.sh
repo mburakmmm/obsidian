@@ -76,24 +76,31 @@ expect_exact_run qbe "$capability_root/async_qbe_scalar_channel.nox" "1 1"
 overlap_result="not-run"
 expect_bounded_overlap_run llvm "$capability_root/async_worker_overlap.nox"
 llvm_overlap="$overlap_result"
-case "$("$noxc_bin" --version 2>&1)" in
+noxc_version="$("$noxc_bin" --version 2>&1)"
+case "$noxc_version" in
   "noxc 2.1.0")
     expect_check_failure "$capability_root/async_thread_cancel.nox" "no method 'cancel'"
     expect_run_failure qbe "$capability_root/async_record_channel.nox" "'ThreadChannel' element type"
     expect_run_failure llvm "$capability_root/async_sync_send.nox" "codegen:"
     echo "async capability audit: decision=no-go llvm-overlap=$llvm_overlap qbe-scalar-transfer=pass"
     ;;
-  "noxc 2.2.38")
+  "noxc 2.2.38"|"noxc 2.2.70")
     expect_check_failure "$capability_root/async_sync_send.nox" "'send' suspends the task"
     expect_exact_run qbe "$capability_root/async_record_channel.nox" "7"
     expect_bounded_overlap_run qbe "$capability_root/async_worker_overlap.nox"
     for backend in llvm qbe; do
-      expect_run_failure "$backend" "$capability_root/async_thread_cancel.nox" "deadlock detected"
+      if [[ "$noxc_version" == "noxc 2.2.70" ]]; then
+        expect_exact_run "$backend" "$capability_root/async_task_recv_cancel.nox" "-1 7"
+        expect_exact_run "$backend" "$capability_root/async_thread_recv_cancel.nox" "0"
+        printf 'recv cancellation: backend=%s task=typed-cancel thread=scalar-zero\n' "$backend"
+      else
+        expect_run_failure "$backend" "$capability_root/async_thread_cancel.nox" "deadlock detected"
+      fi
     done
     echo "async capability audit: decision=no-go llvm-overlap=$llvm_overlap qbe-overlap=$overlap_result both-class-transfer=pass"
     ;;
   *)
-    echo "async capability audit: select a supported audit compiler (2.1.0 or 2.2.38)" >&2
+    echo "async capability audit: select a supported audit compiler (2.1.0, 2.2.38 or 2.2.70)" >&2
     exit 2
     ;;
 esac

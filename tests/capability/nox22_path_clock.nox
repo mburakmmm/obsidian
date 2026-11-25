@@ -39,3 +39,10 @@ start_ns: int = nox.time.monotonic_ns()
 nox.time.sleep_ms(2)
 end_ns: int = nox.time.monotonic_ns()
 nox.test.assert_true(end_ns > start_ns, "monotonic nanosecond clock advances")
+
+records: list[int] = [0]
+alias: list[int] = records
+for index in range(1, 4096):
+    records.append(index)
+nox.test.assert_eq_int(len(alias), 4096, "hosted list aliases observe backing storage growth")
+nox.test.assert_eq_int(alias[4095], 4095, "aliased tail is valid after growth")

@@ -1,0 +1,23 @@
+async def receive(channel: Channel[int], entered: Channel[int]) -> int:
+    await entered.send(1)
+    try:
+        return await channel.recv()
+    except CancelledError:
+        return -1
+
+async def probe() -> None:
+    queue: Channel[int] = Channel[int](1)
+    entered: Channel[int] = Channel[int](1)
+    worker: Task[int] = spawn receive(queue, entered)
+    await entered.recv()
+    if worker.wait(20):
+        raise ValueError("receiver completed before cancellation")
+    worker.cancel()
+    if not worker.wait(2000):
+        raise ValueError("cancelled receiver did not complete")
+    result: int = await worker
+    await queue.send(7)
+    remaining: int = await queue.recv()
+    print(result, remaining)
+
+await spawn probe()

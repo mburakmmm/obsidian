@@ -4,9 +4,14 @@ All notable changes are recorded here. Versions follow Semantic Versioning, incl
 
 ## [Unreleased]
 
+### Added
+
+- Add an opt-in NOX 2.2.70 stdout terminal sink with raw writes, explicit flush and sanitized write failures.
+
 ### Changed
 
 - Use an in-place ring cursor for bounded `MemorySink` storage. Saturated writes replace the oldest slot without shifting retained records. Preserve logical FIFO indexing, owned copies and the synchronous sink lifecycle.
+- Use checksum-pinned NOX 2.2.70 in CI and release tooling while retaining the 2.1.0 core consumer lane. Probe blocked task receive cancellation and stable list aliases after growth.
 
 ### Verification and documentation
 

@@ -1,6 +1,20 @@
 # NOX compatibility baseline
 
-Phase 13 selects NOX 2.2.38 for development and release tooling, with 2.1.0 retained as a consumer compatibility lane. The documented synchronous API and JSON schema remain at their v1 contracts.
+Phase 16 selects NOX 2.2.70 for development and release tooling, with 2.1.0 retained for core consumer compatibility. The documented synchronous API and JSON schema remain at their v1 contracts.
+
+## NOX 2.2.70 audit
+
+The release tag resolves to `4dc061f8c8443f8575092c2652d1109b6f4697e9`. Checksums are pinned in CI for macOS ARM64, Linux x64 and Linux ARM64. The macOS archive used locally hashes to `0bcf719d1a5207e3470d8461f203b56ca086d04baaa2858cbdc6081ccebea7d1`.
+
+| Upstream change | Obsidian integration |
+|---|---|
+| 2.2.39–2.2.62 self-hosting, ownership, list storage, codegen and formatter changes | Hosted list growth through an alias is a capability test. MemorySink keeps its portable ring implementation and owned record snapshots. |
+| 2.2.63 framework fixes | Test typed cancellation of parked task-channel receivers and channel reuse. The parked thread-channel probe reports zero on both local backends. The documented lifecycle gaps and missing enqueue/join APIs keep async disabled. |
+| 2.2.64–2.2.70 runtime and self-hosted type checking, HPy removal | Pin the stable compiler and validate the downstream package and release SBOM. Obsidian has no HPy dependency and no raw runtime-symbol integration. |
+| Public terminal API on 2.2.70 | Opt-in stdout `TerminalSink` with error propagation and real flush. The legacy core remains usable with 2.1.0. |
+| Filesystem and stderr | No applicable public stderr write, no-follow open or stable-storage sync was found. The existing file and rotation contract applies. |
+
+See the [upstream version range](https://github.com/mburakmmm/nox-lang/compare/v2.2.38...v2.2.70), [framework audit](https://github.com/mburakmmm/nox-lang/blob/v2.2.70/project/limitasyon-kaydi-2026-11.md), and [ADR-0011](decisions/0011-async-dispatch-no-go.md).
 
 ## Historical v1.0.0 toolchain
 

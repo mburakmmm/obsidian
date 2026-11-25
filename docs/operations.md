@@ -26,7 +26,9 @@ Direct construction can call `add_sink_with_filter` for per-sink thresholds and 
 
 Construct `ConsoleSink(name, CONSOLE_STDOUT, FORMAT_TEXT)` or select `FORMAT_JSON`. The target is mandatory. The pinned NOX API only exposes stdout, so `CONSOLE_STDERR` is a declared capability gap and raises `SinkError` during construction.
 
-Each write is synchronous and adds exactly one newline through the selected formatter. `flush()` confirms that prior sink calls returned but cannot flush the process stdio buffer because NOX exposes no such primitive. `close()` is idempotent; write/flush after close raise a stable `SinkError`.
+Each legacy console write is synchronous and adds exactly one newline through the selected formatter. Its `flush()` is logical and keeps the NOX 2.1.0 contract. `close()` is idempotent, and write or flush after close raises a stable `SinkError`.
+
+For NOX 2.2.70, import `TerminalSink` from `obsidian.sinks.terminal` and add it directly to a logger. This opt-in stdout sink uses unbuffered `nox.terminal.write_raw`, which flushes preceding `print` output to preserve ordering. Its own `flush()` flushes NOX's buffered `print` output. On a write failure it raises a fixed `SinkError` and leaves the write counter unchanged. The factory and legacy `ConsoleSink` continue using the existing path. Neither terminal target adds stderr support.
 
 ## File sink
 
@@ -53,7 +55,7 @@ For bounded lifecycle validation, run `bash scripts/run-file-stress.sh <llvm|qbe
 ## Unsupported evidence
 
 - stderr output: no public NOX API.
-- console broken-pipe/write failure: `print` exposes no recoverable error channel.
+- legacy console broken-pipe/write failure: `print` exposes no recoverable error channel. The optional terminal sink exercises a closed stdout descriptor as a write-failure case.
 - disk-full simulation: not executed in the current hermetic CI environment.
 - race-free hostile-directory handling: requires a public no-follow/open-relative primitive or an approved native boundary.
 - cross-process rotation, time-based rotation and durable sync: unsupported/deferred.

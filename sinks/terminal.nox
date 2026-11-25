@@ -1,0 +1,54 @@
+import nox.terminal
+import obsidian.sink_format
+from nox.terminal import TerminalError
+from obsidian.diagnostics import saturating_increment
+from obsidian.record import LogRecord
+from obsidian.sink_error import SinkError
+
+class TerminalSink:
+    _name: str
+    _format_kind: int
+    _writes: int
+    _closed: bool
+
+    def __init__(self, name: str, format_kind: int) -> None:
+        if len(name) == 0:
+            raise ValueError("sink name must not be empty")
+        if not obsidian.sink_format.is_valid_format(format_kind):
+            raise ValueError("console sink format is invalid")
+        self._name = name
+        self._format_kind = format_kind
+        self._writes = 0
+        self._closed = False
+
+    def sink_name(self) -> str:
+        return self._name
+
+    def write(self, entry: LogRecord) -> None:
+        if self._closed:
+            raise SinkError("terminal sink is closed")
+        try:
+            encoded: str = obsidian.sink_format.encode_record(entry, self._format_kind)
+            nox.terminal.write_raw(encoded)
+        except ValueError:
+            raise SinkError("terminal sink formatting failed")
+        except TerminalError:
+            raise SinkError("terminal sink write failed")
+        self._writes = saturating_increment(self._writes)
+
+    def flush(self) -> None:
+        if self._closed:
+            raise SinkError("terminal sink is closed")
+        nox.terminal.flush()
+
+    def close(self) -> None:
+        self._closed = True
+
+    def is_closed(self) -> bool:
+        return self._closed
+
+    def is_bounded(self) -> bool:
+        return False
+
+    def write_count(self) -> int:
+        return self._writes

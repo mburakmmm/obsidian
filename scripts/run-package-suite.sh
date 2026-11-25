@@ -44,7 +44,12 @@ chmod 500 "$consumer_root/obsidian-file-denied"
 if [[ "${OBSIDIAN_NOX22_PROBES:-0}" == 1 ]]; then
   NOX_HOME="$probe_nox_home" "$noxc_bin" check --backend "$backend" --strict-spawn-shared tests/concurrency/context_isolation_test.nox
   NOX_HOME="$probe_nox_home" "$noxc_bin" run --backend "$backend" tests/capability/nox22_path_clock.nox
-  printf 'NOX 2.2 probes: backend=%s context-lint=pass path-policy=pass clock=pass\n' "$backend"
+  terminal_output="$(NOX_HOME="$probe_nox_home" "$noxc_bin" run --backend "$backend" tests/capability/nox22_terminal_sink.nox 2>"$probe_root/terminal.stderr")"
+  test ! -s "$probe_root/terminal.stderr"
+  test "$terminal_output" = $'before\n2023-11-14T22:13:20.123Z INFO service.terminal token="***" hello\nafter'
+  NOX_HOME="$probe_nox_home" "$noxc_bin" build --backend "$backend" -o "$probe_root/terminal-failure" tests/capability/nox22_terminal_write_failure.nox
+  "$probe_root/terminal-failure" >&-
+  printf 'NOX 2.2 probes: backend=%s context-lint=pass path-policy=pass clock=pass list-growth=pass terminal-capture=pass terminal-error=pass\n' "$backend"
   exit 0
 fi
 

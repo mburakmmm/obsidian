@@ -3,7 +3,7 @@ set -euo pipefail
 
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 noxc_bin="${NOXC:-noxc}"
-test "$("$noxc_bin" --version 2>&1)" = "noxc 2.2.38"
+test "$("$noxc_bin" --version 2>&1)" = "noxc 2.2.70"
 scratch="$(mktemp -d "${TMPDIR:-/tmp}/obsidian-sbom.XXXXXX")"
 trap 'rm -rf "$scratch"' EXIT
 cd "$project_root"
