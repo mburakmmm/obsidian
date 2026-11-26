@@ -558,7 +558,10 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 
 - [x] NOX Claude hook'larının Codex karşılıkları projeye eklendi. RTK strict shell kontrolü, Graphify NOX dizini, ana/alt ajan başlangıcı, kompaksiyon ve sınırlı çıktı boyutu denetimi kapsanıyor.
 - [x] Gerçek post-open dosya yazma hatası için maskeleme, failure counter ve lifecycle regresyon probu eklendi.
-- [ ] Sonraki immutable release ve temiz registry kurulumu doğrulanacak.
+- [x] `v1.2.0` etiketi ve GitHub Release, `7d88b16775ecacfae93e73d8cdf408203776f88e` commit'ine bağlı. [Ana dal CI](https://github.com/mburakmmm/obsidian/actions/runs/45762304282) ve [etiketli Release](https://github.com/mburakmmm/obsidian/actions/runs/45762816791) altışar iş geçti. İndirilen CycloneDX eki yerel üretimle birebir eşleşti. SHA-256 `d32188a4028e2440788327b19394308ed9fcd8e2e283d0c7422754525bbdc7c2`.
+- [x] `noxc publish` güncel registry metadata'sıyla geçti. `scripts/verify-registry-install.sh v1.2.0 1.2.0 7d88b16775ecacfae93e73d8cdf408203776f88e <noxc-version>` temiz kurulumda NOX 2.1.0 ve 2.2.70 ile aynı lock commit'ini çözdü. LLVM ve QBE'de API, schema, import ve sürüm kontrolleri geçti.
+- [x] Paket süiti dört NOX/backend kombinasyonunda 23 dosya ve 486 assertion noktası, ayrıca sekiz POSIX yazma hatası assertion'ı ile geçti. Dört Python hook testi ve NOX 2.2.70 ile her backend'de dosya yolu başına 120.000 kayıtlık tam stres testi geçti. 2.1.0 QBE worker probu codegen kısıtı nedeniyle skip.
+- BLOCKED — Async, kurulu NOX 2.2.87'de de reddedilen `ThreadChannel.try_send` ve süreli `ThreadHandle.join` çağrıları için [ADR-0011](docs/decisions/0011-async-dispatch-no-go.md) kabul koşullarını bekliyor.
 
 ---
 

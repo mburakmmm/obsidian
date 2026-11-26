@@ -16,6 +16,10 @@ The release tag resolves to `4dc061f8c8443f8575092c2652d1109b6f4697e9`. Checksum
 
 Local packaged consumers passed 23 behavioral files with 486 assertion sites on NOX 2.1.0 and 2.2.70, each with LLVM and QBE. The separate owned-worker probe is skipped on 2.1.0 QBE because that code generator rejects the fixture. Nyx v0.24.0, Aether v0.9.0 and Quartz v0.9.15 probes and examples passed locally on both 2.2.70 backends. Installing the published `v1.1.0` through noxpkg resolved the expected `d3f189f` commit and passed the stable API, schema, import and version probes on both backends.
 
+The published `v1.2.0` resolved to `7d88b16775ecacfae93e73d8cdf408203776f88e` in clean noxpkg installs with NOX 2.1.0 and 2.2.70. Stable API, schema, import and version checks passed on LLVM and QBE. The tagged build also ran the eight-assertion post-open file-write rejection probe on Linux and macOS. [Tagged CI and release](https://github.com/mburakmmm/obsidian/actions/runs/45762816791).
+
+An exploratory compile with installed NOX 2.2.87 still rejected `ThreadChannel.try_send` and timeout arguments to `ThreadHandle.join`. Async dispatch remains disabled pending the public lifecycle primitives in ADR-0011.
+
 See the [upstream version range](https://github.com/mburakmmm/nox-lang/compare/v2.2.38...v2.2.70), [framework audit](https://github.com/mburakmmm/nox-lang/blob/v2.2.70/project/limitasyon-kaydi-2026-11.md), and [ADR-0011](decisions/0011-async-dispatch-no-go.md).
 
 ## Historical v1.0.0 toolchain

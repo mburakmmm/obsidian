@@ -14,7 +14,7 @@ Structured, secure logging foundations for the NOX ecosystem.
 
 Obsidian is a small standalone logging library for Nyx, Aether, Nova, Feather, Atlas, Quartz, Rune, Chronos, Ember, VAULT, Pulse and Aura. Those projects may depend on Obsidian; Obsidian core never depends on them.
 
-[`v1.1.0`](https://github.com/mburakmmm/obsidian/releases/tag/v1.1.0) is the current stable release. It uses NOX 2.2.38 for development and release tooling and has verified consumer installs with NOX 2.1.0 and 2.2.38. `AGENTS.md` is the engineering contract and `todo.md` records the roadmap and release evidence.
+[`v1.2.0`](https://github.com/mburakmmm/obsidian/releases/tag/v1.2.0) is the current stable release. It uses NOX 2.2.70 for development and release tooling. Clean noxpkg installs passed on NOX 2.1.0 and 2.2.70 with LLVM and QBE. See [the engineering contract](AGENTS.md), [the roadmap and release evidence](todo.md), and [the Codex hook setup](docs/agent-tools.md).
 
 ## Design priorities
 
