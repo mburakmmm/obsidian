@@ -77,6 +77,15 @@ jobs:
           version_output="$(noxc --version 2>&1)"
           test "$version_output" = "noxc ${NOX_VERSION#v}"
 
+      - name: Verify project agent hooks
+        if: matrix.platform.asset == 'linux-x64' && matrix.version == 'v2.2.70'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m json.tool .codex/hooks.json > /dev/null
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/hooks
+          python3 scripts/hooks/build_graph.py
+
       - name: Format check
         if: matrix.version == 'v2.2.70'
         shell: bash
@@ -166,6 +175,7 @@ jobs:
             echo "- test files: $test_files"
             echo "- assertions: $assertions"
             echo "- skips: 0"
+            echo "- post-open file failure probe: 8 assertion sites per backend (POSIX)"
             if [[ "$NOX_VERSION" == v2.1.0 ]]; then
               echo "- owned-worker dispatch probe: LLVM pass; QBE skipped (2.1.0 code generation rejects the fixture)"
             else

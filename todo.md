@@ -234,7 +234,7 @@ Bu sürümler yayınlanmış sürümler değildir. Bir sonraki sürüme geçiş,
 - [x] Permission denied ve missing directory negatif testleri; open hatası sanitize kategoriyle görünür.
 - [x] Açılış sonrası validation hata yolu writer'ı kapatıyor; normal ve tekrar close testli.
 - [x] `flush` ile `fsync` farkı açık; doğrulanmamış durability iddiası yok.
-- [ ] Disk-full/post-open write failure simülasyonu çalıştırılmadı; eksik kanıt `docs/operations.md` içinde kayıtlı.
+- [x] Post-open write failure Linux/macOS test hattına sıfır POSIX dosya boyutu limitiyle eklendi. Tam disk ve kısmi yazma simülasyonları ayrı, mevcut sınır `docs/operations.md` içinde.
 - [x] Bu fazda rotation/retention uygulanmadı.
 
 ### Phase 3 kapısı
@@ -552,7 +552,13 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] Liste büyümesi ve task receiver iptali LLVM/QBE'de doğrulandı. `ThreadChannel.recv` iptalde sıfır döndü, `try_send` ve süreli join reddedildi. Async no-go güncellendi.
 - [x] Doğrulanmış macOS ARM64 arşivleriyle 2.1.0 ve 2.2.70 LLVM/QBE ayrı ayrı 23/23 paket testi, örnekler ve lock kontrolü geçti. Deterministik SBOM doğrulandı.
 - [x] Nyx, Aether ve Quartz örnekleri, registry temiz kurulumu ve tam dosya/rotasyon stres testi yerelde 2.2.70 LLVM/QBE ile geçti.
-- [ ] Yeni bir Obsidian etiketi oluşturmadan önce [üç platformlu 2.2.70 CI koşusunun](https://github.com/mburakmmm/obsidian/actions/runs/45588661608) tüm işlerini doğrula.
+- [x] [Üç platformlu 2.2.70 CI](https://github.com/mburakmmm/obsidian/actions/runs/45588661608) altı işi geçti. Kapanış commit'i `95b58b1` da [yeşil](https://github.com/mburakmmm/obsidian/actions/runs/45589966284).
+
+## Phase 17 — Release hardening ve Codex araç disiplini
+
+- [x] NOX Claude hook'larının Codex karşılıkları projeye eklendi. RTK strict shell kontrolü, Graphify NOX dizini, ana/alt ajan başlangıcı, kompaksiyon ve sınırlı çıktı boyutu denetimi kapsanıyor.
+- [x] Gerçek post-open dosya yazma hatası için maskeleme, failure counter ve lifecycle regresyon probu eklendi.
+- [ ] Sonraki immutable release ve temiz registry kurulumu doğrulanacak.
 
 ---
 

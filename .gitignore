@@ -3,6 +3,8 @@
 build/
 dist/
 test-results/
+graphify-out/
+.agent-output-audit.jsonl
 *.o
 *.out
 

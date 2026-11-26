@@ -67,6 +67,19 @@ if [[ "$test_output" == *SYNTHETIC_* ]]; then
   exit 1
 fi
 
+case "$(uname -s)" in
+  Darwin|Linux)
+    NOX_HOME="$probe_nox_home" "$noxc_bin" build --backend "$backend" -o "$probe_root/file-write-limit" tests/capability/file_write_limit.nox
+    (
+      ulimit -f 0
+      trap '' XFSZ
+      "$probe_root/file-write-limit"
+    )
+    printf 'post-open file write failure: backend=%s RLIMIT_FSIZE=pass\n' "$backend"
+    ;;
+  *) echo "post-open file write failure: skip (requires POSIX RLIMIT_FSIZE)" ;;
+esac
+
 expected_json='{"timestamp":"2023-11-14T22:13:20.123Z","timestamp_ms":1700000000123,"level":"INFO","logger":"service.auth","message":"request completed","fields":{"status":200,"token":"***","user_id":"u-123"},"context":{"request":"req-42"},"schema_version":"obsidian.log.v1"}'
 expected_console='2023-11-14T22:13:20.123Z INFO service.auth token="***" password=***'
 expected_file='{"timestamp":"2023-11-14T22:13:20.123Z","timestamp_ms":1700000000123,"level":"INFO","logger":"service.file","message":"file event","fields":{"token":"***"},"context":{},"schema_version":"obsidian.log.v1"}'

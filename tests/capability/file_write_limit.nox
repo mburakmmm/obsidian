@@ -1,0 +1,37 @@
+import nox.fs
+import nox.os
+import nox.test
+import obsidian.fields
+from obsidian.clock import FakeClock
+from obsidian.fields import LogField
+from obsidian.level import INFO
+from obsidian.logger import Logger
+from obsidian.record import LogRecord
+from obsidian.sink_error import SinkError
+from obsidian.sink_format import FORMAT_JSON
+from obsidian.sinks.file import FileSink
+from obsidian.sinks.memory import MemorySink
+
+def write_error_is_sanitized(sink: FileSink) -> bool:
+    try:
+        sink.write(LogRecord(0, INFO, "file-limit", "probe", [], []))
+        return False
+    except SinkError as e:
+        return e.message == "file sink write failed"
+
+path: str = "obsidian-file-tests/write-limit.jsonl"
+file: FileSink = FileSink("file-limit", nox.os.current_dir(), path, FORMAT_JSON, False)
+memory: MemorySink = MemorySink("fallback", 1)
+logger: Logger = Logger("file-limit", INFO, FakeClock(0))
+logger.add_sink(file)
+logger.add_sink(memory)
+fields: list[LogField] = [LogField("token", obsidian.fields.int_value(1234))]
+nox.test.assert_true(not logger.info("probe", fields), "logger reports a post-open file write failure")
+nox.test.assert_eq_int(logger.diagnostics_snapshot().sink_write_failures(), 1, "one failure is accounted")
+nox.test.assert_eq_int(file.write_count(), 0, "failed writes are not counted")
+nox.test.assert_true(write_error_is_sanitized(file), "file write failure has a fixed category")
+nox.test.assert_eq_int(memory.count(), 1, "other sinks still receive the record")
+nox.test.assert_eq_str(memory.record_at(0).field_at(0).value.text_value, "***", "other sinks receive masked fields")
+logger.close()
+nox.test.assert_true(file.is_closed() and memory.is_closed(), "failure does not prevent close")
+nox.test.assert_eq_int(nox.fs.metadata(path).size, 0, "zero file size limit leaves no partial record")

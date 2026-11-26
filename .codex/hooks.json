@@ -1,0 +1,18 @@
+{
+  "description": "Obsidian RTK and Graphify project hooks",
+  "hooks": {
+    "SessionStart": [
+      {"hooks": [{"type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/hooks/agent_policy.py\" session", "timeout": 5}]},
+      {"matcher": "compact", "hooks": [{"type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/hooks/agent_policy.py\" compact", "timeout": 5}]}
+    ],
+    "SubagentStart": [
+      {"hooks": [{"type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/hooks/agent_policy.py\" session", "timeout": 5}]}
+    ],
+    "PreToolUse": [
+      {"matcher": "Bash|Read|Grep|Glob|mcp__filesystem__(read_.*|search_files|list_directory)", "hooks": [{"type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/hooks/agent_policy.py\" pre", "timeout": 5}]}
+    ],
+    "PostToolUse": [
+      {"matcher": "Bash|Read|Grep|Glob|mcp__filesystem__(read_.*|search_files|list_directory)", "hooks": [{"type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/hooks/agent_policy.py\" audit", "timeout": 5}]}
+    ]
+  }
+}

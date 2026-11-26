@@ -4,6 +4,13 @@ All notable changes are recorded here. Versions follow Semantic Versioning, incl
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-26
+
+### Verification and tooling
+
+- Add strict project-local RTK/Graphify hooks for trusted Codex agents, including subagents.
+- Verify post-open file write rejection with a zero POSIX file size limit.
+
 ### Added
 
 - Add an opt-in NOX 2.2.70 stdout terminal sink with raw writes, explicit flush and sanitized write failures.

@@ -56,6 +56,6 @@ For bounded lifecycle validation, run `bash scripts/run-file-stress.sh <llvm|qbe
 
 - stderr output: no public NOX API.
 - legacy console broken-pipe/write failure: `print` exposes no recoverable error channel. The optional terminal sink exercises a closed stdout descriptor as a write-failure case.
-- disk-full simulation: not executed in the current hermetic CI environment.
+- Full disk and partial-write simulation: the package harness uses a zero POSIX file size limit to exercise a real write failure after open. It checks fixed errors, counters, continued masked fan-out, clean close and an empty output file. This covers a rejected write with no bytes committed. It does not simulate a full filesystem or a short successful write followed by failure.
 - race-free hostile-directory handling: requires a public no-follow/open-relative primitive or an approved native boundary.
 - cross-process rotation, time-based rotation and durable sync: unsupported/deferred.

@@ -6,6 +6,12 @@
 > **Reference inspiration:** Loguru's ergonomic API; not a clone or API-compatibility promise.
 > **Applies to:** Every AI coding agent, contributor, test author, reviewer, and release workflow working in this repository.
 
+## Project agent tools
+
+Use RTK for Codex shell discovery and high-volume test runs in this repository, including subagents. Prefer `rtk rg`, `rtk read`, `rtk git`, `rtk gh` and `rtk run`. Use `rtk bypass <command>` when raw bytes, exact source ranges, machine-readable output or complete diagnostics matter. Preserve the underlying exit status.
+
+Build or refresh the local NOX symbol graph with `python3 scripts/hooks/build_graph.py`. Use `graphify query` or `graphify explain` to orient source investigation and verify exact code before changes. Trusted project hooks apply these conventions at session start, subagent start and after compaction. See [agent tools](docs/agent-tools.md) for setup, scope and verification.
+
 ## 0. Mission and non-negotiable principles
 
 Build **Obsidian**, a small, standalone, production-grade NOX logging library that offers a convenient developer API and robust structured, secure, configurable output. Obsidian is the shared logging foundation for Nyx, Aether, Nova, Feather, Atlas, Quartz, Rune, Chronos, Ember, VAULT and later Pulse. It **must not depend on those frameworks**. They may depend on Obsidian.
