@@ -61,3 +61,7 @@ The owned-worker dispatcher test exercises synchronous logging within two indepe
 The 2.2.63 task cancellation change wakes a task parked in `Channel.recv`. On 2.2.70, the LLVM and QBE probes caught `CancelledError` and then reused the channel successfully. The separate parked `ThreadChannel[int].recv` experiment returned a scalar zero after cancellation, without throwing. The tagged contract does not guarantee typed interruption for `ThreadChannel`, blocked sends or thread joins. A receiver cannot treat a scalar zero as an unambiguous completion event. `try_send` and a timed `ThreadHandle.join` remain rejected, so the dispatcher remains synchronous.
 
 See the [documented cancellation contract](https://github.com/mburakmmm/nox-lang/blob/v2.2.70/docs/language/concurrency.md#cancellation).
+
+## NOX 2.2.107 follow-up
+
+The same audit passed on both hosted backends using the checksum-verified macOS ARM64 release. It observed class transfer and overlapping workers, typed cancellation for a parked `Channel.recv`, and a scalar zero from a cancelled `ThreadChannel[int].recv`. The compile-fail fixtures still rejected `try_send` and timed `join`. The no-go decision remains in force. [Tagged thread API](https://github.com/mburakmmm/nox-lang/blob/v2.2.107/docs/stdlib/thread.md).

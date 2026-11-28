@@ -1,6 +1,16 @@
 # NOX compatibility baseline
 
-Phase 16 selects NOX 2.2.70 for development and release tooling, with 2.1.0 retained for core consumer compatibility. The documented synchronous API and JSON schema remain at their v1 contracts.
+NOX 2.2.107 is pinned for development and release tooling. Core consumer CI also runs on 2.1.0. The documented synchronous API and JSON schema use their v1 contracts.
+
+## NOX 2.2.107 audit
+
+The release tag resolves to `37e80cf9f0e273da4f612da0bb1f1c01c9473c6f`. CI pins archive digests for macOS ARM64, Linux x64 and Linux ARM64. The macOS archive used locally hashes to `f47586481d269953d21c64fd39543c92a19db0433d8922aa8f8dd7a96055774e`.
+
+The tagged `log`, `json`, `fs`, `os`, `time`, `terminal`, `thread`, `atomic`, concurrency and architecture documentation used by Obsidian matches the 2.2.70 revision. The span includes the public `bytes` type, length-aware string comparisons, Host ABI changes and additional self-hosted checker coverage. Obsidian uses its existing public string-based logging and filesystem APIs. Runtime internals and the Host ABI are outside its dependency boundary. [Upstream changes](https://github.com/mburakmmm/nox-lang/compare/v2.2.70...v2.2.107).
+
+The compiler still rejects `ThreadChannel.try_send` and timeout arguments to `ThreadHandle.join`. Async dispatch remains disabled under [ADR-0011](decisions/0011-async-dispatch-no-go.md).
+
+Installing the published Obsidian `v1.2.0` into a fresh consumer with NOX 2.2.107 resolved `7d88b16775ecacfae93e73d8cdf408203776f88e`. Stable API, schema, import, version and registry metadata checks passed with LLVM and QBE.
 
 ## NOX 2.2.70 audit
 

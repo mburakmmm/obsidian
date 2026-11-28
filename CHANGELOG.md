@@ -4,6 +4,11 @@ All notable changes are recorded here. Versions follow Semantic Versioning, incl
 
 ## [Unreleased]
 
+### Verification and tooling
+
+- Pin NOX 2.2.107 for CI, release SBOM generation and benchmark provenance. Keep the NOX 2.1.0 consumer lane.
+- Recheck async cancellation and worker capabilities on NOX 2.2.107. Async dispatch remains disabled while non-blocking send and timed worker completion are unavailable.
+
 ## [1.2.0] - 2026-11-26
 
 ### Verification and tooling

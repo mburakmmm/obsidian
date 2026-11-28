@@ -2,7 +2,7 @@
 
 Status: Phase 10 benchmark foundation; no performance guarantee.
 
-Obsidian performance claims require a recorded environment and exact workload. Run the current in-process suite with the pinned NOX 2.2.70 compiler:
+Obsidian performance claims require a recorded environment and exact workload. Run the current in-process suite with the pinned NOX 2.2.107 compiler:
 
 ```sh
 bash scripts/run-benchmarks.sh llvm

@@ -563,6 +563,15 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] Paket süiti dört NOX/backend kombinasyonunda 23 dosya ve 486 assertion noktası, ayrıca sekiz POSIX yazma hatası assertion'ı ile geçti. Dört Python hook testi ve NOX 2.2.70 ile her backend'de dosya yolu başına 120.000 kayıtlık tam stres testi geçti. 2.1.0 QBE worker probu codegen kısıtı nedeniyle skip.
 - BLOCKED — Async, kurulu NOX 2.2.87'de de reddedilen `ThreadChannel.try_send` ve süreli `ThreadHandle.join` çağrıları için [ADR-0011](docs/decisions/0011-async-dispatch-no-go.md) kabul koşullarını bekliyor.
 
+## Phase 18 — NOX 2.2.107 araç zinciri
+
+- [x] NOX 2.2.70–2.2.107 değişiklikleri ve ilgili public stdlib sözleşmeleri incelendi. CI ve release SBOM üretimi için `37e80cf9f0e273da4f612da0bb1f1c01c9473c6f` kaynak revizyonu ve üç platform arşivinin SHA-256 özetleri kaydedildi. NOX 2.1.0 tüketici hattı korunuyor.
+- [x] `bash scripts/run-async-capability-audit.sh`, `OBSIDIAN_NOX22_PROBES=1 bash scripts/run-package-suite.sh <llvm|qbe>` ve `bash scripts/generate-release-sbom.sh` doğrulanmış macOS ARM64 arşiviyle geçti. Task receive iptali typed, thread receive sonucu scalar zero. Async [ADR-0011](docs/decisions/0011-async-dispatch-no-go.md) koşullarını bekliyor.
+- [x] `bash scripts/run-package-suite.sh <llvm|qbe>` yerelde NOX 2.1.0 ve 2.2.107 ile dört kombinasyonda 23 test dosyası, 486 assertion noktası, sekiz POSIX yazma hatası kontrolü, dokuz örnek ve lock doğrulamasıyla geçti. 2.1.0 QBE ayrı worker probu codegen kısıtı nedeniyle skip.
+- [x] `bash scripts/run-ecosystem-suite.sh <llvm|qbe>` ile Nyx, Aether ve Quartz örnek ve probları geçti. `bash scripts/run-file-stress.sh <llvm|qbe> full` ile backend başına 120.000 append ve 120.000 rotation kaydı işlendi. macOS ARM64, NOX 2.2.107.
+- [x] `OBSIDIAN_VERIFY_REGISTRY_METADATA=1 bash scripts/verify-registry-install.sh v1.2.0 1.2.0 7d88b16775ecacfae93e73d8cdf408203776f88e 2.2.107` izole önbellekte geçti. LLVM ve QBE API, şema, paket importu ve sürüm çıktısını doğruladı.
+- [ ] Yeni CI matrisinin üç platform ve iki NOX sürümünde tamamlandığını doğrula.
+
 ---
 
 ## 18. Her görev için zorunlu çalışma şablonu

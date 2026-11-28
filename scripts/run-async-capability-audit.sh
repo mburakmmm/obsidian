@@ -84,12 +84,12 @@ case "$noxc_version" in
     expect_run_failure llvm "$capability_root/async_sync_send.nox" "codegen:"
     echo "async capability audit: decision=no-go llvm-overlap=$llvm_overlap qbe-scalar-transfer=pass"
     ;;
-  "noxc 2.2.38"|"noxc 2.2.70")
+  "noxc 2.2.38"|"noxc 2.2.70"|"noxc 2.2.107")
     expect_check_failure "$capability_root/async_sync_send.nox" "'send' suspends the task"
     expect_exact_run qbe "$capability_root/async_record_channel.nox" "7"
     expect_bounded_overlap_run qbe "$capability_root/async_worker_overlap.nox"
     for backend in llvm qbe; do
-      if [[ "$noxc_version" == "noxc 2.2.70" ]]; then
+      if [[ "$noxc_version" != "noxc 2.2.38" ]]; then
         expect_exact_run "$backend" "$capability_root/async_task_recv_cancel.nox" "-1 7"
         expect_exact_run "$backend" "$capability_root/async_thread_recv_cancel.nox" "0"
         printf 'recv cancellation: backend=%s task=typed-cancel thread=scalar-zero\n' "$backend"
@@ -100,7 +100,7 @@ case "$noxc_version" in
     echo "async capability audit: decision=no-go llvm-overlap=$llvm_overlap qbe-overlap=$overlap_result both-class-transfer=pass"
     ;;
   *)
-    echo "async capability audit: select a supported audit compiler (2.1.0, 2.2.38 or 2.2.70)" >&2
+    echo "async capability audit: select a supported audit compiler (2.1.0, 2.2.38, 2.2.70 or 2.2.107)" >&2
     exit 2
     ;;
 esac

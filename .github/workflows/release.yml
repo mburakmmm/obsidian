@@ -35,10 +35,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          stage=nox-lang-v2.2.70-linux-x64
+          stage=nox-lang-v2.2.107-linux-x64
           archive="$stage.tar.gz"
-          gh release download v2.2.70 --repo mburakmmm/nox-lang --pattern "$archive" --dir "$RUNNER_TEMP"
-          printf '%s  %s\n' 1920366b080bffaaf8dabef6ed4a37cd1ad4230c5b96a3b0241cba6850427b76 "$RUNNER_TEMP/$archive" | shasum -a 256 -c -
+          gh release download v2.2.107 --repo mburakmmm/nox-lang --pattern "$archive" --dir "$RUNNER_TEMP"
+          printf '%s  %s\n' 59ea6470621cf6a55ff258d27eb39a1112c4a9026ccfcbbcc8b755db0d9efd98 "$RUNNER_TEMP/$archive" | shasum -a 256 -c -
           tar xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP"
           NOXC="$RUNNER_TEMP/$stage/bin/noxc" bash scripts/generate-release-sbom.sh > "$RUNNER_TEMP/obsidian-${GITHUB_REF_NAME}.cdx.json"
 
