@@ -570,7 +570,7 @@ Her adaptör için bağımsız modül, minimal örnek, integration test, consume
 - [x] `bash scripts/run-package-suite.sh <llvm|qbe>` yerelde NOX 2.1.0 ve 2.2.107 ile dört kombinasyonda 23 test dosyası, 486 assertion noktası, sekiz POSIX yazma hatası kontrolü, dokuz örnek ve lock doğrulamasıyla geçti. 2.1.0 QBE ayrı worker probu codegen kısıtı nedeniyle skip.
 - [x] `bash scripts/run-ecosystem-suite.sh <llvm|qbe>` ile Nyx, Aether ve Quartz örnek ve probları geçti. `bash scripts/run-file-stress.sh <llvm|qbe> full` ile backend başına 120.000 append ve 120.000 rotation kaydı işlendi. macOS ARM64, NOX 2.2.107.
 - [x] `OBSIDIAN_VERIFY_REGISTRY_METADATA=1 bash scripts/verify-registry-install.sh v1.2.0 1.2.0 7d88b16775ecacfae93e73d8cdf408203776f88e 2.2.107` izole önbellekte geçti. LLVM ve QBE API, şema, paket importu ve sürüm çıktısını doğruladı.
-- [ ] Yeni CI matrisinin üç platform ve iki NOX sürümünde tamamlandığını doğrula.
+- [x] `c9a7afd` için [GitHub CI](https://github.com/mburakmmm/obsidian/actions/runs/46147038812) altı işi geçti. Linux x64, Linux ARM64 ve macOS ARM64 üzerinde NOX 2.1.0 ve 2.2.107 doğrulandı. Temiz `c9a7afd` checkout'unda 2.2.107 ile `bash scripts/run-benchmarks.sh <llvm|qbe>` ve tam dosya stres testi geçti. Faz 18 kapandı.
 
 ---
 
