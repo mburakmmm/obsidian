@@ -2,6 +2,8 @@
 
 Son doğrulama 28 Kasım 2026. Yerel tekrarlar macOS ARM64’te resmi NOX arşivleriyle yapıldı. NOX 2.2.107 kaynak revizyonu `37e80cf9f0e273da4f612da0bb1f1c01c9473c6f`, NOX 2.1.0 revizyonu `fd107b922c67a804520dc30f849039d977542f6c`. Ana CI, Obsidian `c9a7afd` üzerinde Linux x64, Linux ARM64 ve macOS ARM64’te iki NOX sürümünü de çalıştırdı. Belgedeki tekil derleyici tanıları ayrıca yerelde alındı. [NOX 2.2.107 yayını](https://github.com/mburakmmm/nox-lang/releases/tag/v2.2.107) · [Obsidian CI](https://github.com/mburakmmm/obsidian/actions/runs/46147038812)
 
+Güncellik kontrolünde GitHub’ın son kararlı yayını, uzak `main` ve `v2.2.107` etiketi aynı kaynak revizyonunu gösterdi. Kurulu `noxc` dosyası SHA-256 doğrulamalı macOS arşivindeki derleyiciyle birebir eşleşti. Async ve terminal probları yeniden çalıştırıldı. Aşağıdaki kanal kapanışı ve süreli join sarmalayıcı kontrolleri bu denetimde eklendi.
+
 ## NOX 2.2.107’de açık olanlar
 
 ### 1. `ThreadChannel` için beklemeden gönderim ve kapanış
@@ -20,7 +22,15 @@ UndefinedMethod: ThreadChannel has no method 'try_send' (only send/recv)
 TypeMismatch: 'send' suspends the task: write 'await ch.send(...)'
 ```
 
-Obsidian’ın senkron çağrı yolunda, kuyruğa ekleme ile doluluk kararını tek işlemde veren bir public metot gerekiyor. Belgelenen `ThreadChannel` arayüzünde kanal kapatma, tamponu boşaltma veya bekleyen gönderici ve alıcıları uyandırma sözleşmesi de bulunmuyor. Bu kısım API incelemesine dayanıyor. `DROP_NEWEST`, `DROP_OLDEST` ve `SYNC_FALLBACK` politikalarının kesin muhasebesi bu sözleşmelere bağlı. [Kabul koşulları](docs/decisions/0011-async-dispatch-no-go.md#upstream-acceptance-criteria)
+Obsidian’ın senkron çağrı yolunda, kuyruğa ekleme ile doluluk kararını tek işlemde veren bir public metot gerekiyor. `DROP_NEWEST`, `DROP_OLDEST` ve `SYNC_FALLBACK` politikalarının kesin muhasebesi bu sözleşmeye bağlı. Belgelenen `ThreadChannel` API’si ayrıca kanal kapatma, kapanıştan sonra tamponu boşaltma veya bekleyen gönderici ve alıcıları uyandırma sözleşmesi sunmuyor. [Kabul koşulları](docs/decisions/0011-async-dispatch-no-go.md#upstream-acceptance-criteria)
+
+Kapanışı ve beklemeden almayı sınamak için aşağıdaki ilk satırı iki ayrı dosyaya yazıp her birine çağrılardan birini ekle. İki `noxc check` çalıştırması da çıkış kodu `1` ve ilgili metoda yönelik `UndefinedMethod` tanısı verdi.
+
+```nox
+q: ThreadChannel[int] = ThreadChannel[int](1)
+q.close()
+q.try_recv()
+```
 
 ### 2. Worker için süreli tamamlanma
 
@@ -31,6 +41,29 @@ noxc check tests/capability/async_timed_join.nox
 ```
 
 Çıkış kodu `1`. Tanı `ArgumentCountMismatch: 'join' takes no arguments`. [NOX thread API’si](https://github.com/mburakmmm/nox-lang/blob/v2.2.107/docs/stdlib/thread.md#start-and-threadhandlet)
+
+`Task.wait(ms)` belgelenmiş bir süreli bekleme API’si. `ThreadHandle.join()` işlemini ayrı bir task’a taşımak için denenen iki yöntem LLVM ve QBE’de `TypeMismatch` verdi. `async def join_worker(handle: ThreadHandle[int]) -> int` imzası parametre türünün paketlenememesi nedeniyle reddedildi. İç async işlevde `handle` yakalamak da türün task ile paylaşılamaması nedeniyle reddedildi. [Task süre aşımı API’si](https://github.com/mburakmmm/nox-lang/blob/v2.2.107/docs/language/concurrency.md#timeouts-and-waiting-for-the-first-of-two-tasks)
+
+İç işlev probu `noxc run --backend llvm join_capture.nox` ve `noxc run --backend qbe join_capture.nox` ile tekrar üretilebilir.
+
+```nox
+import nox.thread
+
+async def worker(queue: ThreadChannel[int]) -> int:
+    return await queue.recv()
+
+async def probe() -> None:
+    queue: ThreadChannel[int] = ThreadChannel[int](1)
+    handle: ThreadHandle[int] = nox.thread.start(worker, queue)
+    async def join_worker() -> int:
+        return await handle.join()
+    waiter: Task[int] = spawn join_worker()
+    print(waiter.wait(20))
+    await queue.send(7)
+    print(await waiter)
+
+await spawn probe()
+```
 
 ### 3. Bekleyen thread alıcısının iptalinde ayırt edilemeyen değer
 
